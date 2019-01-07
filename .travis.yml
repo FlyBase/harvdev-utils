@@ -8,3 +8,4 @@ cache: pip
 
 script:
     - python -m pytest -v
+    - pip install .
