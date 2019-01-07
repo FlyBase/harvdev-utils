@@ -4,7 +4,7 @@
 """Tests for `harvdev_utils` package."""
 import pytest
 
-from char_conversions import sgml_to_plain_text
+from harvdev_utils.char_conversions import sgml_to_plain_text
 
 dict_to_test = {
     '&agr;' : 'alpha',
