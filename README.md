@@ -15,4 +15,4 @@ Common Python functions used by FlyBase developers at Harvard.
 
 ### Git Branching
 - Please branch from develop and merge back via pull request.
-- Merges from develop into master should coincide with a new release tag on master with a version increment.
+- Merges from develop into master should coincide with a new release tag on master and a version increment.
