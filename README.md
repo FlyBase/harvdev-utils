@@ -3,4 +3,4 @@
 Common Python functions used by FlyBase developers at Harvard.
 
 ## Installation
-`pip install git+https://github.com/FlyBase/harvdev_utils.git`
+`pip install -e git+https://github.com/FlyBase/harvdev_utils.git#egg=harvdev_utils`
