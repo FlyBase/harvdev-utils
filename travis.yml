@@ -1,0 +1,10 @@
+sudo: false
+dist: trusty
+
+language: python
+python:
+    - "3.6"
+cache: pip
+
+script:
+    - python -m pytest -v
