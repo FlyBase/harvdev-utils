@@ -106,3 +106,6 @@ venv.bak/
 # Misc
 special_char.py
 temp.py
+
+# VSCode
+.vscode

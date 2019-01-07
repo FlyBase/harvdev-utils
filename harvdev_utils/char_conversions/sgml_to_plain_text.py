@@ -1,6 +1,20 @@
 import re
 
 def sgml_to_plain_text(input_string):
+    """A function to convert FlyBase SGML to plain text greek words. 
+    e.g. &agr; -> alpha
+
+    Args:
+        input_string (str): The string containing characters to be converted.
+
+    Returns:
+        substitution (str): The same string as the input with the greek characters converted.
+
+    Raises:
+        KeyError: If the regex matches for a set of SGML characters but
+        there is no exact matching valid character set.
+
+    """
 
     substitution_dict = {
     '&agr;' : 'alpha',
