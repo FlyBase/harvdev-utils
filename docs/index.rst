@@ -8,8 +8,8 @@ Welcome to harvdev-utils's documentation!
 
 .. toctree::
 .. automodule:: harvdev_utils
-    :members:
-
+    :members: sgml_to_plain_text
+.. automodule:: harvdev_utils
 
 
 Indices and tables
