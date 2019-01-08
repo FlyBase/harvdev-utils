@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'harvdev-utils'
+project = 'harvdev_utils'
 copyright = '2019, Harvard FlyBase Developers'
 author = 'Harvard FlyBase Developers'
 
