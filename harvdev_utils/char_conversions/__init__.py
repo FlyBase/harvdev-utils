@@ -1,1 +1,2 @@
 from .sgml_to_plain_text import sgml_to_plain_text
+from .sgml_to_unicode import sgml_to_unicode
