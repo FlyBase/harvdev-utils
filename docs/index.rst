@@ -7,7 +7,7 @@ Welcome to harvdev-utils's documentation!
 =========================================
 
 .. toctree::
-.. automodule:: harvdev_utils.char_conversions
+.. automodule:: harvdev_utils
     :members:
 
 
