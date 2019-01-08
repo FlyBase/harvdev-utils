@@ -20,7 +20,7 @@ def sgml_to_plain_text(input_string):
         str: The same string as the input with the greek characters converted.
 
     Raises:
-        KeyError: If the regex matches for a set of SGML characters but there is no exact matching valid character set.
+        KeyError: If the regex matches for a set of SGML characters but there is no exact matching SGML.
 
     """
 

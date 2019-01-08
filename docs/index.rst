@@ -7,10 +7,12 @@ Welcome to harvdev-utils's documentation!
 =========================================
 
 .. toctree::
+
+Modules for converting special characters
+=========================================
+
 .. automodule:: harvdev_utils
     :members: sgml_to_plain_text
-.. automodule:: harvdev_utils
-
 
 Indices and tables
 ==================
