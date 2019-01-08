@@ -7,9 +7,6 @@ Welcome to harvdev-utils's documentation!
 =========================================
 
 .. toctree::
-.. automodule:: harvdev_utils
-    :members:
-
 
 
 Indices and tables
