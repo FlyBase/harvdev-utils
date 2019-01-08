@@ -6,6 +6,8 @@
 Welcome to harvdev-utils's documentation!
 =========================================
 
+Please refer to the sections below for information regarding common Python functions used by FlyBase developers at Harvard.
+
 .. toctree::
 
 Modules for converting special characters
