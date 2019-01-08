@@ -14,7 +14,7 @@ Modules for converting special characters
 =========================================
 
 .. automodule:: harvdev_utils
-    :members: sgml_to_plain_text
+    :members:
 
 Indices and tables
 ==================
