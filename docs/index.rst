@@ -7,7 +7,8 @@ Welcome to harvdev-utils's documentation!
 =========================================
 
 .. toctree::
-.. automodule:: harvdev_utils.char_conversions.sgml_to_plain_text
+.. automodule:: harvdev_utils
+    :members:
 
 
 
