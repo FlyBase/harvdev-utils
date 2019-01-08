@@ -7,8 +7,7 @@ Welcome to harvdev-utils's documentation!
 =========================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. automodule:: harvdev_utils.char_conversions.sgml_to_plain_text
 
 
 
