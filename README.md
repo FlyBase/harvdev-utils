@@ -31,7 +31,7 @@ Common Python functions used by FlyBase developers at Harvard.
 - Update the file `__init__.py` in `harvdev_utils` and add your function to the list of default loaded functions. If the folder you are using does not exist at the top of the file, be sure to import it. 
     - _e.g._ `from .char_conversions import *`
 - Navigate to the `tests` folder and create a new sub-folder if you're not using a currently deployed folder (_i.e._ if you're using `char_conversions`, the folder already exists).
-- Create your `test` python file with the prefix `test` .
+- Create your `test` python file with the prefix `test_` .
     - _e.g._ `test_sgml_to_plain_text.py`
 - Tests can be run locally with `python -m pytest` from the root directory of the repository.
 - Edit the file `docs/index.rst` and be sure the folder that you're using is listed as an automodule.
