@@ -25,7 +25,7 @@ Common Python functions used by FlyBase developers at Harvard.
 #### Example Development Workflow
 - Clone the repository and branch off develop.
 - Navigate to the directory `harvdev_utils` and use an existing folder (_e.g._ `char_conversions`) or create a new folder based on the goal of your module.
-- Create a single python file containing a function to be used.
+- Create a single python file containing a function to be used. Feel free to add multiple functions to a single python file if you feel it's appropriate.
 - Be sure to add an entry to the `__init__.py` file in the folder where you're working.
     - _e.g._ `from .unicode_to_plain_text import unicode_to_plain_text`
 - Update the file `__init__.py` in `harvdev_utils` and add your function to the list of default loaded functions. If the folder you are using does not exist at the top of the file, be sure to import it. 
