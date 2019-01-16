@@ -1,8 +1,10 @@
 """
-.. module:: sgml_to_plain_text
+.. module:: sub_sup_to_special_char
    :synopsis: A module to convert Greek unicode to plain text Greek words. 
 
 .. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
+
+
 """
 
 import re

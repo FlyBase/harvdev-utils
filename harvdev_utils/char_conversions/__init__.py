@@ -1,3 +1,4 @@
 from .sgml_to_plain_text import sgml_to_plain_text
 from .sgml_to_unicode import sgml_to_unicode
 from .unicode_to_plain_text import unicode_to_plain_text
+from .sub_sup_to_sgml import sub_sup_to_sgml

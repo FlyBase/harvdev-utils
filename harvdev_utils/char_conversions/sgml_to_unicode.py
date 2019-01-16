@@ -3,8 +3,6 @@
    :synopsis: A module to convert FlyBase SGML to Greek characters in unicode. 
 
 .. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
-
-
 """
 
 import re

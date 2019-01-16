@@ -3,8 +3,6 @@
    :synopsis: A module to convert FlyBase SGML to plain text Greek words. 
 
 .. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
-
-
 """
 
 import re
