@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/FlyBase/harvdev-utils.svg?branch=master)](https://travis-ci.com/FlyBase/harvdev-utils)[![Documentation Status](https://readthedocs.org/projects/harvdev-utils/badge/?version=latest)](https://harvdev-utils.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.com/FlyBase/harvdev-utils.svg?branch=master)](https://travis-ci.com/FlyBase/harvdev-utils)
+[![Documentation Status](https://readthedocs.org/projects/harvdev-utils/badge/?version=latest)](https://harvdev-utils.readthedocs.io/en/latest/?badge=latest)
 
 # harvdev_utils Python package
 Common Python functions used by FlyBase developers at Harvard.
