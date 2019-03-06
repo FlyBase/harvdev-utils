@@ -6,7 +6,7 @@ Common Python functions and classes used by FlyBase developers at Harvard.
 
 ## Installation
 
-`pip install -e git+https://github.com/FlyBase/harvdev-utils.git#egg=harvdev_utils`
+`pip install -e git+https://github.com/FlyBase/harvdev-utils.git@master#egg=harvdev_utils`
 
 ## Documentation
 
