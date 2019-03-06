@@ -10,7 +10,19 @@ Common Python functions and classes used by FlyBase developers at Harvard.
 
 ## Documentation
 
-- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes.
+- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes  (see below).
+
+### SQLAlchemy classes
+
+- `harvdev_utils` contains two sets of SQLAlchemy classes for use with FlyBase Harvard's `production` and `reporting` databases. The class names correspond to tables within the Chado database and serve as an integral part of writing SQLAlchemy code. 
+- To use these classes, include the appropriate imports at the top of your Python module:
+  - When using production or reporting individually (the classes share overlapping names, so _only_ use this approach if `production` / `reporting` queries are **not** written together in the same module):
+    - `from harvdev_utils.production import *`
+    - `from harvdev_utils.reporting import *`
+  - When using production or reporting both within the _same_ module:
+    - `from harvdev_utils import production as prod`
+    - `from harvdev_utils import reporting as rep`
+    - Code can then be written by prefixing the classes as appropriate when calling them, _e.g._ `prod.Feature`, `rep.Feature`, `rep.Pub`, `prod.Cvterm`, _etc_.
 
 ## General Development
 - The [dev_readme.md](dev/dev_readme.md) file contains instructions for regenerating SQLAlchemy classes.
