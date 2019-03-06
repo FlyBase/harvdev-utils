@@ -2,27 +2,46 @@
 [![Documentation Status](https://readthedocs.org/projects/harvdev-utils/badge/?version=latest)](https://harvdev-utils.readthedocs.io/en/latest/?badge=latest)
 
 # harvdev_utils Python package
-Common Python functions used by FlyBase developers at Harvard.
+Common Python functions and classes used by FlyBase developers at Harvard.
 
 ## Installation
+
 `pip install -e git+https://github.com/FlyBase/harvdev-utils.git#egg=harvdev_utils`
 
 ## Documentation
-- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?).
 
-## Development
+- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes  (see below).
+
+### SQLAlchemy classes
+
+- `harvdev_utils` contains two sets of SQLAlchemy classes for use with FlyBase Harvard's `production` and `reporting` databases. The class names correspond to tables within the Chado database and serve as an integral part of writing SQLAlchemy code. 
+- To use these classes, include the appropriate imports at the top of your Python module:
+  - When using production or reporting individually (the classes share overlapping names, so _only_ use this approach if `production` / `reporting` queries are **not** written together in the same module):
+    - `from harvdev_utils.production import *`
+    - `from harvdev_utils.reporting import *`
+  - When using production or reporting both within the _same_ module:
+    - `from harvdev_utils import production as prod`
+    - `from harvdev_utils import reporting as rep`
+    - Code can then be written by prefixing the classes as appropriate when calling them, _e.g._ `prod.Feature`, `rep.Feature`, `rep.Pub`, `prod.Cvterm`, _etc_.
+
+## General Development
+- The [dev_readme.md](dev/dev_readme.md) file contains instructions for regenerating SQLAlchemy classes.
+
 - Please use [PEP8](https://www.python.org/dev/peps/pep-0008/) whenever possible. 
 - Docstrings should follow Google's style guides ([Sphinx guide](http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#module-sphinx.ext.napoleon), [additional example 1](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html), [additional example 2](http://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)) and are used to generate [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?).
 - Tests should be written for each non-trivial function. Please see the `tests` folder for examples. We're using [pytest](https://docs.pytest.org/en/latest/) via [Travis CI](https://travis-ci.com/FlyBase/harvdev_utils.svg?branch=master) for testing. Tests can be run locally with the command `python -m pytest -v` from the root directory of the repository (`-v` flag is optional). 
 
 #### Git Branching
+
 - Please branch from develop and merge back via pull request.
 - Merges from develop into master should coincide with a new release tag on master and a version increment.
 
 #### Writing Documentation
+
 - The file `docs/index.rst` should be updated after a new module is added. The `automodule` command will automatically pull in information for specified modules once the code is pushed to GitHub. Please see the [automodule documentation](http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#directive-automodule) for help.
 
 #### Example Development Workflow
+
 - Clone the repository and branch off develop.
 - Navigate to the directory `harvdev_utils` and use an existing folder (_e.g._ `char_conversions`) or create a new folder based on the goal of your module.
 - Create a single python file containing a function to be used. Feel free to add multiple functions to a single python file if you feel it's appropriate.
