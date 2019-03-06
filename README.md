@@ -2,7 +2,7 @@
 [![Documentation Status](https://readthedocs.org/projects/harvdev-utils/badge/?version=latest)](https://harvdev-utils.readthedocs.io/en/latest/?badge=latest)
 
 # harvdev_utils Python package
-Common Python functions used by FlyBase developers at Harvard.
+Common Python functions and classes used by FlyBase developers at Harvard.
 
 ## Installation
 
@@ -10,9 +10,10 @@ Common Python functions used by FlyBase developers at Harvard.
 
 ## Documentation
 
-- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?).
+- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes.
 
 ## General Development
+- The [dev_readme.md](dev/dev_readme.md) file contains instructions for regenerating SQLAlchemy classes.
 
 - Please use [PEP8](https://www.python.org/dev/peps/pep-0008/) whenever possible. 
 - Docstrings should follow Google's style guides ([Sphinx guide](http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#module-sphinx.ext.napoleon), [additional example 1](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html), [additional example 2](http://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)) and are used to generate [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?).
