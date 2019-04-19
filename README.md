@@ -12,7 +12,7 @@ Common Python functions and classes used by FlyBase developers at Harvard.
 
 - Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes  (see below).
 
-### SQLAlchemy classes
+### SQLAlchemy Classes
 
 - `harvdev_utils` contains two sets of SQLAlchemy classes for use with FlyBase Harvard's `production` and `reporting` databases. The class names correspond to tables within the Chado database and serve as an integral part of writing SQLAlchemy code. 
 - To use these classes, include the appropriate imports at the top of your Python module:
