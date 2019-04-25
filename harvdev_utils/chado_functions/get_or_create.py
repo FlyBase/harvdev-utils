@@ -17,6 +17,11 @@ def get_or_create(self, session, model, ret_col=None, **kwargs):
     # If rank exists in a table, we always insert our entry and increment the rank.
     log.debug('Submitted table: {}'.format(model.__tablename__))
     log.debug('Submitted kwargs: {}'.format(kwargs))
+
+    # We need to get our engine back from our session to create an inspector.
+    engine = session.get_bind()
+    insp = inspect(engine) # Used for inspecting the schema when needed.
+
     if 'rank' in model.__table__.columns:
         log.debug('Found rank column in {}'.format(model.__tablename__))
         # Get our unique constraints. We need to query with *only* these in order to get the correct rank value.
