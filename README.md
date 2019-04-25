@@ -10,11 +10,11 @@ Common Python functions and classes used by FlyBase developers at Harvard.
 
 ## Documentation
 
-- Detailed information for all available functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes  (see below).
+- Detailed information for some functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes and functions (see below).
 
-### SQLAlchemy classes
+### SQLAlchemy Classes
 
-- `harvdev_utils` contains two sets of SQLAlchemy classes for use with FlyBase Harvard's `production` and `reporting` databases. The class names correspond to tables within the Chado database and serve as an integral part of writing SQLAlchemy code. 
+- `harvdev_utils` contains two sets of SQLAlchemy classes for use with FlyBase Harvard's `production` and `reporting` databases. The class names correspond to tables within the Chado database and serve as an integral part of writing SQLAlchemy code.
 - To use these classes, include the appropriate imports at the top of your Python module:
   - When using production or reporting individually (the classes share overlapping names, so _only_ use this approach if `production` / `reporting` queries are **not** written together in the same module):
     - `from harvdev_utils.production import *`
@@ -23,6 +23,28 @@ Common Python functions and classes used by FlyBase developers at Harvard.
     - `from harvdev_utils import production as prod`
     - `from harvdev_utils import reporting as rep`
     - Code can then be written by prefixing the classes as appropriate when calling them, _e.g._ `prod.Feature`, `rep.Feature`, `rep.Pub`, `prod.Cvterm`, _etc_.
+
+### SQLAlchemy Functions
+
+- `harvdev_utils` contains a set of commonly used Chado-SQLAlchemy functions:
+
+  -  **`harvdev_utils.chado_functions.get_or_create`**
+      -  This function allows for values to be inserted into a specific Chado table. If the values already exist in the table, nothing is inserted. If the table uses `rank`, the `rank` value is automatically incremented and the values are _always_ inserted.
+      -  Example import: `from harvdev_utils.chado_functions import get_or_create`
+      -  The function as defined in the module: `def get_or_create(session, model, ret_col=None, **kwargs)`
+      -  Required fields:
+          -  `session`: Your SQLAlchemy session.
+          -  `model`: The model (aka table) where you'd like to insert data.
+          -  `kwargs**`: Values used to look up the appropriate row of a table to insert the data. Please see the example below.
+      -  Optional fields: 
+          -  `ret_col=` If you'd like a value returned from this function, specify the column name of the value you'd like back. Useful when creating new identifiers where you'd like to immediately know the identifier number.
+      -  Example without `ret_col`:
+          -  `get_or_create(session, FeatureCvtermprop, feature_cvterm_id=feature_cvterm_id_fly, type_id=qualifier_cv_term_id, value='model of')`
+      -  Example with `ret_col`:
+          -  `feature_cvterm_id_fly = get_or_create(session, FeatureCvterm, pub_id=pub_id, feature_id=fly_feature_id, cvterm_id=cv_term_id_disease, ret_col='feature_cvterm_id')`
+      -  The debugging level is set to `INFO` by default and can be changed to `DEBUG` by using the following line in your script where appropriate:
+          -  `logging.getLogger('harvdev_utils.chado_functions.get_or_create').setLevel(logging.DEBUG)`
+
 
 ## General Development
 - The [dev_readme.md](dev/dev_readme.md) file contains instructions for regenerating SQLAlchemy classes.
