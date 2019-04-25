@@ -13,7 +13,7 @@ import logging, sys
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def get_or_create(self, session, model, ret_col=None, **kwargs):
+def get_or_create(session, model, ret_col=None, **kwargs):
     # If rank exists in a table, we always insert our entry and increment the rank.
     log.debug('Submitted table: {}'.format(model.__tablename__))
     log.debug('Submitted kwargs: {}'.format(kwargs))
