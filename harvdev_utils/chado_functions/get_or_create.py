@@ -10,7 +10,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 import logging, sys
 
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 def get_or_create(session, model, ret_col=None, **kwargs):
