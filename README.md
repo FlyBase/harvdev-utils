@@ -37,8 +37,11 @@ Common Python functions and classes used by FlyBase developers at Harvard.
           -  `model`: The model (aka table) where you'd like to insert data.
           -  `kwargs**`: Values used to look up the appropriate row of a table to insert the data. Please see the example below.
       -  Optional fields: 
-          -  `ret_col=` If you'd like a value returned from this function, specify the column name of the value you'd like back. Useful when creating new identifiers where you'd like to immediately know the identifier number.
+          -  `ret_col=` If you'd like a specific value returned from this function, specify the column name of the value you'd like back. Useful when creating new identifiers where you'd like to immediately know just the identifier number.
       -  Example without `ret_col`:
+          -  `Fcp = get_or_create(session, FeatureCvtermprop, feature_cvterm_id=feature_cvterm_id_fly, type_id=qualifier_cv_term_id, value='model of')`
+          -  `print(Fcp.feature_cvterm_id)`
+      -  Another example without `ret_col` where we do not capture the return object:
           -  `get_or_create(session, FeatureCvtermprop, feature_cvterm_id=feature_cvterm_id_fly, type_id=qualifier_cv_term_id, value='model of')`
       -  Example with `ret_col`:
           -  `feature_cvterm_id_fly = get_or_create(session, FeatureCvterm, pub_id=pub_id, feature_id=fly_feature_id, cvterm_id=cv_term_id_disease, ret_col='feature_cvterm_id')`
