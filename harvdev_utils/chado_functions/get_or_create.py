@@ -14,10 +14,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def get_or_create(session, model, ret_col=None, **kwargs):
+def get_or_create(session, model, **kwargs):
     """
-    return an object or just the column of interest (i.e pub_id), if ret_col is defined.
+    :param session: The current session in use by SQL Alchemy
+    :param model: The table to be queried.
+    :param kwargs: Values for the table used for lookup (e.g. name='awesome gene')
+    :return: Both an SQL Alchemy object and True (if new object created) or False (if object retrieved)
     """
+
     # If rank exists in a table, we always insert our entry and increment the rank.
     log.debug('Submitted table: {}'.format(model.__tablename__))
     log.debug('Submitted kwargs: {}'.format(kwargs))
@@ -51,10 +55,7 @@ def get_or_create(session, model, ret_col=None, **kwargs):
         try:
             attempt = session.query(model).filter_by(**kwargs).one()
             log.debug('Found previous entry for %s, insert not required.' % (kwargs))
-            if ret_col is not None:  # If we're expecting a returning value from the Postgres insert.
-                return getattr(attempt, ret_col)  # Return this new value from our recently checked object.
-            else:
-                return attempt
+            return attempt, False
         except NoResultFound:
             log.debug('Previous entry for %s not found. Adding insert.' % (kwargs))
             created = model(**kwargs)
@@ -62,6 +63,4 @@ def get_or_create(session, model, ret_col=None, **kwargs):
     session.add(created)
     session.flush()
 
-    if ret_col is not None:  # If we're expecting a RETURNING value from the Postgres insert.
-        return getattr(created, ret_col)  # Return this new value from our recently added/flushed object.
-    return created
+    return created, True

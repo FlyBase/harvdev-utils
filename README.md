@@ -31,20 +31,13 @@ Common Python functions and classes used by FlyBase developers at Harvard.
   -  **`harvdev_utils.chado_functions.get_or_create`**
       -  This function allows for values to be inserted into a specific Chado table. If the values already exist in the table, nothing is inserted. If the table uses `rank`, the `rank` value is automatically incremented and the values are _always_ inserted.
       -  Example import: `from harvdev_utils.chado_functions import get_or_create`
-      -  The function as defined in the module: `def get_or_create(session, model, ret_col=None, **kwargs)`
+      -  The function as defined in the module: `def get_or_create(session, model, **kwargs)`
       -  Required fields:
           -  `session`: Your SQLAlchemy session.
           -  `model`: The model (aka table) where you'd like to insert data.
           -  `kwargs**`: Values used to look up the appropriate row of a table to insert the data. Please see the example below.
-      -  Optional fields: 
-          -  `ret_col=` If you'd like a specific value returned from this function, specify the column name of the value you'd like back. Useful when creating new identifiers where you'd like to immediately know just the identifier number.
-      -  Example without `ret_col`:
-          -  `Fcp = get_or_create(session, FeatureCvtermprop, feature_cvterm_id=feature_cvterm_id_fly, type_id=qualifier_cv_term_id, value='model of')`
-          -  `print(Fcp.feature_cvterm_id)`
-      -  Another example without `ret_col` where we do not capture the return object:
-          -  `get_or_create(session, FeatureCvtermprop, feature_cvterm_id=feature_cvterm_id_fly, type_id=qualifier_cv_term_id, value='model of')`
-      -  Example with `ret_col`:
-          -  `feature_cvterm_id_fly = get_or_create(session, FeatureCvterm, pub_id=pub_id, feature_id=fly_feature_id, cvterm_id=cv_term_id_disease, ret_col='feature_cvterm_id')`
+      - The function always returns two variables: the first is an sql alchemy object (equivalent to a row in a table) and the second is `True` (if a new entry was created) or `False` (if an existing entry was retrieved).
+      - Column values in the returned sql alchemy object can be accessed as such: `uniquename = my_returned_object.uniquename`
       -  The debugging level is set to `INFO` by default and can be changed to `DEBUG` by using the following line in your script where appropriate:
           -  `logging.getLogger('harvdev_utils.chado_functions.get_or_create').setLevel(logging.DEBUG)`
 
