@@ -16,8 +16,12 @@ log = logging.getLogger(__name__)
 
 def get_or_create(session, model, **kwargs):
     """
-    return an object or just the column of interest (i.e pub_id), if ret_col is defined.
+    :param session: The current session in use by SQL Alchemy
+    :param model: The table to be queried.
+    :param kwargs: Values for the table used for lookup (e.g. name='awesome gene')
+    :return: Both an SQL Alchemy object and True (if new object created) or False (if object retrieved)
     """
+
     # If rank exists in a table, we always insert our entry and increment the rank.
     log.debug('Submitted table: {}'.format(model.__tablename__))
     log.debug('Submitted kwargs: {}'.format(kwargs))
