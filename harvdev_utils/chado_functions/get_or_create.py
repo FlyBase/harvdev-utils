@@ -46,11 +46,21 @@ def get_or_create(session, model, **kwargs):
         if max_rank[0] is None:
             new_rank = {'rank': 0}
             log.debug('Rank value not found for current query, starting new rank at 0.')
+            kwargs.update(new_rank)
+            created = model(**kwargs)
         else:
-            log.debug('Max rank value for existing values is {}, incrementing to {} for current query.'.format(max_rank[0], max_rank[0]+1))
-            new_rank = {'rank': max_rank[0] + 1}
-        kwargs.update(new_rank)
-        created = model(**kwargs)
+            log.debug('Previous rank value exists when querying for unique constraints.')
+            log.debug('Checking whether all values in this query currently exist.')
+            try:
+                attempt = session.query(model).filter_by(**kwargs).one()
+                log.debug('Found previous entry for {}, insert not required.'.format(kwargs))
+                return attempt, False
+            except NoResultFound:
+                log.debug('Max rank value for existing values is {}, incrementing to {} for current query.'
+                          .format(max_rank[0], max_rank[0]+1))
+                new_rank = {'rank': max_rank[0] + 1}
+            kwargs.update(new_rank)
+            created = model(**kwargs)
     else:
         try:
             attempt = session.query(model).filter_by(**kwargs).one()
