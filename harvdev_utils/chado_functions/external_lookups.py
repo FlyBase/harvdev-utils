@@ -25,7 +25,6 @@ import pubchempy
 # general imports
 import logging
 import json
-import time
 from retry import retry
 
 log = logging.getLogger(__name__)
@@ -34,6 +33,7 @@ logging.getLogger("suds").setLevel(logging.INFO)
 
 MAX_TRIES = 5
 SLEEP_TIME = 5
+
 
 class ExternalLookup:
     def __init__(self, dbname, external_id=None, name=None):
@@ -52,11 +52,10 @@ class ExternalLookup:
 
         self.name_dict = {'pubchem': self._lookup_pubchem_name}
 
-
     @classmethod
     def check_id(cls, dbname, external_id=None):
         #
-        # Will throw error if fails to connect after all tries 
+        # Will throw error if fails to connect after all tries
         #
         dbname = dbname.lower()
         new_instance = cls(dbname, external_id=external_id)
@@ -64,14 +63,14 @@ class ExternalLookup:
             new_instance.error = "No Accession supplied"
             return new_instance
         if dbname not in new_instance.id_dict:
-            new_instance.error =  "Dbname {}. Not found in list {}".format(dbname, new_instance.id_dict.keys())
+            new_instance.error = "Dbname {}. Not found in list {}".format(dbname, new_instance.id_dict.keys())
             return new_instance
         return new_instance.id_dict[dbname]()
- 
+
     @classmethod
     def check_name(cls, dbname, name=None):
         #
-        # Will throw error if fails to connect after all tries 
+        # Will throw error if fails to connect after all tries
         #
         dbname = dbname.lower()
         new_instance = cls(dbname, name=name)
@@ -79,7 +78,7 @@ class ExternalLookup:
             new_instance.error = "No Name supplied"
             return new_instance
         if dbname not in new_instance.name_dict:
-            new_instance.error =  "Dbname {}. Not found in list {}".format(dbname, new_instance.name_dict.keys())
+            new_instance.error = "Dbname {}. Not found in list {}".format(dbname, new_instance.name_dict.keys())
             return new_instance
         return new_instance.name_dict[dbname]()
 
@@ -121,7 +120,7 @@ class ExternalLookup:
         chebi_web = ChEBI()
         lookup_id = str(self.external_id)
         if not lookup_id.startswith("CHEBI:"):
-             lookup_id = "CHEBI:{}".format(self.external_id)
+            lookup_id = "CHEBI:{}".format(self.external_id)
         chebi = chebi_web.getCompleteEntity(lookup_id)
         if not chebi:
             self.error = "No results found when querying ChEBI for {}".format(self.external_id)
@@ -130,7 +129,7 @@ class ExternalLookup:
         try:
             self.inchikey = chebi.inchiKey
         except AttributeError:
-            self.error = 'No InChIKey found for entry: {}'.format(external_id)
+            self.error = 'No InChIKey found for entry: {}'.format(self.external_id)
         return self
 
     #################
@@ -148,7 +147,7 @@ class ExternalLookup:
         #
         # From the pubchem id get the description, title (stored as name) and inchikey
         #
-        description = pubchempy.request(self.external_id, operation='description')            
+        description = pubchempy.request(self.external_id, operation='description')
         raw_data = description.read()
         encoding = description.info().get_content_charset('utf8')  # JSON default
         description_data = json.loads(raw_data.decode(encoding))
@@ -159,7 +158,7 @@ class ExternalLookup:
                                                    description_item['Description'])
                 string_to_add_for_description += formatted_string
             elif 'Title' in description_item.keys():
-                    self.name = description_item['Title']
+                self.name = description_item['Title']
 
         self.description = string_to_add_for_description
 
@@ -170,39 +169,25 @@ class ExternalLookup:
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
     def _lookup_pubchem_id(self):
-        #results = pubchempy.get_compounds(self.external_id, 'name')
         try:
             self.pubchem_get_details_from_id()
         except pubchempy.BadRequestError:
             self.error = "No results found when querying pubchem for {}".format(self.external_id)
-            return self
-
-        #print("Description: {}".format(description_data))
-
-        #bob = results.to_dict()
-        #print(type(bob))
-        #for jane in bob.keys():
-        #    print("{}: {}".format(jane, bob[jane]))
-        #bob = results.to_dict(properties=['inchikey', 'iupac_name'])
-        #print(bob)
         return self
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
     def _lookup_pubchem_name(self):
         try:
             results = pubchempy.get_compounds(self.name, 'name')
-            #print(type(results))
-            #print(results)
             if results:
                 self.external_id = results[0].to_dict(properties=['cid'])['cid']
                 self.pubchem_get_details_from_id()
             else:
                 self.error = "No results found when querying pubchem for {}".format(self.name)
-
         except pubchempy.BadRequestError:
             self.error = "No results found when querying pubchem for {}".format(self.name)
         return self
-        
+
 # test examples
 # for hg_id in [1101, 111111]:
 #     print("\n\nProcessing hgnc {}".format(hg_id))
