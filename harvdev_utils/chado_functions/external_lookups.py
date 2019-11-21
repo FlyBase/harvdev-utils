@@ -138,7 +138,7 @@ class ExternalLookup:
             self.error = "No results found when querying ChEBI for {}".format(self.external_id)
             return self
 
-        # Synonyms    
+        # Synonyms
         if self.get_synonyms:
             for item in chebi.Synonyms:
                 self.synonyms.append(item.data)
@@ -226,10 +226,11 @@ class ExternalLookup:
             self.error = "No results found when querying pubchem for {}".format(self.name)
         return self
 
+
 ##########
 # Examples
 ##########
-if __name__ == '__main__':
+if __name__ == '__main__':  # noqa: C901
     for hg_id in [1101, 111111]:
         print("\n\nProcessing hgnc {}".format(hg_id))
         hgnc = ExternalLookup.lookup_by_id('HGNC', hg_id)
@@ -258,7 +259,7 @@ if __name__ == '__main__':
             print("\tname: {}".format(hgnc.name))
             print("\tdesc: {}".format(hgnc.description))
             print("\tsynonyms: {}".format(hgnc.synonyms))
- 
+
     for pub_id in [23669229, 12345678910]:
         print("\n\nProcessing pubchem id {}".format(pub_id))
         hgnc = ExternalLookup.lookup_by_id('pubchem', pub_id)
@@ -279,7 +280,7 @@ if __name__ == '__main__':
             print("\tinchikey: {}".format(hgnc.inchikey))
             print("\tdesc: {}".format(hgnc.description))
             print("\tsynonyms: {}".format(hgnc.synonyms))
- 
+
     # also get synonyms
     for pub_name in ['sodium caffeine benzoate']:
         print("\n\nProcessing pubchem name {}".format(pub_name))
