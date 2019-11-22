@@ -8,5 +8,11 @@ __all__ = [
     'sgml_to_unicode',
     'unicode_to_plain_text',
     'sub_sup_to_sgml',
-    'get_or_create'
+    'get_or_create',
+    'lookup_by_id',
+    'lookup_by_name',
+    'lookup_hgnc',
+    'lookup_chebi',
+    'lookup_pubchem',
+    'lookup_omim'
 ]
