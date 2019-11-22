@@ -33,6 +33,11 @@ import logging
 import json
 from retry import retry
 
+# url imports for omim
+from urllib.parse import urlencode
+from urllib.request import urlopen
+from urllib.error import HTTPError
+
 log = logging.getLogger(__name__)
 # Stop bioservices from outputting tons of unnecessary info in DEBUG mode.
 logging.getLogger("suds").setLevel(logging.INFO)
@@ -48,6 +53,7 @@ class ExternalLookup:
         self.dbname = dbname.lower()
         self.name = name
         self.description = None
+        self.inchikey = None
         self.error = None
         self.get_synonyms = get_synonyms
         self.synonyms = []
@@ -56,7 +62,8 @@ class ExternalLookup:
         ############################################
         self.id_dict = {'hgnc': self._lookup_hgnc_id,
                         'chebi': self._lookup_chebi_id,
-                        'pubchem': self._lookup_pubchem_id}
+                        'pubchem': self._lookup_pubchem_id,
+                        'omim': self._lookup_omim_id}
 
         self.name_dict = {'pubchem': self._lookup_pubchem_name}
 
@@ -161,7 +168,7 @@ class ExternalLookup:
         if not external_id:
             new_instance.error = "No Accession supplied"
             return new_instance
-        return new_instance._lookup_pubchem()
+        return new_instance._lookup_pubchem_id()
 
     def pubchem_get_details_from_id(self):
         #
@@ -226,6 +233,48 @@ class ExternalLookup:
             self.error = "No results found when querying pubchem for {}".format(self.name)
         return self
 
+    ##############
+    # OMIM methods
+    ##############
+    @classmethod
+    def lookup_omim(cls, external_id=None, synonyms=False):
+        new_instance = cls('omim', external_id, get_synonyms=synonyms)
+        if not external_id:
+            new_instance.error = "No Accession supplied"
+            return new_instance
+        return new_instance._lookup_omim_id()
+
+    @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
+    def _lookup_omim_id(self):
+        request_data = {}
+        request_data['apiKey'] = 'GaZ_sZ5zRTOkgLHwW4KKyQ'  # Get from ENV later just testing for now DO NOT MERGE IF YOU SEE THIS
+        request_data['format'] = 'json'
+        request_data['mimNumber'] = self.external_id
+
+        url = 'http://api.omim.org/api/entry'
+        # add parameters to url string
+        url_values = urlencode(request_data)
+        url = url + '?' + url_values
+        # query OMIM
+        try:
+            response = urlopen(url)
+        except HTTPError as err:
+            if err.code == 403:  # forbidden: BAD KEY
+                self.error = "Failed to access OMIM API, may be time to register for a new key"
+                return self
+            elif err.code == 400:
+                self.error = "No results found when querying OMIM for {}".format(self.external_id)
+            return self
+
+        # read in response
+        result = json.loads(response.read())
+        try:
+            self.name = result['omim']['entryList'][0]['entry']['titles']['preferredTitle']
+        except KeyError:
+            pass
+
+        return self
+
 
 ##########
 # Examples
@@ -285,6 +334,17 @@ if __name__ == '__main__':  # noqa: C901
     for pub_name in ['sodium caffeine benzoate']:
         print("\n\nProcessing pubchem name {}".format(pub_name))
         hgnc = ExternalLookup.lookup_by_name('pubchem', pub_name, synonyms=True)
+        if hgnc.error:
+            print("\t Error: {}".format(hgnc.error))
+        else:
+            print("\tname: {}".format(hgnc.name))
+            print("\tinchikey: {}".format(hgnc.inchikey))
+            print("\tdesc: {}".format(hgnc.description))
+            print("\tsynonyms: {}".format(hgnc.synonyms))
+
+    for omim_id in [100100, 123456789]:
+        print("\n\nProcessing omim id {}".format(omim_id))
+        hgnc = ExternalLookup.lookup_by_id('omim', omim_id, synonyms=True)
         if hgnc.error:
             print("\t Error: {}".format(hgnc.error))
         else:
