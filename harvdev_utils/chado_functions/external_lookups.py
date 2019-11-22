@@ -22,6 +22,9 @@
 # lookups take an optional argument of synonym to set wether we
 # want these aswell. It takes more time hence optional, no need
 # grabbing stuff we do not need and wasting time.
+#
+# NOTE: for OMIM we need the env OMIM_KEY set to get the api key
+#
 ###############################################################
 
 # external api's
@@ -32,6 +35,7 @@ import pubchempy
 import logging
 import json
 from retry import retry
+from os import getenv
 
 # url imports for omim
 from urllib.parse import urlencode
@@ -246,8 +250,14 @@ class ExternalLookup:
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
     def _lookup_omim_id(self):
+
+        api_key = getenv('OMIM_KEY')
+        if not api_key:
+            self.error = "OMIM_KEY env NOT set"
+            return self
+
         request_data = {}
-        request_data['apiKey'] = 'GaZ_sZ5zRTOkgLHwW4KKyQ'  # Get from ENV later just testing for now DO NOT MERGE IF YOU SEE THIS
+        request_data['apiKey'] = api_key
         request_data['format'] = 'json'
         request_data['mimNumber'] = self.external_id
 
