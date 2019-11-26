@@ -26,7 +26,9 @@
 # NOTE: for OMIM we need the env OMIM_KEY set to get the api key
 #
 ###############################################################
-
+# curl -L 'https://www.ebi.ac.uk/ols/api/terms?id=DOID:162' -i -H 'Accept: application/json'
+# COSMIC https://cancer.sanger.ac.uk/cosmic/search?q=KMT2A
+# GHR_gene https://ghr.nlm.nih.gov/search?query=TBC1D24
 # external api's
 from bioservices import ChEBI, HGNC
 import pubchempy
@@ -49,6 +51,7 @@ logging.getLogger("suds").setLevel(logging.INFO)
 MAX_TRIES = 5
 SLEEP_TIME = 5
 
+db_alias = {'omim_phenotype': 'omim'}
 
 class ExternalLookup:
     def __init__(self, dbname, external_id=None, name=None, get_synonyms=False):
@@ -77,6 +80,8 @@ class ExternalLookup:
         # Will throw error if fails to connect after all tries
         #
         dbname = dbname.lower()
+        if dbname in db_alias:
+            dbname = db_alias[dbname]
         new_instance = cls(dbname, external_id=external_id, get_synonyms=synonyms)
         if not external_id:
             new_instance.error = "No Accession supplied"
