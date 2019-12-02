@@ -269,7 +269,7 @@ class ExternalLookup:
         request_data['format'] = 'json'
         request_data['mimNumber'] = self.external_id
 
-        url = 'http://api.omim.org/api/entry'
+        url = 'https://api.omim.org/api/entry'
         # add parameters to url string
         url_values = urlencode(request_data)
         url = url + '?' + url_values
@@ -289,8 +289,9 @@ class ExternalLookup:
         try:
             self.description = result['omim']['entryList'][0]['entry']['titles']['preferredTitle']
         except KeyError:
-            pass
-
+            self.error = "No results found when querying OMIM for {}".format(self.external_id)
+        except IndexError:
+            self.error = "No results found when querying OMIM for {}".format(self.external_id)
         return self
 
     ##############
