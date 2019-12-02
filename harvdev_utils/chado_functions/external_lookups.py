@@ -26,7 +26,7 @@
 # NOTE: for OMIM we need the env OMIM_KEY set to get the api key
 #
 ###############################################################
-# curl -L 'https://www.ebi.ac.uk/ols/api/terms?id=DOID:162' -i -H 'Accept: application/json'
+#
 # COSMIC https://cancer.sanger.ac.uk/cosmic/search?q=KMT2A
 # GHR_gene https://ghr.nlm.nih.gov/search?query=TBC1D24
 # external api's
@@ -36,6 +36,7 @@ import pubchempy
 # general imports
 import logging
 import json
+import requests
 from retry import retry
 from os import getenv
 
@@ -52,6 +53,7 @@ MAX_TRIES = 5
 SLEEP_TIME = 5
 
 db_alias = {'omim_phenotype': 'omim'}
+
 
 class ExternalLookup:
     def __init__(self, dbname, external_id=None, name=None, get_synonyms=False):
@@ -70,7 +72,8 @@ class ExternalLookup:
         self.id_dict = {'hgnc': self._lookup_hgnc_id,
                         'chebi': self._lookup_chebi_id,
                         'pubchem': self._lookup_pubchem_id,
-                        'omim': self._lookup_omim_id}
+                        'omim': self._lookup_omim_id,
+                        'doid': self._lookup_doid_id}
 
         self.name_dict = {'pubchem': self._lookup_pubchem_name}
 
@@ -284,10 +287,43 @@ class ExternalLookup:
         # read in response
         result = json.loads(response.read())
         try:
-            self.name = result['omim']['entryList'][0]['entry']['titles']['preferredTitle']
+            self.description = result['omim']['entryList'][0]['entry']['titles']['preferredTitle']
         except KeyError:
             pass
 
+        return self
+
+    ##############
+    # DOID methods
+    ##############
+    @classmethod
+    def lookup_doid(cls, external_id=None, synonyms=False):
+        #
+        # Lookup merere tests it exists and does not load descriptions etc
+        #
+        new_instance = cls('doid', external_id, get_synonyms=synonyms)
+        if not external_id:
+            new_instance.error = "No Accession supplied"
+            return new_instance
+        return new_instance._lookup_doid_id()
+
+    @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
+    def _lookup_doid_id(self):
+        lookup_id = str(self.external_id)
+        if not lookup_id.startswith("DOID:"):
+            lookup_id = "DOID:{}".format(self.external_id)
+        url = 'https://www.ebi.ac.uk/ols/api/terms?id={}'.format(lookup_id)
+        headers = {'Accept': 'application/json'}
+
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            self.error = "No results found when querying DOID for {}".format(self.external_id)
+            return self
+        result = response.json()
+        try:
+            self.description = result['_embedded']['terms'][0]['label']
+        except KeyError:
+            self.error = "No results found when querying DOID for {}".format(self.external_id)
         return self
 
 
@@ -367,3 +403,11 @@ if __name__ == '__main__':  # noqa: C901
             print("\tinchikey: {}".format(hgnc.inchikey))
             print("\tdesc: {}".format(hgnc.description))
             print("\tsynonyms: {}".format(hgnc.synonyms))
+
+    for doid_id in ['0001816', '1234567890123']:
+        print("\n\nProcessing doid id {}".format(doid_id))
+        hgnc = ExternalLookup.lookup_by_id('doid', doid_id)
+        if hgnc.error:
+            print("\t Error: {}".format(hgnc.error))
+        else:
+            print("\tdescription: {}".format(hgnc.description))
