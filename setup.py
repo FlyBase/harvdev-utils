@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'harvdev_utils',
-    version = '1.0.0',
+    version = '1.0.1',
     url = 'https://github.com/FlyBase/harvdev-utils',
     author = 'FlyBase Harvard Developers',
     author_email = 'harvdev@morgan.harvard.edu',
