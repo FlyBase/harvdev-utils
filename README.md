@@ -8,6 +8,10 @@ Common Python functions and classes used by FlyBase developers at Harvard.
 
 `pip install -e git+https://github.com/FlyBase/harvdev-utils.git@master#egg=harvdev_utils`
 
+... and don't forget to the requirements for this module before use.
+`pip install -r requirements.txt`
+
+
 ## Documentation
 
 - Detailed information for some functions can be found in the [Read the Docs documentation](https://harvdev-utils.readthedocs.io/en/latest/?). This documentation does not include information regarding SQLAlchemy classes and functions (see below).
