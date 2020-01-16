@@ -1,11 +1,12 @@
 """
 .. module:: greek_to_sgml
-   :synopsis: A module to convert Greek characters to FlyBase SGML for writing proformae. 
+   :synopsis: A module to convert Greek characters to FlyBase SGML for writing proformae.
 
 .. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
 """
 
 import re
+
 
 def greek_to_sgml(input_string):
     """A function to convert Greek characters into FlyBase SGML for writing proformae.
