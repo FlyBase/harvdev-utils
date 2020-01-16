@@ -1,14 +1,15 @@
 """
 .. module:: sgml_to_plain_text
-   :synopsis: A module to convert FlyBase SGML to plain text Greek words. 
+   :synopsis: A module to convert FlyBase SGML to plain text Greek words.
 
 .. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
 """
 
 import re
 
+
 def sgml_to_plain_text(input_string):
-    """A function to convert FlyBase SGML to plain text Greek words. 
+    """A function to convert FlyBase SGML to plain text Greek words.
     e.g. &agr; -> alpha
 
     Args:
@@ -23,54 +24,54 @@ def sgml_to_plain_text(input_string):
     """
 
     substitution_dict = {
-    '&agr;' : 'alpha',
-    '&Agr;' : 'Alpha',
-    '&bgr;' : 'beta',
-    '&Bgr;' : 'Beta',
-    '&ggr;' : 'gamma',
-    '&Ggr;' : 'Gamma',
-    '&dgr;' : 'delta',
-    '&Dgr;' : 'Delta',
-    '&egr;' : 'epsilon',
-    '&Egr;' : 'Epsilon',
-    '&zgr;' : 'zeta',
-    '&Zgr;' : 'Zeta',
-    '&eegr;' : 'eta',
-    '&EEgr;' : 'Eta',
-    '&thgr;' : 'theta',
-    '&THgr;' : 'Theta',
-    '&igr;' : 'iota',
-    '&Igr;' : 'Iota',
-    '&kgr;' : 'kappa',
-    '&Kgr;' : 'Kappa',
-    '&lgr;' : 'lambda',
-    '&Lgr;' : 'Lambda',
-    '&mgr;' : 'mu',
-    '&Mgr;' : 'Mu',
-    '&ngr;' : 'nu',
-    '&Ngr;' : 'Nu',
-    '&xgr;' : 'xi',
-    '&Xgr;' : 'Xi',
-    '&ogr;' : 'omicron',
-    '&Ogr;' : 'Omicron',
-    '&pgr;' : 'pi',
-    '&Pgr;' : 'Pi',
-    '&rgr;' : 'rho',
-    '&Rgr;' : 'Rho',
-    '&sgr;' : 'sigma',
-    '&Sgr;' : 'Sigma',
-    '&tgr;' : 'tau',
-    '&Tgr;' : 'Tau',
-    '&ugr;' : 'upsilon',
-    '&Ugr;' : 'Upsilon',
-    '&phgr;' : 'phi',
-    '&PHgr;' : 'Phi',
-    '&khgr;' : 'chi',
-    '&KHgr;' : 'Chi',
-    '&psgr;' : 'psi',
-    '&PSgr;' : 'Psi',
-    '&ohgr;' : 'omega',
-    '&OHgr;' : 'Omega'
+        '&agr;': 'alpha',
+        '&Agr;': 'Alpha',
+        '&bgr;': 'beta',
+        '&Bgr;': 'Beta',
+        '&ggr;': 'gamma',
+        '&Ggr;': 'Gamma',
+        '&dgr;': 'delta',
+        '&Dgr;': 'Delta',
+        '&egr;': 'epsilon',
+        '&Egr;': 'Epsilon',
+        '&zgr;': 'zeta',
+        '&Zgr;': 'Zeta',
+        '&eegr;': 'eta',
+        '&EEgr;': 'Eta',
+        '&thgr;': 'theta',
+        '&THgr;': 'Theta',
+        '&igr;': 'iota',
+        '&Igr;': 'Iota',
+        '&kgr;': 'kappa',
+        '&Kgr;': 'Kappa',
+        '&lgr;': 'lambda',
+        '&Lgr;': 'Lambda',
+        '&mgr;': 'mu',
+        '&Mgr;': 'Mu',
+        '&ngr;': 'nu',
+        '&Ngr;': 'Nu',
+        '&xgr;': 'xi',
+        '&Xgr;': 'Xi',
+        '&ogr;': 'omicron',
+        '&Ogr;': 'Omicron',
+        '&pgr;': 'pi',
+        '&Pgr;': 'Pi',
+        '&rgr;': 'rho',
+        '&Rgr;': 'Rho',
+        '&sgr;': 'sigma',
+        '&Sgr;': 'Sigma',
+        '&tgr;': 'tau',
+        '&Tgr;': 'Tau',
+        '&ugr;': 'upsilon',
+        '&Ugr;': 'Upsilon',
+        '&phgr;': 'phi',
+        '&PHgr;': 'Phi',
+        '&khgr;': 'chi',
+        '&KHgr;': 'Chi',
+        '&psgr;': 'psi',
+        '&PSgr;': 'Psi',
+        '&ohgr;': 'omega',
+        '&OHgr;': 'Omega'
     }
 
     substitution = None
