@@ -158,10 +158,13 @@ class ExternalLookup:
             return self
 
         # Synonyms
+        # We get duplicates so filter these.
         if self.get_synonyms:
+            seen_it = {}
             for item in chebi.Synonyms:
-                self.synonyms.append(item.data)
-
+                if item.data not in seen_it:
+                    self.synonyms.append(item.data)
+                    seen_it[item.data] = 1
         # Name
         self.name = chebi.chebiAsciiName
         # inchikey
