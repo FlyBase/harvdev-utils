@@ -13,7 +13,7 @@ import psycopg2
 import logging
 import datetime
 import strict_rfc3339
-from general_functions import timenow
+from ..general_functions import timenow
 from ..psycopg_functions import establish_db_connection
 
 log = logging.getLogger(__name__)
@@ -37,11 +37,14 @@ def set_up(report_label):
     log.info('TIME: {}. Setting up environment, db connections and logging.'.format(timenow()))
     parser = argparse.ArgumentParser(description='inputs')
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
-    parser.add_argument('-l', '--local', action='store_true', help='Use local credentials.', required=False)
+    parser.add_argument('-l', '--local_file', help='Supply filepath with credentials.', required=False)
     args = parser.parse_args()
 
     # Determine whether script is to run locally or in docker.
-    local = args.local
+    local_file = args.local_file
+
+# CONTINUE HERE
+
     if local is True:
         config = configparser.ConfigParser()
         config.read('/data/credentials/alliance/connection_info.cfg')
@@ -53,6 +56,7 @@ def set_up(report_label):
         annotation_release = config['default']['AnnotationRelease']
         database_release = config['default']['DatabaseRelease']
         alliance_schema = config['default']['AllianceSchema']
+        svn_username = config['default']['AllianceSchema']
         output_dir = './'
     else:
         database_host = os.environ['SERVER']
