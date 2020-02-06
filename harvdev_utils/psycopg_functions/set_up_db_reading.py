@@ -50,33 +50,41 @@ def set_up_db_reading(report_label):
     if local_file is True:
         config = configparser.ConfigParser()
         config.read(local_file)
-        database_host = config['default']['DatabaseHost']
+        database_host = config['default']['Server']
         database = config['default']['Database']
-        username = config['default']['Username']
-        password = config['default']['Password']
+        username = config['default']['User']
+        password = config['default']['PGPassword']
+        database_release = config['default']['Release']
         assembly = config['default']['Assembly']
         annotation_release = config['default']['AnnotationRelease']
-        database_release = config['default']['DatabaseRelease']
         alliance_schema = config['default']['AllianceSchema']
-        svn_username = config['default']['AllianceSchema']
+        alliance_release = config['default']['AllianceRelease']
+        svn_username = config['default']['SVNUsername']
+        svn_password = config['default']['SVNPassword']
         output_dir = './'
     else:
         database_host = os.environ['SERVER']
         database = os.environ['DATABASE']
         username = os.environ['USER']
         password = os.environ['PGPASSWORD']
+        database_release = os.environ['RELEASE']
         assembly = os.environ['ASSEMBLY']
         annotation_release = os.environ['ANNOTATIONRELEASE']
-        database_release = os.environ['DATABASERELEASE']
         alliance_schema = os.environ['ALLIANCESCHEMA']
+        alliance_release = os.environ['ALLIANCERELEASE']
+        svn_username = os.environ['SVNUSER']
+        svn_password = os.environ['SVNPASSWORD']
         output_dir = '/src/output/'
 
     # Send values to a dict.
     set_up_dict = {}
+    set_up_dict['database_release'] = database_release
     set_up_dict['assembly'] = assembly
     set_up_dict['annotation_release'] = annotation_release
-    set_up_dict['database_release'] = database_release
     set_up_dict['alliance_schema'] = alliance_schema
+    set_up_dict['alliance_release'] = alliance_release
+    set_up_dict['svn_username'] = svn_username
+    set_up_dict['svn_password'] = svn_password
 
     # Output filename
     set_up_dict['output_dir'] = output_dir
