@@ -9,7 +9,8 @@ import psycopg2
 import logging
 import datetime
 from harvdev_utils.general_functions import timenow
-from harvdev_utils.psycopg_functions import connect, current_features, Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
+from harvdev_utils.psycopg_functions import connect, current_features
+from harvdev_utils.psycopg_functions import Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
 
 log = logging.getLogger(__name__)
 
