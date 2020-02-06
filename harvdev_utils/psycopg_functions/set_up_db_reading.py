@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 def set_up_db_reading(report_label):
     """
-    Function that establishes the database connection.
+    Function that gets values for db connection, makes connection and specifies output filenames.
     Libraries:
         argparse, configparser, sys, os, psycopg2, datetime, logging, strict_rfc3339, alliance-flybase.utils.
     Other functions:
@@ -36,6 +36,8 @@ def set_up_db_reading(report_label):
     """
 
     log.info('TIME: {}. Setting up environment, db connections and logging.'.format(timenow()))
+
+    # Parse command line inputs.
     parser = argparse.ArgumentParser(description='inputs')
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
     parser.add_argument('-l', '--local_file', help='Supply filepath with credentials.', required=False)
@@ -44,11 +46,10 @@ def set_up_db_reading(report_label):
     # Determine whether script is to run locally or in docker.
     local_file = args.local_file
 
-# CONTINUE HERE
-
-    if local is True:
+    # Determine values for key variables.
+    if local_file is True:
         config = configparser.ConfigParser()
-        config.read('/data/credentials/alliance/connection_info.cfg')
+        config.read(local_file)
         database_host = config['default']['DatabaseHost']
         database = config['default']['Database']
         username = config['default']['Username']
@@ -70,14 +71,15 @@ def set_up_db_reading(report_label):
         alliance_schema = os.environ['ALLIANCESCHEMA']
         output_dir = '/src/output/'
 
+    # Send values to a dict.
     set_up_dict = {}
     set_up_dict['assembly'] = assembly
     set_up_dict['annotation_release'] = annotation_release
     set_up_dict['database_release'] = database_release
     set_up_dict['alliance_schema'] = alliance_schema
-    set_up_dict['output_dir'] = output_dir
 
-    # Specify output filename.
+    # Output filename
+    set_up_dict['output_dir'] = output_dir
     set_up_dict['output_filename'] = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.json'
 
     # Handle logging
