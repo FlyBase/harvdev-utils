@@ -133,7 +133,7 @@ def format_sql_query(sql_query, *arguments):
         None.
     """
 
-    if len(*arguments) == 0:
+    if len(arguments) == 0:
         formatted_sql_query = sql_query
     else:
         formatted_sql_query = sql_query.format(*arguments)
@@ -281,7 +281,6 @@ def build_list_db_result_dict(db_results):
     db_dict = {}
     for row in db_results:
         row_key, row_value = get_key_value(row)
-        db_dict[row_key] = row_value
         if db_dict.__contains__(row_key) is True:
             db_dict[row_key].append(row_value)
         else:
@@ -431,8 +430,7 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
             target[attribute].extend(db_value)
             add_cnt += 1
         else:
-            new_value = getattr(target, attribute).extend(db_value)
-            setattr(target, attribute, new_value)
+            getattr(target, attribute).extend(db_value)
             add_cnt += 1
 
     log.info('TIME: {}. Added values to the {} attribute of {} objects.\n'.format(timenow(), attribute, add_cnt))
