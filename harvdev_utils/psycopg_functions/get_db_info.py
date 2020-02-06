@@ -35,8 +35,7 @@ def get_features(db_connection, feat_regex):
     formatted_sql_query = current_features.format(feat_regex)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
-    result_cnt = len(db_results)
-    log.info('Found {} results for this query.'.format(result_cnt))
+    log.info('Found {} results for this query.'.format(len(db_results)))
 
     ThisFeature = None
     class_dict = {
@@ -69,6 +68,228 @@ def get_features(db_connection, feat_regex):
     return feature_dict
 
 
+def confirm_attribute(item, attribute):
+    """
+    For some item (object or dictionary), checks that an attribute exists.
+    Libraries:
+        logging.
+    Other functions:
+        None.
+    Args:
+        An object or dictionary.
+    Returns:
+        None.
+    Warnings:
+        None.
+    Raises:
+        Raises an exception if attribute to check does not exist for the object.
+    """
+
+    if type(item) == dict:
+        if item.__contains__(attribute) is True:
+            pass
+        else:
+            raise KeyError('Attribute {} does not exist.'.format(attribute))
+    else:
+        if hasattr(item, attribute) is True:
+            pass
+        else:
+            raise AttributeError('Attribute {} does not exist.'.format(attribute))
+
+    return
+
+
+def get_dict_value(this_dict, this_key):
+    """
+    For some dict and key, gets the value. Returns None if no value to get.
+    Args:
+        A dictionary and some look-up key.
+    Returns:
+        The value for a key, it if exists. Otherwise, returns None.
+    """
+    try:
+        this_value = this_dict[this_key]
+    except KeyError:
+        log.debug('Dictionary has no attribute: {}. Returning "None"'.format(this_key))
+        this_value = None
+
+    return this_value
+
+
+def format_sql_query(sql_query, *arguments):
+    """
+    For an sql_query and an optional list of arguments, it formats text of an sql query.
+    Libraries:
+        None.
+    Other functions:
+        format().
+    Args:
+        An input string with optional "{}" placeholders for format.
+    Returns:
+        A formatted sql query that combines query with arguments.
+    Warnings:
+        None.
+    Raises:
+        None.
+    """
+
+    if len(*arguments) == 0:
+        formatted_sql_query = sql_query
+    else:
+        formatted_sql_query = sql_query.format(*arguments)
+
+    return formatted_sql_query
+
+
+def check_unique_results(db_results):
+    """
+    For some set of db results, this query checks if keys (column 1 values) appear only once and are thus unique.
+    Libraries:
+        None.
+    Other functions:
+        None.
+    Args:
+        A list of lists (sql db results).
+    Returns:
+        Nothing.
+    Warnings:
+        None.
+    Raises:
+        Will raise an exception if any values in column 1 appear more than once.
+    """
+
+    result_count = len(db_results)
+    unique_key_column_values = set([row[0] for row in db_results])
+    key_count = len(unique_key_column_values)
+
+    if result_count > key_count:
+        raise ValueError('Values in the first column are not unique. Try "add_list_info" function instead.')
+
+    return
+
+
+def check_key_overlap(data_dict, db_results):
+    """
+    For a FB-ID-keyed data_dict and db_results, checks overlap of ID keys with db_results column one values.
+    Libraries:
+        logging.
+    Other functions:
+        None
+    Args:
+        A data_dict and some db_results from psycopg2.
+    Returns:
+        Nothing.
+    Warnings:
+        Raises a warning if there is no overlap in keys.
+    Raises:
+        None.
+    """
+
+    data_keys = set(data_dict.keys())
+    db_keys = set([row[0] for row in db_results])
+    key_overlap = set(data_keys.intersection(db_keys))
+    if len(key_overlap) == 0:
+        log.warning('There is no overlap between the data_dict keys and the db results keys.')
+
+    return
+
+
+def get_key_value(row):
+    """
+    For some list (usually sql result row), determines key and value pair.
+    Key is element in first column. Value depends on number of columsn in row ("n").
+    Value is element in second column if n = 2 columns.
+    Value is tuple of columns 2-n if n > 2 columns.
+    Libraries:
+        None.
+    Other functions:
+        None.
+    Args:
+        A list (usually of row from an sql query result).
+    Returns:
+        Two variables - the "row_key" and "row_value".
+    Warnings:
+        None.
+    Raises:
+        Will raise an exception if result row has only one column, since no value to get.
+    """
+
+    if len(row) < 2:
+        raise ValueError('Row of results must have at least two columns to assign key and value.')
+    else:
+        row_key = row[0]
+        if len(row) == 2:
+            row_value = row[1]
+        else:
+            row_value = tuple(row[1:])
+
+    return row_key, row_value
+
+
+def build_uniq_db_result_dict(db_results):
+    """
+    For some db_results, converts into a dictionary.
+    Dict key will be column 1 element; dict value will be column2 or tuple of columns 2-n.
+    Libraries:
+        None.
+    Other functions:
+        check_unique_results(), get_key_value()
+    Args:
+        A set of db_results for psycopg2 (list of lists).
+    Returns:
+        A dict where keys are column 1 values and results are columns 2-n values.
+    Warnings:
+        None.
+    Raises:
+        None in addition to those in sub-functions used.
+    """
+
+    # Check there's only one row per "db_results" key (i.e, row's first value).
+    check_unique_results(db_results)
+
+    # Make a db result dict.
+    db_dict = {}
+    for row in db_results:
+        row_key, row_value = get_key_value(row)
+        db_dict[row_key] = row_value
+
+    return db_dict
+
+
+def build_list_db_result_dict(db_results):
+    """
+    For some db_results, converts into a dictionary.
+    Dict key will be column 1 element; dict value will be a list of values.
+    Values in that list will be column2 or tuple of columns 2-n, depending on row length.
+    Libraries:
+        None.
+    Other functions:
+        get_key_value()
+    Args:
+        A set of db_results for psycopg2 (list of lists).
+    Returns:
+        A dict where keys are column 1 values and each result is a list.
+        If row has two columns, list has single elements corresponding to column 2.
+        If row has "n" columns where n >2, values are tuples of columns 2-n values.
+    Warnings:
+        None.
+    Raises:
+        None.
+    """
+
+    # Make a db result dict.
+    db_dict = {}
+    for row in db_results:
+        row_key, row_value = get_key_value(row)
+        db_dict[row_key] = row_value
+        if db_dict.__contains__(row_key) is True:
+            db_dict[row_key].append(row_value)
+        else:
+            db_dict[row_key] = [row_value]
+
+    return db_dict
+
+
 def add_unique_info(data_dict, attribute, db_connection, sql_query, *arguments):
     """
     For some keyed dict, it will construct an sql query (with args given), query db and return results.
@@ -80,7 +301,7 @@ def add_unique_info(data_dict, attribute, db_connection, sql_query, *arguments):
     Libraries:
         psycopg2, logging, datetime, alliance-flybase.utils.
     Other functions:
-        None.
+        get_key_value(), format_sql_query(), check_unique_results(), check_key_overlap(), timenow(), connect().
     Args:
         The input "data_dict", and the name of the "attribute" to which new info is to be added
         A "db_connection", an "sql_query" string, and a list of "*arguments" to add into the query string.
@@ -101,45 +322,37 @@ def add_unique_info(data_dict, attribute, db_connection, sql_query, *arguments):
 
     # Perform the query.
     log.info('TIME: {}. Adding unique db info to this attribute: {}'.format(timenow(), attribute))
-    formatted_sql_query = sql_query.format(*arguments)
+    formatted_sql_query = format_sql_query(sql_query, *arguments)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
-    result_cnt = len(db_results)
-    log.info('Found {} results for this query.'.format(result_cnt))
+    log.info('Found {} results for this query.'.format(len(db_results)))
 
     # Check there's only one row per "db_results" key (i.e, row's first value).
-    db_keys = set([row[0] for row in db_results])
-    if len(db_keys) < result_cnt:
-        raise ValueError('Getting many values per key. Try "add_list_info" function instead.')
+    check_unique_results(db_results)
 
-    # Check for overlap in db_result and data_dict keys.
-    key_overlap = set(data_dict.keys()).intersection(db_keys)
-    if key_overlap == 0:
-        log.warning('There is no overlap between the data_dict keys and the db results keys.')
+    # Check that data_dict keys overlap with values in column one of db results.
+    check_key_overlap(data_dict, db_results)
 
     # Now add the results.
     add_cnt = 0
     for row in db_results:
-        key = row[0]
+        row_key, row_value = get_key_value(row)
+        confirm_attribute(data_dict, row_key)
         try:
-            target = data_dict[key]
+            target = data_dict[row_key]
         except KeyError:
-            log.debug('The db results key "{}" does not exist in the target data_dict.'.format(key))
+            log.debug('The db results key "{}" does not exist in the target data_dict.'.format(row_key))
             continue
-        if len(row) > 2:
-            result = tuple(row[1:])
-        else:
-            result = row[1]
         # Action depends on whether info is being added to a dict or some other object type.
         if type(target) == dict:
             try:
-                target[attribute] = result
+                target[attribute] = row_value
                 add_cnt += 1
             except KeyError:
                 raise KeyError('Attribute {} not found as key for the target data object.'.format(attribute))
         else:
             try:
-                setattr(target, attribute, result)
+                setattr(target, attribute, row_value)
                 add_cnt += 1
             except AttributeError:
                 raise AttributeError('Attribute {} not found for the target data object.'.format(attribute))
@@ -178,57 +391,34 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
 
     # Perform the query.
     log.info('TIME: {}. Adding list of db info to this attribute: {}'.format(timenow(), attribute))
-    formatted_sql_query = sql_query.format(*arguments)
+    formatted_sql_query = format_sql_query(sql_query, *arguments)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
-    result_cnt = len(db_results)
-    log.info('Found {} results for this query.'.format(result_cnt))
+    log.info('Found {} results for this query.'.format(len(db_results)))
 
     # Check for overlap in db_result and data_dict keys.
-    db_keys = set([row[0] for row in db_results])
-    key_overlap = set(data_dict.keys()).intersection(db_keys)
-    if len(key_overlap) == 0:
-        log.warning('There is no overlap between the data_dict keys and the db results keys.')
-    else:
-        log.debug('{} db results overlap with data_dict keys.'.format(len(key_overlap)))
+    check_key_overlap(data_dict, db_results)
 
     # Set targeted attribute to an empty list if None.
     # This indicates attribute has been evaluated; an empty list means results sought but none found.
-    # If still None, then results not yet sought.
     for key, target in data_dict.items():
+        # First confirm that the attribute to update exists for the object.
+        confirm_attribute(target, attribute)
         empty_list = []
         if type(target) == dict:
-            try:
-                if target[attribute] is None:
-                    target[attribute] = empty_list
-                    log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
-            except KeyError:
-                raise KeyError('Attribute {} not found as key for the target data object.'.format(attribute))
+            if target[attribute] is None:
+                target[attribute] = empty_list
+                log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
         else:
-            try:
-                if getattr(target, attribute) is None:
-                    setattr(target, attribute, empty_list)
-                    log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
-            except AttributeError:
-                raise AttributeError('Attribute {} not found for the target data object.'.format(attribute))
+            if getattr(target, attribute) is None:
+                setattr(target, attribute, empty_list)
+                log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
+
+    # Build a dict of the db_results.
+    db_results_dict = build_list_db_result_dict(db_results)
 
     # Now add the results.
     add_cnt = 0
-    # Build a dict of the db results (grouping lines by key).
-    db_results_dict = {}
-    for row in db_results:
-        key = row[0]
-        if len(row) > 2:
-            row_result = tuple(row[1:])
-        else:
-            row_result = row[1]
-        log.debug('For key: {}; have result: {}'.format(key, row_result))
-        if key in db_results_dict.keys():
-            db_results_dict[key].append(row_result)
-        else:
-            db_results_dict[key] = [row_result]
-    log.debug(db_results_dict)
-    # Integrate into data_dict.
     for key, db_value in db_results_dict.items():
         log.debug('Trying to add this: {}: {}'.format(key, db_value))
         try:
@@ -238,50 +428,38 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
             continue
         # Action depends on whether info is being added to a dict or some other object type.
         if type(target) == dict:
-            log.debug('The target object is a dict.')
-            try:
-                target[attribute].extend(db_value)
-                add_cnt += 1
-            except KeyError:
-                raise KeyError('Attribute {} not found as key for the target data object.'.format(attribute))
+            target[attribute].extend(db_value)
+            add_cnt += 1
         else:
-            log.debug('The target object is not a dict.')
-            try:
-                target_value = getattr(target, attribute)
-                log.debug('Have this current value: {}'.format(target_value))
-                target_value.extend(db_value)
-                target_value = getattr(target, attribute)
-                log.debug('Have this updated value: {}'.format(target_value))
-                # setattr(target, attribute, new_value)
-                add_cnt += 1
-            except AttributeError:
-                raise AttributeError('Attribute {} not found for the target data object.'.format(attribute))
+            new_value = getattr(target, attribute).extend(db_value)
+            setattr(target, attribute, new_value)
+            add_cnt += 1
 
     log.info('TIME: {}. Added values to the {} attribute of {} objects.\n'.format(timenow(), attribute, add_cnt))
 
     return data_dict
 
 
-def add_unique_dict_info(data_dict, att_key, att_value, db_connection, sql_query, *arguments):
+def add_unique_dict_info(data_dict, att_key, new_att, db_connection, sql_query, *arguments):
     """
     For a data_dict, this function adds db values to each keyed-object.
     For each object, this function uses one attribute to look up the value for a 2nd attribute.
     For example, given an allele.organism_id, look up the allele.org_abbr (1 => 'Dmel').
     The look up dict is generated by sql query, where column 1 values should match up to "att_key" values.
-    The rest of the db result columns go into the 2nd "att_value" attribute that is being updated.
+    The rest of the db result columns go into the 2nd "new_att" attribute that is being updated.
     Will add single values or tuples (if db result rows have > 2 elements).
     Libraries:
         psycopg2, logging, datetime, alliance-flybase.utils.
     Other functions:
-        None.
+        get_key_value(), format_sql_query(), check_unique_results(), check_key_overlap(), timenow(), connect().
+        confirm_attribute().
     Args:
-        The input "data_dict", the "att_key" for look ups, and the "att_value" where updated info goes.
+        The input "data_dict", the "att_key" for look ups, and the "new_att" where updated info goes.
         A "db_connection", an "sql_query" string, and a list of "*arguments" to add into the query string.
     Returns:
-        The same "data_dict", but now with extra information in the "att_value" field specified.
+        The same "data_dict", but now with extra information in the "new_att" field specified.
         If db results have only 2 columns (key plus one piece of info), adds that piece of info.
         If db results have > 2 columns, add columns after the key (first column) as a tuple.
-
     Warnings:
         Warns if there is no overlap between "data_dict" keys and db results keys (first value in each result row).
         However, it quietly skips over cases where db data key is not a data_dict key ...
@@ -293,67 +471,32 @@ def add_unique_dict_info(data_dict, att_key, att_value, db_connection, sql_query
     """
 
     # Perform the query.
-    log.info('TIME: {}. Using "{}" to look up db info for "{}".'.format(timenow(), att_key, att_value))
-    formatted_sql_query = sql_query.format(*arguments)
+    log.info('TIME: {}. Using "{}" to look up db info for "{}".'.format(timenow(), att_key, new_att))
+    formatted_sql_query = format_sql_query(sql_query, *arguments)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
-    result_cnt = len(db_results)
-    log.info('Found {} results for this query.'.format(result_cnt))
+    log.info('Found {} results for this query.'.format(len(db_results)))
 
     # Make a db result dict.
-    db_dict = {}
-    if len(db_results[0]) < 2:
-        raise ValueError('Need at least two columns of db results.')
-    elif len(db_results[0]) == 2:
-        add_tuples = False
-    else:
-        add_tuples = True
-    for row in db_results:
-        key = row[0]
-        if add_tuples is False:
-            value = row[1]
-        else:
-            value = tuple(row[1:])
-        db_dict[key] = value
-
-    # Check that there's only one value per key, since expectation is only one unique value in db.
-    if len(db_dict.keys()) < result_cnt:
-        raise ValueError('Getting many values per key. Try "add_list_dict_info" function instead.')
+    db_results_dict = build_uniq_db_result_dict(db_results)
 
     # Now add the info.
     add_cnt = 0
-    for item in data_dict.values():
-        if type(item) == dict:
-            try:
-                this_key = item[att_key]
-            except KeyError:
-                raise KeyError('Object has no attribute "{}".'.format(att_key))
-            try:
-                this_value = db_dict[this_key]
-            except KeyError:
-                log.warning('For {}, no db result found for "att_key": {}.'.format(att_key, this_key))
-                this_value = None
-            try:
-                item[att_value] = this_value
-                add_cnt += 1
-            except KeyError:
-                raise KeyError('Object has no attribute "{}".'.format(att_value))
+    for target in data_dict.values():
+        # First confirm that the starting attribute exists.
+        confirm_attribute(target, att_key)
+        # Now get the db value and add it to new attribute (for dict or object).
+        if type(target) == dict:
+            this_key = get_dict_value(target, att_key)
+            new_value = get_dict_value(db_results_dict, this_key)    # This could be return None, and that's OK.
+            target[new_att] = new_value
+            add_cnt += 1
         else:
-            try:
-                this_key = getattr(item, att_key)
-            except AttributeError:
-                raise AttributeError('Object has no attribute "{}".'.format(att_key))
-            try:
-                this_value = db_dict[this_key]
-            except KeyError:
-                log.warning('For {}, no db result found for "att_key": {}.'.format(att_key, this_key))
-                this_value = None
-            try:
-                setattr(item, att_value, this_value)
-                add_cnt += 1
-            except AttributeError:
-                raise AttributeError('Object has no attribute "{}".'.format(att_value))
+            this_key = getattr(target, att_key)
+            new_value = get_dict_value(db_results_dict, this_key)    # This could be return None, and that's OK.
+            setattr(target, new_att, new_value)
+            add_cnt += 1
 
-    log.info('TIME: {}. Added {} values to the {} attribute.\n'.format(timenow(), add_cnt, att_value))
+    log.info('TIME: {}. Added {} values to the {} attribute.\n'.format(timenow(), add_cnt, new_att))
 
     return data_dict
