@@ -424,7 +424,7 @@ class Gene(Feature):
         elif type(self.mod_id_list) != list:
             log.warning('Gene {} should have "mod_id_list" to pick an ID.'.format(self.uniquename))
         elif len(self.mod_id_list) > 0:
-            self.agr_gene_id  = self.mod_id_list[0]
+            self.agr_gene_id = self.mod_id_list[0]
             if len(self.mod_id_list) > 1:
                 log.warning('Gene {} has multiple MOD IDs'.format(self.uniquename))
         self.agr_gene_id = self.agr_gene_id.replace('WormBase:', 'WB:').replace('MGI:MGI:', 'MGI:')
