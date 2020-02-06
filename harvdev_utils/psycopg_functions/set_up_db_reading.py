@@ -47,7 +47,7 @@ def set_up_db_reading(report_label):
     local_file = args.local_file
 
     # Determine values for key variables.
-    if local_file is True:
+    if local_file:
         config = configparser.ConfigParser()
         config.read(local_file)
         database_host = config['default']['Server']

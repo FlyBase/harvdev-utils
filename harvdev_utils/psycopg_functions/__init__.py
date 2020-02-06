@@ -27,7 +27,15 @@ from .sql_queries import feat_id_symbol_sgml
 from .sql_queries import indirect_rel_features
 from .sql_queries import gene_HGNC_ids
 from .sql_queries import gene_MOD_ids
+from .get_db_info import get_features
+from .get_db_info import confirm_attribute
+from .get_db_info import get_dict_value
+from .get_db_info import format_sql_query
+from .get_db_info import check_unique_results
+from .get_db_info import check_key_overlap
+from .get_db_info import get_key_value
+from .get_db_info import build_uniq_db_result_dict
+from .get_db_info import build_list_db_result_dict
 from .get_db_info import add_unique_info
 from .get_db_info import add_list_info
-from .get_db_info import get_features
 from .get_db_info import add_unique_dict_info
