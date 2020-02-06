@@ -1,6 +1,7 @@
 """
-.. module:: get_env_variables
-   :synopsis: A module that parses command line arguments and gets values for needed environmental variables.
+.. module:: set_up_db_reading
+   :synopsis: A module that performs general set up for scripts that connect to a FlyBase db and generate report files.
+              Module parses command arguments, gets environmental variable values, connects to db, specifies filenames.
 
 .. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
 """
@@ -19,7 +20,7 @@ from ..psycopg_functions import establish_db_connection
 log = logging.getLogger(__name__)
 
 
-def set_up(report_label):
+def set_up_db_reading(report_label):
     """
     Function that establishes the database connection.
     Libraries:
