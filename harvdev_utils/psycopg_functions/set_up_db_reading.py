@@ -59,8 +59,8 @@ def set_up_db_reading(report_label):
         annotation_release = config['default']['AnnotationRelease']
         alliance_schema = config['default']['AllianceSchema']
         alliance_release = config['default']['AllianceRelease']
-        svn_username = config['default']['SVNUsername']
-        svn_password = config['default']['SVNPassword']
+        # svn_username = config['default']['SVNUsername']
+        # svn_password = config['default']['SVNPassword']
         output_dir = './'
     else:
         database_host = os.environ['SERVER']
@@ -72,8 +72,8 @@ def set_up_db_reading(report_label):
         annotation_release = os.environ['ANNOTATIONRELEASE']
         alliance_schema = os.environ['ALLIANCESCHEMA']
         alliance_release = os.environ['ALLIANCERELEASE']
-        svn_username = os.environ['SVNUSER']
-        svn_password = os.environ['SVNPASSWORD']
+        # svn_username = os.environ['SVNUSER']
+        # svn_password = os.environ['SVNPASSWORD']
         output_dir = '/src/output/'
 
     # Send values to a dict.
@@ -83,8 +83,8 @@ def set_up_db_reading(report_label):
     set_up_dict['annotation_release'] = annotation_release
     set_up_dict['alliance_schema'] = alliance_schema
     set_up_dict['alliance_release'] = alliance_release
-    set_up_dict['svn_username'] = svn_username
-    set_up_dict['svn_password'] = svn_password
+    # set_up_dict['svn_username'] = svn_username
+    # set_up_dict['svn_password'] = svn_password
 
     # Output filename
     set_up_dict['output_dir'] = output_dir

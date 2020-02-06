@@ -1,41 +1,18 @@
 from .establish_db_connection import establish_db_connection
 from .connect import connect
 from .set_up_db_reading import set_up_db_reading
-from .fb_feature_classes import Feature
-from .fb_feature_classes import Allele
-from .fb_feature_classes import Construct
-from .fb_feature_classes import Gene
-from .fb_feature_classes import Insertion
-from .fb_feature_classes import SeqFeat
-from .fb_feature_classes import Tool
-from .sql_queries import current_features
-from .sql_queries import current_feat_symbol_sgmls
-from .sql_queries import current_feat_fullname_sgmls
-from .sql_queries import rel_features
-from .sql_queries import rel_features_rev
-from .sql_queries import rel_dmel_features
-from .sql_queries import rel_dmel_features_rev
-from .sql_queries import feat_symbol_synonyms
-from .sql_queries import feat_fullname_synonyms
-from .sql_queries import feat_secondary_fbids
-from .sql_queries import featureprops
-from .sql_queries import feat_cvterm
-from .sql_queries import feat_cvterm_cvtprop
-from .sql_queries import orgid_abbr
-from .sql_queries import orgid_genus
-from .sql_queries import feat_id_symbol_sgml
-from .sql_queries import indirect_rel_features
-from .sql_queries import gene_HGNC_ids
-from .sql_queries import gene_MOD_ids
-from .get_db_info import get_features
-from .get_db_info import confirm_attribute
-from .get_db_info import get_dict_value
-from .get_db_info import format_sql_query
-from .get_db_info import check_unique_results
-from .get_db_info import check_key_overlap
-from .get_db_info import get_key_value
-from .get_db_info import build_uniq_db_result_dict
-from .get_db_info import build_list_db_result_dict
-from .get_db_info import add_unique_info
-from .get_db_info import add_list_info
-from .get_db_info import add_unique_dict_info
+from .fb_feature_classes import (
+    Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
+)
+from .sql_queries import (
+    current_features, current_feat_symbol_sgmls, current_feat_fullname_sgmls,
+    rel_features, rel_features_rev, rel_dmel_features, rel_dmel_features_rev,
+    feat_symbol_synonyms, feat_fullname_synonyms, feat_secondary_fbids,
+    featureprops, feat_cvterm, feat_cvterm_cvtprop, orgid_abbr, orgid_genus,
+    feat_id_symbol_sgml, indirect_rel_features, gene_HGNC_ids, gene_MOD_ids
+)
+from .get_db_info import (
+    get_features, confirm_attribute, get_dict_value, format_sql_query,
+    check_unique_results, check_key_overlap, get_key_value, build_uniq_db_result_dict,
+    build_list_db_result_dict, add_unique_info, add_list_info, add_unique_dict_info
+)
