@@ -8,7 +8,7 @@
 import json
 import logging
 import datetime
-from utils import timenow
+from ..general_functions import timenow
 
 log = logging.getLogger(__name__)
 
