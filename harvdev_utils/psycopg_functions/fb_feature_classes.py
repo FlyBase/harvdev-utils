@@ -167,7 +167,8 @@ class Allele(Feature):
     classification = None        # AGR export classification
     crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
     gene_action = None           # For transgenic allele, determines if transgenic allele expresses or targets its gene.
-    # for_agr_export = None        # Will be a bool. Obtained from related gene.
+    gene_for_agr_export = None   # Will be a bool. Obtained from related gene.
+    for_agr_export = None        # Will be a bool.
 
     # This is a more sophisticated version of "get_agr_symbol_text()" method
     # It replaces ONLY the superscript designations around the superscripted allelic suffix, after the gene.
@@ -371,6 +372,22 @@ class Allele(Feature):
                 else:
                     self.gene_action = 'expresses'
                     self.expresses = self.gene_id
+        return
+
+    def is_for_agr_export(self):
+        """Considers allele type and related gene type to determine if allele is for export."""
+        self.classify_allele()
+        allele_type_filter = ['undetermined', 'marker', 'non-dmel_allele']
+        if self.gene_for_agr_export is None:
+            raise ValueError('Cannot determine if allele is for agr export with "gene_for_agr_export" info.')
+        elif self.classification is None:
+            raise ValueError('Cannot determine if allele is for agr export with "classification" info.')
+        elif self.gene_for_agr_export is False:
+            self.for_agr_export = False
+        elif self.classification in allele_type_filter:
+            self.for_agr_export = False
+        else:
+            self.for_agr_export = True
         return
 
 
