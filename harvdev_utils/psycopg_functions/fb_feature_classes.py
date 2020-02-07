@@ -377,14 +377,15 @@ class Allele(Feature):
     def is_for_agr_export(self):
         """Considers allele type and related gene type to determine if allele is for export."""
         self.classify_allele()
-        allele_type_filter = ['undetermined', 'marker', 'non-dmel_allele']
+        allele_type_filter_1 = ['classical', 'insertion']
+        allele_type_filter_2 = ['undetermined', 'marker', 'non-dmel_allele']
         if self.gene_for_agr_export is None:
             raise ValueError('Cannot determine if allele is for agr export with "gene_for_agr_export" info.')
         elif self.classification is None:
             raise ValueError('Cannot determine if allele is for agr export with "classification" info.')
-        elif self.gene_for_agr_export is False:
+        elif self.gene_for_agr_export is False and self.classification in allele_type_filter_1:
             self.for_agr_export = False
-        elif self.classification in allele_type_filter:
+        elif self.classification in allele_type_filter_2:
             self.for_agr_export = False
         else:
             self.for_agr_export = True
