@@ -35,6 +35,11 @@ def check_tsv_data_object(tsv_data_object):
         log.error('The "tsv_data_object["data"]" object is not of the expected type "list".')
         raise TypeError
 
+    # Check that the data list is not empty.
+    if len(tsv_data_object['data']) == 0:
+        log.error('The "tsv_data_object["data"]" object is empty.')
+        raise ValueError
+
     # Check that elements in the 'data' list are themselves dicts.
     for datum in tsv_data_object['data']:
         if type(datum) != dict:
