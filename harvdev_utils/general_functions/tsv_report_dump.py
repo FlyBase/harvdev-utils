@@ -7,10 +7,39 @@
 
 import csv
 import logging
-import datetime
 from ..general_functions import timenow
 
 log = logging.getLogger(__name__)
+
+
+def check_tsv_data_object(tsv_data_object):
+    """
+    Function that checks structure of input tsv object for writing.
+    """
+    log.info('TIME: {}. Checking format of input data.'.format(timenow()))
+
+    # Check that the "tsv_data_object" is a dict.
+    if type(tsv_data_object) != dict:
+        log.error('The "tsv_data_object" is not of the expected type "dict".')
+        raise TypeError
+
+    # Check that expected 'data' key exists in the "tsv_data_object".
+    try:
+        tsv_data_object['data']
+    except KeyError:
+        log.error('The "tsv_data_object" is missing the expected "data" key.')
+        raise KeyError
+
+    # Check that the 'data' key represents a list.
+    if type(tsv_data_object['data']) != list:
+        log.error('The "tsv_data_object["data"]" object is not of the expected type "list".')
+        raise TypeError
+
+    # Check that elements in the 'data' list are themselves dicts.
+    for datum in tsv_data_object['data']:
+        if type(datum) != dict:
+            log.error('Elements of the tsv_data_object["data"] list are not of expected type dict.')
+            raise TypeError
 
 
 def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
@@ -37,22 +66,8 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
 
     log.info('TIME: {}. Writing data to output file.'.format(timenow()))
 
-    # Check that the "tsv_data_object" is a dict.
-    if type(tsv_data_object) != dict:
-        log.error('The "tsv_data_object" is not of the expected type "dict".')
-        raise TypeError
-
-    # Check that expected 'data' key exists in the "tsv_data_object".
-    try:
-        tsv_data_object['data']
-    except KeyError:
-        log.error('The "tsv_data_object" is missing the expected "data" key.')
-        raise KeyError
-
-    # Check that the 'data' key represents a list.
-    if type(tsv_data_object['data']) != list:
-        log.error('The "tsv_data_object["data"]" object is not of the expected type "list".')
-        raise TypeError
+    # Check that the input "tsv_data_object" meets expectations.
+    check_tsv_data_object(tsv_data_object)
 
     # Can supply a list of headers under the keyword 'headers'.
     if 'headers' in kwargs.keys():
