@@ -7,7 +7,7 @@
 
 import psycopg2
 import logging
-import datetime
+# import datetime
 from ..general_functions import timenow
 
 log = logging.getLogger(__name__)

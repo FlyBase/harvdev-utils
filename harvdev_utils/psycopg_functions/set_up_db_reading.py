@@ -10,9 +10,9 @@ import argparse
 import configparser
 import sys
 import os
-import psycopg2
+# import psycopg2
 import logging
-import datetime
+# import datetime
 import strict_rfc3339
 from ..general_functions import timenow
 from ..psycopg_functions import establish_db_connection

@@ -5,12 +5,12 @@
 .. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
 """
 
-import psycopg2
+# import psycopg2
 import logging
-import datetime
+# import datetime
 from ..general_functions import timenow
 from ..psycopg_functions import (
-    connect, current_features, Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
+    connect, current_features, Allele, Construct, Gene, Insertion, SeqFeat, Tool
 )
 
 log = logging.getLogger(__name__)
