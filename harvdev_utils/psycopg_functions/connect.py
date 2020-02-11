@@ -5,7 +5,7 @@
 .. moduleauthor:: Chris Tabone ctabone@morgan.harvard.edu
 """
 
-import psycopg2
+# import psycopg2
 
 
 def connect(sql, query_variable, db_connection):

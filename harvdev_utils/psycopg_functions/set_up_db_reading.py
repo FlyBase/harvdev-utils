@@ -10,9 +10,9 @@ import argparse
 import configparser
 import sys
 import os
-import psycopg2
+# import psycopg2
 import logging
-import datetime
+# import datetime
 import strict_rfc3339
 from ..general_functions import timenow
 from ..psycopg_functions import establish_db_connection
@@ -78,6 +78,7 @@ def set_up_db_reading(report_label):
 
     # Send values to a dict.
     set_up_dict = {}
+    set_up_dict['database'] = database
     set_up_dict['database_release'] = database_release
     set_up_dict['assembly'] = assembly
     set_up_dict['annotation_release'] = annotation_release

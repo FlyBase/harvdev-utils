@@ -5,12 +5,12 @@
 .. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
 """
 
-import psycopg2
+# import psycopg2
 import logging
-import datetime
+# import datetime
 from ..general_functions import timenow
 from ..psycopg_functions import (
-    connect, current_features, Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
+    connect, current_features, Allele, Construct, Gene, Insertion, SeqFeat, Tool
 )
 
 log = logging.getLogger(__name__)
@@ -404,16 +404,13 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     # This indicates attribute has been evaluated; an empty list means results sought but none found.
     for key, target in data_dict.items():
         # First confirm that the attribute to update exists for the object.
-        confirm_attribute(target, attribute)
         empty_list = []
         if type(target) == dict:
-            if target[attribute] is None:
-                target[attribute] = empty_list
-                log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
+            target[attribute] = empty_list
+            log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
         else:
-            if getattr(target, attribute) is None:
-                setattr(target, attribute, empty_list)
-                log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
+            setattr(target, attribute, empty_list)
+            log.debug('Before adding values, attribute {} set to this: {}.'.format(attribute, empty_list))
 
     # Build a dict of the db_results.
     db_results_dict = build_list_db_result_dict(db_results)
