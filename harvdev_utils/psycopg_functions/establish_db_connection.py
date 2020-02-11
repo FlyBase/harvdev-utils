@@ -31,6 +31,6 @@ def establish_db_connection(database_host, database, username, password):
     conn_string = "host={} dbname={} user={} password='{}'".format(database_host, database, username, password)
     db_connection = psycopg2.connect(conn_string)
 
-    log.info('TIME: {}. Made connection to database {} on host {}.'.format(timenow(), database, database_host))
+    log.info('TIME: {}. Made connection to database {} on db_host {}.'.format(timenow(), database, database_host))
 
     return db_connection
