@@ -1,28 +1,26 @@
-"""
-.. module:: connect
-   :synopsis: Queries a postgres db by a psycopg2 connection.
+"""Module:: connect.
 
-.. moduleauthor:: Chris Tabone ctabone@morgan.harvard.edu
-"""
+Synopsis:
+    Queries a postgres db by a psycopg2 connection.
 
-# import psycopg2
+Author(s):
+    Chris Tabone ctabone@morgan.harvard.edu
+
+"""
 
 
 def connect(sql, query_variable, db_connection):
-    """
-    Function that retrieves information from a postgres db using psycopg2.
-    Libraries:
-        psycopg2.
-    Other functions:
-        None.
-    Args:
-        An "sql" query, an optional "query_variable", and a "db_connection".
-    Returns:
-        Query results as a list of tuples.
-    Raises:
-        None.
-    """
+    """Retrieve information from a postgres db using psycopg2.
 
+    Args:
+        arg1 (string): An "sql" query.
+        arg2 (tuple): An optional "query_variable": e.g., ('wingless', )
+        arg3 (psycopg2.extensions.connection): A psycopg2 db connection.
+
+    Returns:
+        list: Query results as a list of tuples.
+
+    """
     cursor = db_connection.cursor()
     if query_variable == 'no_query':           # If SQL query lacks a variable.
         cursor.execute(sql)

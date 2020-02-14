@@ -1,24 +1,26 @@
-"""
-.. module:: timenow
-   :synopsis: A human-readable timestamp in HH:MM:SS format.
+"""Module:: timenow.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+    A module that returns the current time as a human-readable timestamp in HH:MM:SS format.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 import datetime
 
 
 def timenow():
-    """
-    A function that gives current time in simple human-readable format.
+    """Return the current time as a human-readable timestamp in HH:MM:SS format.
+
     Args:
         None.
-    Returns:
-        Time in HH:MM:SS format.
-    Raises:
-        None.
-    """
 
+    Returns:
+        str: Time in HH:MM:SS format.
+
+    """
     timenow = datetime.datetime.now().strftime('%H:%M:%S')
 
     return timenow

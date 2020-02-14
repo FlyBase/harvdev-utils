@@ -1,8 +1,11 @@
-"""
-.. module:: sql_queries
-   :synopsis: Commonly used sql queries. Use ".format()" function to add values for "{}" variables.
+"""Module:: sql_queries.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+      Commonly used sql queries. Use ".format()" function to add values for "{}" variables.
+
+Author(s):
+      Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 # Get all current, non-analysis features given a uniquename regex.

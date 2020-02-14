@@ -1,8 +1,11 @@
-"""
-.. module:: count_value_frequency
-   :synopsis: Logs the frequency of all values in a list.
+"""Module:: count_value_frequency.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+    A module that counts frequency of all values in a list and prints results to log file.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 import logging
@@ -11,16 +14,20 @@ log = logging.getLogger(__name__)
 
 
 def count_value_frequency(input_list):
-    """
-    A function that logs frequency of values in a list.
-    Args:
-        A list.
-    Returns:
-        Logs value frequency, no return per se.
-    Raises:
-        None.
-    """
+    """Print the frequency of all values in a list.
 
+    Args:
+        arg1 (list): the list of values to be assessed.
+
+    Returns:
+        None. Results are printed to log file.
+
+    To do:
+        Alternative approaches include a try/except method to increment count for a given "count_dict" key.
+        Initial tests on lists of a million values find only small sub-second differences in performance.
+        Re-assess if data size increases dramatically.
+
+    """
     unique_values = set(input_list)
     count_dict = {}
     for value in unique_values:

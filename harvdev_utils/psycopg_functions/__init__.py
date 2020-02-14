@@ -1,3 +1,4 @@
+"""harvdev_utils.psycopg_functions init file."""
 from .establish_db_connection import establish_db_connection
 from .connect import connect
 from .set_up_db_reading import set_up_db_reading

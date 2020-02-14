@@ -1,40 +1,36 @@
-"""
-.. module:: set_up_db_reading
-   :synopsis: A module that performs general set up for scripts that connect to a FlyBase db and generate report files.
-              Module parses command arguments, gets environmental variable values, connects to db, specifies filenames.
+"""Module:: set_up_db_reading.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+    A module that performs general set up for scripts that connect to a FlyBase db and generate report files.
+    Module parses command arguments, gets environmental variable values, connects to db, specifies filenames.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 import argparse
 import configparser
 import sys
 import os
-# import psycopg2
 import logging
-# import datetime
 import strict_rfc3339
-from ..general_functions import timenow
-from ..psycopg_functions import establish_db_connection
+from harvdev_utils.general_functions import timenow
+from harvdev_utils.psycopg_functions import establish_db_connection
 
 log = logging.getLogger(__name__)
 
 
 def set_up_db_reading(report_label):
-    """
-    Function that gets values for db connection, makes connection and specifies output filenames.
-    Libraries:
-        argparse, configparser, sys, os, psycopg2, datetime, logging, strict_rfc3339, alliance-flybase.utils.
-    Other functions:
-        establish_db_connection(), timenow().
-    Args:
-        A "report_label" string for the output files (logs and data).
-    Returns:
-        A dict of various values for the script.
-    Raises:
-        None.
-    """
+    """Get values db connection, makes connection and specifies output filenames.
 
+    Args:
+        arg1 (str): A "report_label" string for the output files (logs and data).
+
+    Returns:
+        dict: A dict of various values for the script to make db_connection, name files, etc.
+
+    """
     log.info('TIME: {}. Setting up environment, db connections and logging.'.format(timenow()))
 
     # Parse command line inputs.

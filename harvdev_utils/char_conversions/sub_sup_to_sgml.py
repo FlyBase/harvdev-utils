@@ -1,8 +1,11 @@
-"""
-.. module:: sub_sup_to_sgml
-   :synopsis: A module to convert bracket characters to up and down flags.
+"""Module:: sub_sup_to_sgml.
 
-.. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
+Synopsis:
+    A module to convert bracket characters to up and down flags.
+
+Author(s):
+    Christopher Tabone ctabone@morgan.harvard.edu
+
 """
 
 import re
@@ -10,16 +13,16 @@ import re
 
 def sub_sup_to_sgml(input_string):
     """A function to convert bracket characters to up and down flags.
-    e.g. [hello] -> <up>hello</up>
+
+    e.g. "[hello]" -> "<up>hello</up>"
 
     Args:
-        input_string (str): The string containing bracket characters to be converted.
+        arg1 (str): The "input_string" containing bracket characters to be converted.
 
     Returns:
-        str: The same string as the input with the bracket characters converted.
+        str: The same string as the input with the bracket characters converted to up and down flags.
 
     """
-
     substitution_dict = {
         '[[': '<down>',
         ']]': '</down>',

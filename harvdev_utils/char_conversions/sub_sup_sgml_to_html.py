@@ -1,8 +1,11 @@
-"""
-.. module:: sub_sup_sgml_to_html
-   :synopsis: A module to convert FlyBase up/down flags into html sub/superscript flags.
+"""Module:: sub_sup_sgml_to_html.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+    A module to convert FlyBase up/down flags into html sub/superscript flags.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 import logging
@@ -12,13 +15,15 @@ log = logging.getLogger(__name__)
 
 def sub_sup_sgml_to_html(input_string):
     """A function to convert FlyBase up/down flags into html sub/superscript flags.
-    e.g. <up>hello</up> -> <sup>hello</sup>
+
+    e.g. "<up>hello</up>" -> "<sup>hello</sup>"
 
     Args:
-        input_string (str): The string containing FlyBase up/down flags to be converted.
+        arg1 (str): The "input_string" containing FlyBase up/down flags to be converted.
 
     Returns:
         str: The same string as the input with the html sub/superscript flags.
+
     """
     sub_dict = {
         '<down>': '<sub>',
