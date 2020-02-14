@@ -1,28 +1,31 @@
-"""
-.. module:: sgml_to_plain_text
-   :synopsis: A module to convert Greek unicode to plain text Greek words.
+"""Module:: sgml_to_plain_text.
 
-.. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
+Synopsis:
+    A module to convert Greek unicode to plain text Greek words.
+
+Author(s):
+    Christopher Tabone ctabone@morgan.harvard.edu
+
 """
 
 import re
 
 
 def unicode_to_plain_text(input_string):
-    """A function to convert Greek unicode to plain text Greek words.
-    e.g. \\u03B1 -> alpha
+    r"""A function to convert Greek unicode to plain text Greek words.
+
+    e.g. "\\u03B1" -> "alpha"
 
     Args:
-        input_string (str): The string containing Greek unicode characters to be converted.
+        arg1 (str): The "input_string" containing Greek unicode characters to be converted.
 
     Returns:
-        str: The same string as the input with the Greek unicode characters converted.
+        str: The same string as the input with the Greek unicode characters transliterated.
 
     Raises:
         KeyError: If the regex matches for a set of unicode characters but there is no exact matching plain text.
 
     """
-
     substitution_dict = {
         '\u03B1': 'alpha',
         '\u0391': 'Alpha',

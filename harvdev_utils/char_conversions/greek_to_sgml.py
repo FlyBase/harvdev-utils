@@ -17,10 +17,10 @@ def greek_to_sgml(input_string):
     e.g. "\\u03B1" -> "&agr;".
 
     Args:
-        arg1 (str): "input_string" containing characters to be converted.
+        arg1 (str): The "input_string" containing Greek characters to be converted.
 
     Returns:
-        str: The same string as the input with the Greek characters converted.
+        str: The same string as the input with the Greek characters converted to FB SGML.
 
     Raises:
         KeyError: If the regex matches for a set of Greek characters but there is no exact matching Greek.

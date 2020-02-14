@@ -1,28 +1,31 @@
-"""
-.. module:: sgml_to_unicode
-   :synopsis: A module to convert FlyBase SGML to Greek characters in unicode.
+"""Module:: sgml_to_unicode.
 
-.. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
+Synopsis:
+    A module to convert FlyBase SGML to Greek characters in unicode.
+
+Author(s):
+    Christopher Tabone ctabone@morgan.harvard.edu
+
 """
 
 import re
 
 
 def sgml_to_unicode(input_string):
-    """A function to convert FlyBase SGML to Greek characters in unicode.
-    e.g. &agr; -> \\u03B1
+    r"""A function to convert FlyBase SGML to Greek characters in unicode.
+
+    e.g. "&agr;" -> "\\u03B1"
 
     Args:
-        input_string (str): The string containing characters to be converted.
+        arg1 (str): The "input_string" containing FB SGML characters to be converted.
 
     Returns:
-        str: The same string as the input with the SGML characters converted.
+        str: The same string as the input with the SGML characters converted to unicode.
 
     Raises:
         KeyError: If the regex matches for a set of SGML characters but there is no exact matching SGML.
 
     """
-
     substitution_dict = {
         '&agr;': '\u03B1',
         '&Agr;': '\u0391',
