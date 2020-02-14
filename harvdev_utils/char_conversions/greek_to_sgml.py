@@ -1,24 +1,30 @@
-"""
-.. module:: greek_to_sgml
-   :synopsis: A module to convert Greek characters to FlyBase SGML for writing proformae.
+"""Module:: greek_to_sgml.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+    A module to convert Greek characters to FlyBase SGML for writing proformae.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu, Chris Tabone ctabone@morgan.harvard.edu
+
 """
 
 import re
 
 
 def greek_to_sgml(input_string):
-    """A function to convert Greek characters into FlyBase SGML for writing proformae.
-    e.g. \\u03B1 -> &agr;
+    r"""A function to convert Greek characters into FlyBase SGML for writing proformae.
+
+    e.g. "\\u03B1" -> "&agr;".
+
     Args:
-        input_string (str): The string containing characters to be converted.
+        arg1 (str): "input_string" containing characters to be converted.
+
     Returns:
         str: The same string as the input with the Greek characters converted.
+
     Raises:
         KeyError: If the regex matches for a set of Greek characters but there is no exact matching Greek.
     """
-
     substitution_dict = {
         '\u03B1': '&agr;',
         '\u0391': '&Agr;',
