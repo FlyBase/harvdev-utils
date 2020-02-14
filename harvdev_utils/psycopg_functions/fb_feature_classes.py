@@ -1,22 +1,41 @@
-"""
-.. module:: fb_feature_classes
-   :synopsis: FlyBase feature objects.
+"""Module:: fb_feature_classes.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+    FlyBase feature objects.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 import logging
 import re
-from ..char_conversions import sub_sup_to_sgml, sub_sup_sgml_to_html, sgml_to_unicode
+from harvdev_utils.char_conversions import sub_sup_to_sgml, sub_sup_sgml_to_html, sgml_to_unicode
 
 log = logging.getLogger(__name__)
 
 
 # Parent Feature object.
 class Feature(object):
+    """Define a general FlyBase Feature object."""
 
     # Feature Class has the basic attributes of the chado feature table.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Initialize a FlyBase Feature class object.
+
+        Args:
+            arg1 (int): The feature.feature_id.
+            arg2 (int): The feature.organism_id.
+            arg3 (str): The feature.name.
+            arg4 (str): The feature.uniquename; r'^FB[a-z]{2}[0-9]{7,10}$'.
+            arg5 (str): The cvterm.name corresponding to feature.type_id.
+            arg6 (bool): The feature.is_analysis value.
+            arg7 (bool): The feature.is_obsolete value.
+
+        Returns:
+            Feature: A FlyBase "Feature" object.
+
+        """
         self.feature_id = feature_id
         self.organism_id = organism_id
         self.name = name
@@ -88,8 +107,7 @@ class Feature(object):
 
     # Methods for converting FB sub/superscripts to html, uniquefying synonym/ID lists.
     def get_agr_symbol(self):
-        """Converts FB symbol_sgml to AGR format (proper html sub/superscripts.
-           Relies on utils function "sub_sup_sgml_to_html"."""
+        """Convert FB symbol_sgml to AGR format (proper html sub/superscripts."""
         self.agr_symbol = self.symbol_sgml
         self.agr_symbol = sub_sup_sgml_to_html(self.symbol_sgml)
         return
@@ -135,9 +153,11 @@ class Feature(object):
 
 # Children of Feature Object (alphabetically sorted).
 class Allele(Feature):
+    """Define a FlyBase Allele object."""
 
     # Inherit parental feature init.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Initialize a FlyBase Allele class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
 
     # feature.uniquename must be FBal-type.
@@ -278,8 +298,7 @@ class Allele(Feature):
         return
 
     def exists_in_dmel(self):
-        """Determines if this allele is carried in Dmel (regardless of allele's feature.orgnanism).
-           e.g., Hsap transgenes and Ecol enhancer traps are carried in Dmel."""
+        """Determines if this allele is carried in Dmel (regardless of allele's feature.orgnanism)."""
         if self.org_abbr is None:
             log.warning('Allele {} missing org_abbr to determine if it exists in Dmel.'.format(self.uniquename))
             conclusion = None
@@ -393,9 +412,11 @@ class Allele(Feature):
 
 
 class Construct(Feature):
+    """Define a FlyBase Construct object."""
 
     # Inherit parental feature init.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Initialize a FlyBase Construct class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
 
     # feature.uniquename must be FBtp-type.
@@ -413,9 +434,11 @@ class Construct(Feature):
 
 
 class Gene(Feature):
+    """Define a FlyBase Gene object."""
 
     # Inherit parental feature init.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Initialize a FlyBase Gene class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
 
     # feature.uniquename must be FBgn-type.
@@ -474,9 +497,11 @@ class Gene(Feature):
 
 
 class Insertion(Feature):
+    """Define a FlyBase Insertion object."""
 
     # Inherit parental feature init.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Initialize a FlyBase Gene class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
 
     # feature.uniquename must be FBti-type.
@@ -486,9 +511,11 @@ class Insertion(Feature):
 
 
 class SeqFeat(Feature):
+    """Define a FlyBase SeqFeat object."""
 
     # Inherit parental feature init.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Initialize a FlyBase SeqFeat class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
 
     # feature.uniquename must be FBsf-type.
@@ -498,9 +525,11 @@ class SeqFeat(Feature):
 
 
 class Tool(Feature):
+    """Define a FlyBase Tool object."""
 
     # Inherit parental feature init.
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
+        """Make a FlyBase Tool class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
 
     # feature.uniquename must be FBto-type.
