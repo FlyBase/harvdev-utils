@@ -14,7 +14,7 @@ from harvdev_utils.general_functions import timenow
 log = logging.getLogger(__name__)
 
 
-def generic_AGR_json(database_release, strict_time):
+def generic_AGR_json_dict(database_release, strict_time):
     """Return a generic AGR data structure with metadata and data.
 
     Args:
