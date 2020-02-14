@@ -1,20 +1,27 @@
-"""
-.. module:: generic_FB_tsv_dict
-   :synopsis: Function that builds a generic FB dictionary with data and metadata elements.
+"""Module:: generic_FB_tsv_dict.
 
-.. moduleauthor:: Gil dos Santos dossantos@morgan.harvard.edu
+Synopsis:
+   Function that builds a generic FB dictionary with data and metadata elements.
+
+Author(s):
+    Gil dos Santos dossantos@morgan.harvard.edu
+
 """
 
 import datetime
 
 
 def generic_FB_tsv_dict(report_label, database):
-    """Builds a generic dictionary for tsv export.
-       Required libraries: datetime.
-       Required functions: now().
-       Required global variables: the_time, database_release, report_title.
-       Input: none.
-       Output: generic Alliance JSON data structure (dictionary)."""
+    """Build a generic dictionary for tsv export.
+
+    Args:
+        arg1 (str): the label to be used for output files: e.g., "allele", "protein_isoforms".
+        arg2 (str): the name of the database from which info was retrieved: e.g., "fb_2019_03_reporting".
+
+    Returns:
+        dict: A generic FlyBase JSON data structure (dictionary) with metadata and an empty list under "data" key.
+
+    """
     to_export_as_tsv = {}
     to_export_as_tsv['metaData'] = {}
     to_export_as_tsv['metaData']['title'] = report_label

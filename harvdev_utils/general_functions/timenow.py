@@ -17,13 +17,8 @@ def timenow():
         None.
 
     Returns:
-        Time in HH:MM:SS format.
+        str: Time in HH:MM:SS format.
 
-    Warnings:
-        None.
-
-    Raises:
-        None.
     """
     timenow = datetime.datetime.now().strftime('%H:%M:%S')
 
