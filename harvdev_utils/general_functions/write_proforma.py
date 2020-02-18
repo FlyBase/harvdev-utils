@@ -310,8 +310,8 @@ def write_proforma_line(field_key, field_value, proforma, outfile):
             for item in field_value:
                 outfile.write(item + '\n')
         # If it's a list of dicts, just write out each element of each dict in turn.
-        # In this way, one can write multiple sets of proforma fields.
-        # e.g., write out multiple repeats of LC99a/LC99b accession/db pairs.
+        # In this way, one can write multiple sets of proforma fields: e.g., LC99a/LC99b accession/db pairs.
+        #     { "LC99a": [ { "LC99a": "acc1", "LC99b": "db1" }, { "LC99a": "acc2", "LC99b": "db2" },...] }
         elif list_types[0] == dict:
             log.debug('Handling {}: {} as a list/tuple of dict objects.'.format(field_key, field_value))
             for element_dict in field_value:
