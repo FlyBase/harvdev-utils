@@ -354,6 +354,9 @@ def write_proforma_record(data_list, output_filename, svn_username, svn_password
     """Write full proforma record for a list of dicts representing data objects.
 
     A wrapper of several smaller functions in the "write_proforma" module.
+    Expects that the data_list will be a list of dicts.
+    List order determines write order.
+    Each dict is expected to represent only a single proforma type; otherwise skipped.
 
     Args:
         arg1 (list): The list of data objects to write to file.
