@@ -36,6 +36,7 @@ def set_up_db_reading(report_label):
     # Parse command line inputs.
     parser = argparse.ArgumentParser(description='inputs')
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
+    parser.add_argument('-a', '--alliance', action='store_true', help='Filenames for AGR export.', required=False)
     parser.add_argument('-c', '--config_file', help='Supply filepath to credentials, optional.', required=False)
     args = parser.parse_args()
 
@@ -85,10 +86,17 @@ def set_up_db_reading(report_label):
 
     # Output filename
     set_up_dict['output_dir'] = output_dir
-    set_up_dict['output_filename'] = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.json'
+    alliance = args.alliance
+    if alliance is True:
+        set_up_dict['output_filename'] = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.json'
+    else:
+        set_up_dict['output_filename'] = output_dir + report_label + '_' + database + '.tsv'
 
     # Handle logging
-    log_filename = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.log'
+    if alliance_schema is True:
+        log_filename = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.log'
+    else:
+        log_filename = output_dir + report_label + '_' + database + '.log'
     verbose = args.verbose
     if verbose is True:
         logging.basicConfig(format='%(levelname)s:%(message)s', filename=log_filename, level=logging.DEBUG)

@@ -1,7 +1,7 @@
 """Module:: dump_data_to_file.
 
 Synopsis:
-    A module that prints out data (a dict with metadata dict and data list) to file.
+    A module that prints out data (a dict with metaData dict and data list) to file.
     This module checks basic structure of the data.
     It will print out to JSON file or to TSV file.
 
@@ -22,16 +22,16 @@ def check_data_object(data_object):
     """Check the structure of the input data dict object before writing to file.
 
     Args:
-        arg1 (dict): A dictionary that includes a "metadata" key, and a "data" key with a list type value.
+        arg1 (dict): A dictionary that includes a "metaData" key, and a "data" key with a list type value.
 
     Returns:
         None. Simply a check.
 
     Warnings:
-        Will raise a warning if the "data_object" dict has no "metadata" key.
+        Will raise a warning if the "data_object" dict has no "metaData" key.
 
     Raises:
-        Will raise an exception if the "data_object" is not a dict.
+        Will raise an exception if the "data_object" is not a dict.metaData
         Will raise an exception if the "data_object" has no "data" key.
         Will raise an exception if the "data_object["data"]" object is not a list.
         Will raise an exception if the "data_object["data"]" list is empty.
@@ -45,11 +45,11 @@ def check_data_object(data_object):
         log.error('The "data_object" is not of the expected type "dict".')
         raise TypeError
 
-    # Check that the "data_object" has a "metadata" key.
+    # Check that the "data_object" has a "metaData" key.
     try:
-        data_object['metadata']
+        data_object['metaData']
     except KeyError:
-        log.warning('The "data_object" is missing the expected "metadata" key.')
+        log.warning('The "data_object" is missing the expected "metaData" key.')
 
     # Check that the "data_object" has a "data" key.
     try:
@@ -79,7 +79,7 @@ def json_dump(json_data_object, output_filename):
     """Write "tsv_data_object" dict to JSON file.
 
     Args:
-        arg1 (dict): A data dict. It should have metadata and data keys.
+        arg1 (dict): A data dict. It should have metaData and data keys.
         arg2 (str): The name to use for the output file.
 
     Returns:
@@ -103,7 +103,7 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
     """Write "tsv_data_object" dict to TSV file.
 
     Args:
-        arg1 (dict): A data dict. It should have metadata and data keys.
+        arg1 (dict): A data dict. It should have metaData and data keys.
         arg2 (str): The name to use for the output file.
         **kwargs (list): An optional list of headers under the "headers" key: e.g., headers=['a', 'b', 'c']
 
@@ -132,17 +132,18 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
     # Open up the output file if we get this far.
     output_file = open(output_filename, 'w')
 
-    # Check that metadata key exists.
+    # Check that metaData key exists.
     try:
         output_file.write('## {}\n'.format(tsv_data_object['metaData']['title']))
         output_file.write('## Generated: {}\n'.format(tsv_data_object['metaData']['dateProduced']))
         output_file.write('## Using datasource: {}\n'.format(tsv_data_object['metaData']['database']))
+        output_file.write('##\n')
     except KeyError:
-        log.debug('The "tsv_data_object" has no "metadata" key.')
+        log.debug('The "tsv_data_object" has no "metaData" key.')
 
-    # Regardless of presence/absence of metadata, write out headers.
+    # Regardless of presence/absence of metaData, write out headers.
+    output_file.write('## ')
     csv_writer = csv.DictWriter(output_file, fieldnames=headers, delimiter='\t', extrasaction='ignore')
-    output_file.write('##\n## ')
     csv_writer.writeheader()
 
     for data_item in tsv_data_object['data']:
