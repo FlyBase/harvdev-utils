@@ -93,7 +93,7 @@ def set_up_db_reading(report_label):
         set_up_dict['output_filename'] = output_dir + report_label + '_' + database + '.tsv'
 
     # Handle logging
-    if alliance_schema is True:
+    if alliance is True:
         log_filename = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.log'
     else:
         log_filename = output_dir + report_label + '_' + database + '.log'
