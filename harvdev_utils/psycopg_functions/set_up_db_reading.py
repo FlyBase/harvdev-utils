@@ -38,7 +38,9 @@ def set_up_db_reading(report_label):
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
     parser.add_argument('-a', '--alliance', action='store_true', help='Filenames for AGR export.', required=False)
     parser.add_argument('-c', '--config_file', help='Supply filepath to credentials, optional.', required=False)
-    args = parser.parse_args()
+    # args = parser.parse_args()
+    args, extra_args = parser.parse_known_args()    # This way, scripts that use other args don't break.
+    log.info('These extra arguments not used by set_up_db_reading(): {}'.format(extra_args))
 
     # Determine whether script is to run locally or in docker.
     config_file = args.config_file
@@ -47,7 +49,7 @@ def set_up_db_reading(report_label):
     if config_file:
         config = configparser.ConfigParser()
         config.read(config_file)
-        database_host = config['default']['Server']
+        server = config['default']['Server']
         database = config['default']['Database']
         username = config['default']['User']
         password = config['default']['PGPassword']
@@ -60,7 +62,7 @@ def set_up_db_reading(report_label):
         svn_password = config['default']['SVNPassword']
         output_dir = './'
     else:
-        database_host = os.environ['SERVER']
+        server = os.environ['SERVER']
         database = os.environ['DATABASE']
         username = os.environ['USER']
         password = os.environ['PGPASSWORD']
@@ -75,6 +77,7 @@ def set_up_db_reading(report_label):
 
     # Send values to a dict.
     set_up_dict = {}
+    set_up_dict['server'] = server
     set_up_dict['database'] = database
     set_up_dict['database_release'] = database_release
     set_up_dict['assembly'] = assembly
@@ -83,9 +86,9 @@ def set_up_db_reading(report_label):
     set_up_dict['alliance_release'] = alliance_release
     set_up_dict['svn_username'] = svn_username
     set_up_dict['svn_password'] = svn_password
+    set_up_dict['output_dir'] = output_dir
 
     # Output filename
-    set_up_dict['output_dir'] = output_dir
     alliance = args.alliance
     if alliance is True:
         set_up_dict['output_filename'] = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.json'
@@ -106,7 +109,7 @@ def set_up_db_reading(report_label):
     set_up_dict['log'] = logging.getLogger(__name__)
 
     # Establish database connection.
-    set_up_dict['conn'] = establish_db_connection(database_host, database, username, password)
+    set_up_dict['conn'] = establish_db_connection(server, database, username, password)
 
     # Official timestamp for this script.
     set_up_dict['the_time'] = strict_rfc3339.now_to_rfc3339_localoffset()
