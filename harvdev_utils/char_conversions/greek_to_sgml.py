@@ -12,7 +12,7 @@ import re
 
 
 def greek_to_sgml(input_string):
-    r"""A function to convert Greek characters into FlyBase SGML for writing proformae.
+    r"""Convert Greek characters into FlyBase SGML for writing proformae.
 
     e.g. "\\u03B1" -> "&agr;".
 

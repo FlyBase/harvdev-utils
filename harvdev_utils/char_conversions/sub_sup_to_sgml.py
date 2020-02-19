@@ -12,7 +12,7 @@ import re
 
 
 def sub_sup_to_sgml(input_string):
-    """A function to convert bracket characters to up and down flags.
+    """Convert bracket characters to up and down flags.
 
     e.g. "[hello]" -> "<up>hello</up>"
 

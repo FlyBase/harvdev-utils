@@ -12,7 +12,7 @@ import re
 
 
 def sgml_to_plain_text(input_string):
-    """A function to convert FlyBase SGML to plain text Greek words.
+    """Convert FlyBase SGML to plain text Greek words.
 
     e.g. "&agr; -> alpha"
 

@@ -12,7 +12,7 @@ import re
 
 
 def sgml_to_unicode(input_string):
-    r"""A function to convert FlyBase SGML to Greek characters in unicode.
+    r"""Convert FlyBase SGML to Greek characters in unicode.
 
     e.g. "&agr;" -> "\\u03B1"
 

@@ -12,7 +12,7 @@ import re
 
 
 def unicode_to_plain_text(input_string):
-    r"""A function to convert Greek unicode to plain text Greek words.
+    r"""Convert Greek unicode to plain text Greek words.
 
     e.g. "\\u03B1" -> "alpha"
 

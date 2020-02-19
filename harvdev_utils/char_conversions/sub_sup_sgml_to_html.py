@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def sub_sup_sgml_to_html(input_string):
-    """A function to convert FlyBase up/down flags into html sub/superscript flags.
+    """Convert FlyBase up/down flags into html sub/superscript flags.
 
     e.g. "<up>hello</up>" -> "<sup>hello</sup>"
 
