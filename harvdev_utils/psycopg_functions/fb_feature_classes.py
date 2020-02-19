@@ -113,7 +113,7 @@ class Feature(object):
         return
 
     def convert_symbol_synonyms(self):
-        """Converts all FB script designations in symbol synonyms to proper html."""
+        """Convert all FB script designations in symbol synonyms to proper html."""
         if self.symbol_synonym_list is None:
             log.warning('Feature {} has no symbol_synonym_list to convert.'.format(self.uniquename))
             return
@@ -122,7 +122,7 @@ class Feature(object):
             return
 
     def convert_fullname_synonyms(self):
-        """Converts all FB script designations in fullname synonyms to proper html."""
+        """Convert all FB script designations in fullname synonyms to proper html."""
         if self.fullname_synonym_list is None:
             log.warning('Feature {} has no fullname_synonym_list to convert.'.format(self.uniquename))
             return
@@ -131,19 +131,19 @@ class Feature(object):
             return
 
     def unique_synonyms(self):
-        """Makes a unique set of symbol and fullname synonyms."""
+        """Make a unique set of symbol and fullname synonyms."""
         self.all_synonym_set = list(set(self.symbol_synonym_list + self.fullname_synonym_list))
         return
 
     def unique_secondary_ids(self):
-        """Makes unique set of secondary IDs."""
+        """Make unique set of secondary IDs."""
         if self.secondary_id_list is None:
             log.warning('Feature {} has no 2o ID info.'.format(self.uniquename))
         else:
             self.secondary_id_list = list(set(self.secondary_id_list))
 
     def agr_processing(self):
-        """Runs various methods for AGR processing."""
+        """Run various methods for AGR processing."""
         self.get_agr_symbol()
         self.convert_symbol_synonyms()
         self.convert_fullname_synonyms()
@@ -209,7 +209,7 @@ class Allele(Feature):
     #     return
 
     def get_agr_symbol_text(self):
-        """Replaces all FB superscript with chevrons."""
+        """Replace all FB superscript with chevrons."""
         if self.symbol_sgml is None:
             log.warning('Cannot get AGR symbolText for {} without symbol_sgml.'.format(self.uniquename))
             return
@@ -222,7 +222,7 @@ class Allele(Feature):
     # aminoacid_rep = None         # Will be a list. Eponymous featureprop.
     # c = None        # Will be a list. Eponymous featureprop.
     def make_description(self):
-        """Concatenates "nature_lesion" strings into a description."""
+        """Concatenate "nature_lesion" strings into a description."""
         if self.molecular_info is None:
             log.warning('Allele {} missing "molecular_info" info for description.'.format(self.uniquename))
             self.description = None
@@ -250,7 +250,7 @@ class Allele(Feature):
         return
 
     def is_drosophilidae(self):
-        """Determines if the feature is in some Drosophilidae species (vinegar/fruit fly)."""
+        """Determine if the feature is in some Drosophilidae species (vinegar/fruit fly)."""
         genus_list = ['Drosophila', 'Scaptomyza', 'Scaptodrosophila', 'Zaprionus', 'Chymomyza']
         if self.genus is None:
             log.warning('Feature {} lacks genus into to determine if Drosophilidae.'.format(self.uniquename))
@@ -262,7 +262,7 @@ class Allele(Feature):
         return
 
     def is_transgenic(self):
-        """Allele is transgenic if "in vitro" term or FBtp found."""
+        """Determine if allele is transgenic if "in vitro" term or FBtp found."""
         if self.mut_origin is None:
             log.warning('Allele {} has no cvterm info to make this determination.'.format(self.name))
             conclusion = None
@@ -298,7 +298,7 @@ class Allele(Feature):
         return
 
     def exists_in_dmel(self):
-        """Determines if this allele is carried in Dmel (regardless of allele's feature.orgnanism)."""
+        """Determine if this allele is carried in Dmel (regardless of allele's feature.orgnanism)."""
         if self.org_abbr is None:
             log.warning('Allele {} missing org_abbr to determine if it exists in Dmel.'.format(self.uniquename))
             conclusion = None
@@ -329,13 +329,13 @@ class Allele(Feature):
         return
 
     def agr_allele_processing(self):
-        """Runs various methods for AGR processing."""
+        """Run various methods for AGR processing."""
         self.agr_processing()
         self.get_agr_symbol_text()
         self.make_description()
 
     def classify_allele(self):
-        """Classifies allele into AGR export bins."""
+        """Classify allele into AGR export bins."""
         # Runs smaller methods to derive needed info for the decision.
         self.is_drosophilidae()
         self.is_transgenic()
@@ -370,7 +370,7 @@ class Allele(Feature):
         return
 
     def determine_gene_action(self):
-        """Determines if transgenic allele expresses, targets, or is_regulated_by its gene."""
+        """Determine if transgenic allele expresses, targets, or is_regulated_by its gene."""
         self.classify_allele()
         if self.classification == 'transgenic':
             if type(self.crispr_ko_coll) != list:

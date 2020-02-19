@@ -38,11 +38,11 @@ def set_up_db_reading(report_label):
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
     parser.add_argument('-a', '--alliance', action='store_true', help='Filenames for AGR export.', required=False)
     parser.add_argument('-c', '--config_file', help='Supply filepath to credentials, optional.', required=False)
+    # Use parse_known_args() instead of parse_args() to handle only the args relevant here without crashing.
+    # Extra arguments that may be relevant to specific scripts using this module are safely ignored.
     # args = parser.parse_args()
-    args, extra_args = parser.parse_known_args()    # This way, scripts that use other args don't break.
+    args, extra_args = parser.parse_known_args()
     log.info('These extra arguments not used by set_up_db_reading(): {}'.format(extra_args))
-    print('These extra arguments not used by set_up_db_reading(): {}'.format(extra_args))
-
 
     # Determine whether script is to run locally or in docker.
     config_file = args.config_file
