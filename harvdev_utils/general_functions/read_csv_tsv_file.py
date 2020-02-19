@@ -52,11 +52,9 @@ def check_tsv_filename(filename):
         None.
 
     """
-    log.info('Check filename "{}" for ".csv/.tsv" extension.'.format(filename))
     extensions = ('.tsv', '.csv')
-
     if filename.endswith(extensions):
-        log.debug('Filename "{}" has the expected ".csv/.tsv" extension.'.format(filename))
+        log.info('Filename "{}" has the expected ".csv/.tsv" extension.'.format(filename))
     else:
         log.warning('Filename "{}" has no ".csv/.tsv" extension.'.format(filename))
 
