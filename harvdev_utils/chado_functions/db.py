@@ -7,7 +7,7 @@ db_dict = {}
 
 
 def get_db(session, db_name):
-    """Lookup dn chsado object given name."""
+    """Lookup db chado object given name."""
     global db_dict
     try:
         return db_dict[db_name]
