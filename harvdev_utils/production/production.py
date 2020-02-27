@@ -374,6 +374,10 @@ class Cv(Base):
     name = Column(String(255), nullable=False, unique=True)
     definition = Column(Text)
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Cv: {}".format(self.name)
+
 
 class Cvterm(Base):
     __tablename__ = 'cvterm'
@@ -391,6 +395,10 @@ class Cvterm(Base):
 
     cv = relationship('Cv')
     dbxref = relationship('Dbxref', uselist=False)
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Cvterm:{} {}".format(self.name, self.cv)
 
 
 class CvtermDbxref(Base):
@@ -696,6 +704,10 @@ class Feature(Base):
     organism = relationship('Organism')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Feature id:{}: {} {} type:({}) obsolete:{}".format(self.feature_id, self.uniquename, self.name, self.type, self.is_obsolete)
+
 
 class FeatureCvterm(Base):
     __tablename__ = 'feature_cvterm'
@@ -712,6 +724,10 @@ class FeatureCvterm(Base):
     cvterm = relationship('Cvterm')
     feature = relationship('Feature')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureCvterm {}: f_id={}, cvterm_id={}, pub_id={}".format(self.feature_cvterm_id, self.cvterm_id, self.pub_id)
 
 
 class FeatureCvtermDbxref(Base):
