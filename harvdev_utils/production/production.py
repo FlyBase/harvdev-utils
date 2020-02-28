@@ -845,7 +845,7 @@ class Feature(Base):
     def __str__(self):
         """Over write the default output."""
         # ? add dbxref org?
-        return "Feature id={}: uniquename:'{}' name:'{}' obsolete:{}\n\ttype:({})".\
+        return "Feature id={}: uniquename:'{}' name:'{}' obsolete:{} type:({})".\
             format(self.feature_id, self.uniquename, self.name, self.is_obsolete, self.type)
 
 
