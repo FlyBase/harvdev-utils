@@ -9,12 +9,22 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from production import (
-    Analysisfeature, 
+    Analysisfeature,
     CellLineCvtermprop, CellLineFeature, CellLineLibraryprop,
     CellLinePub, CellLineRelationship, CellLineStrain, CellLineSynonym,
     CellLinepropPub, CvtermDbxref, CvtermRelationship, Dbxrefprop,
     ExpressionCvtermprop, ExpressionPub, Expressionprop,
-    Feature, Featureprop, Pub, FeaturePub, Organism,
+    Feature, Featureprop, FeatureCvtermDbxref, FeatureCvtermprop,
+    FeatureExpressionprop, FeatureGenotype, FeatureGrpmemberPub,
+    FeatureHumanhealthDbxref, FeatureInteractionPub, FeatureInteractionprop,
+    FeaturePhenotype, FeaturePubprop, FeatureRelationshipPub, FeatureRelationshippropPub,
+    FeatureSynonym, FeaturelocPub, Featuremap, FeaturepropPub,
+    GrpCvterm, GrpDbxref, GrpPub, GrpRelationshipPub, GrpRelationshipprop,
+    GrpmemberCvterm, GrpmemberPub, Grpmemberprop, GrppropPub,
+    HumanhealthCvtermprop, HumanhealthDbxrefpropPub, HumanhealthFeatureprop,
+    HumanhealthPubprop, HumanhealthRelationshipPub, HumanhealthSynonym,
+    HumanhealthpropPub,
+    Pub, FeaturePub, Organism,
     FeatureSynonym, Synonym
 )
 
@@ -82,8 +92,6 @@ def test_output(session):
     clf = session.query(CellLineFeature).first()
     log.info(clf)
     log.info('#####################################')
-    cllp = session.query(CellLineLibraryprop).first()
-    log.info(cllp)
     log.info('#####################################')
     clp = session.query(CellLinePub).first()
     log.info(clp)
@@ -111,9 +119,6 @@ def test_output(session):
 
     # dbxref
     dp = session.query(Dbxrefprop).first()
-    log.info(dp)
-    log.info('#####################################')
-
     # expression
     ecp = session.query(ExpressionCvtermprop).first()
     log.info(ecp)
@@ -124,6 +129,113 @@ def test_output(session):
     ecp = session.query(Expressionprop).first()
     log.info(ecp)
     log.info('#####################################')
+
+    # feature
+    f = session.query(Feature).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureCvtermprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureCvtermDbxref).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureExpressionprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureGenotype).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureGrpmemberPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureHumanhealthDbxref).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureInteractionPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureInteractionprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeaturePhenotype).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeaturePubprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureRelationshipPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureRelationshippropPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureSynonym).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeaturelocPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(Featuremap).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeaturepropPub).first()
+    log.info(f)
+    log.info('#####################################')
+
+    # grp
+    f = session.query(GrpCvterm).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrpDbxref).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrpPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrpRelationshipPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrpRelationshipprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrpmemberCvterm).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrpmemberPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(Grpmemberprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(GrppropPub).first()
+    log.info(f)
+    log.info('#####################################')
+
+    # HH
+    f = session.query(HumanhealthCvtermprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(HumanhealthDbxrefpropPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(HumanhealthFeatureprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(HumanhealthPubprop).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(HumanhealthRelationshipPub).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(HumanhealthSynonym).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(HumanhealthpropPub).first()
+    log.info(f)
+    log.info('#####################################')
+
+
 
 if __name__ == '__main__':
     session = create_postgres_session()
