@@ -1,4 +1,15 @@
-# coding: utf-8
+"""Chado Object Classes.
+
+:synopsis: Chado Object Classes.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+
+Produced originally from production_gen_init.py
+
+NOTE: If you run this again do not overwrite, instead do a diff.
+      many __str__ methods have been added to this file and this will be removed if overwritten.
+
+"""
 from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer, SmallInteger, String, Table, Text, UniqueConstraint, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -52,6 +63,10 @@ class Analysi(Base):
     sourceuri = Column(Text)
     timeexecuted = Column(DateTime, nullable=False, server_default=text("('now'::text)::timestamp(6) with time zone"))
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Anaylsis id={}:  program:'{}' sourcename:'{}'".format(self.analysis_id, self.program, self.sourcename)
+
 
 class Analysisfeature(Base):
     __tablename__ = 'analysisfeature'
@@ -70,6 +85,10 @@ class Analysisfeature(Base):
     analysis = relationship('Analysi')
     feature = relationship('Feature')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "AnalysisFeat id={}:\n\tAnalysis:({})\n\tFeature:({})".format(self.analysisfeature_id, self.analysis, self.feature)
+
 
 class Analysisgrp(Base):
     __tablename__ = 'analysisgrp'
@@ -87,6 +106,10 @@ class Analysisgrp(Base):
 
     analysis = relationship('Analysi')
     grp = relationship('Grp')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Analysisgrp id={}:\n\tAnalysis:({})\n\tGrp:({})".format(self.analysisgrp_id, self.analysis, self.grp)
 
 
 class Analysisgrpmember(Base):
@@ -152,6 +175,10 @@ class CellLine(Base):
 
     organism = relationship('Organism')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLine id={}: uniquename:'{}' name:'{}' organism:({})".format(self.cell_line_id, self.uniquename, self.name, self.organism)
+
 
 class CellLineCvterm(Base):
     __tablename__ = 'cell_line_cvterm'
@@ -169,6 +196,10 @@ class CellLineCvterm(Base):
     cvterm = relationship('Cvterm')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineCvterm id={}:\n\tcellline:({})\n\tcvterm:({})\n\tpub:({})".format(self.cell_line_cvterm_id, self.cell_line, self.cvterm, self.pub)
+
 
 class CellLineCvtermprop(Base):
     __tablename__ = 'cell_line_cvtermprop'
@@ -185,6 +216,11 @@ class CellLineCvtermprop(Base):
     cell_line_cvterm = relationship('CellLineCvterm')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineCvtermprop id={}: value:'{}' type:({}) clc:({})".\
+            format(self.cell_line_cvtermprop_id, self.value, self.type, self.cell_line_cvterm)
+
 
 class CellLineDbxref(Base):
     __tablename__ = 'cell_line_dbxref'
@@ -199,6 +235,11 @@ class CellLineDbxref(Base):
 
     cell_line = relationship('CellLine')
     dbxref = relationship('Dbxref')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineDbxref id={}: CellLine:({}) dbxef:({}) current:{}".\
+            format(self.cell_line_dbxref_id, self.cell_line, self.dbxef)
 
 
 class CellLineFeature(Base):
@@ -216,6 +257,11 @@ class CellLineFeature(Base):
     feature = relationship('Feature')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineFeature id={}:\n\tcell line:({})\n\tfeature:({})\n\tpub:({})".\
+            format(self.cell_line_feature_id, self.cell_line, self.feature, self.pub)
+
 
 class CellLineLibrary(Base):
     __tablename__ = 'cell_line_library'
@@ -231,6 +277,11 @@ class CellLineLibrary(Base):
     cell_line = relationship('CellLine')
     library = relationship('Library')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineLibrary id={}:\n\tcell line:({})\n\tlibrary:({})\n\tpub:({})".\
+            format(self.cell_line_library_id, self.cell_line, self.library, self.pub)
 
 
 class CellLineLibraryprop(Base):
@@ -248,6 +299,11 @@ class CellLineLibraryprop(Base):
     cell_line_library = relationship('CellLineLibrary')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineLibraryprop id={}: value:{} rank:{}\n\tLibrary:({})\n\tType:({})".\
+            format(self.cell_line_libraryprop_id, self.value, self.rank, self.cell_line_library, self.type)
+
 
 class CellLinePub(Base):
     __tablename__ = 'cell_line_pub'
@@ -261,6 +317,11 @@ class CellLinePub(Base):
 
     cell_line = relationship('CellLine')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLinePub id={}:\n\tcell line:({})\n\tpub:({})".\
+            format(self.cell_line_pub_id, self.cell_line, self.pub)
 
 
 class CellLineRelationship(Base):
@@ -278,6 +339,11 @@ class CellLineRelationship(Base):
     subject = relationship('CellLine', primaryjoin='CellLineRelationship.subject_id == CellLine.cell_line_id')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineRelationship id={}:\n\tObject:({})\n\tSubject:({})\n\tType({})".\
+            format(self.cell_line_relationship_id, self.object, self.subject, self.type)
+
 
 class CellLineStrain(Base):
     __tablename__ = 'cell_line_strain'
@@ -294,6 +360,11 @@ class CellLineStrain(Base):
     pub = relationship('Pub')
     strain = relationship('Strain')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineStrain id={}:\n\tcell line:({})\n\tstrain:({})\n\tpub:({})".\
+            format(self.cell_line_strain_id, self.cell_line, self.strain, self.pub)
+
 
 class CellLineStrainprop(Base):
     __tablename__ = 'cell_line_strainprop'
@@ -309,6 +380,11 @@ class CellLineStrainprop(Base):
 
     cell_line_strain = relationship('CellLineStrain')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineStrainprop id={}: value:'{}' rank:'{}'\n\tcell line strain:({})\n\tType:({})".\
+            format(self.cell_line_strainprop_id, self.value, self.rank, self.cell_line_strain, self.type)
 
 
 class CellLineSynonym(Base):
@@ -328,6 +404,11 @@ class CellLineSynonym(Base):
     pub = relationship('Pub')
     synonym = relationship('Synonym')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineSynonym id={}: is_current:{} is_internal:{}\n\tcell line:({})\n\tsynonym:({})\n\tpub:({})".\
+            format(self.cell_line_synonym_id, self.is_current, self.is_internal, self.cell_line, self.synonym, self.pub)
+
 
 class CellLineprop(Base):
     __tablename__ = 'cell_lineprop'
@@ -344,6 +425,11 @@ class CellLineprop(Base):
     cell_line = relationship('CellLine')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineprop id={}: value:'{}' rank:'{}'\n\tcell line:({})\n\ttype::({})".\
+            format(self.cell_lineprop_id, self.value, self.rank, self.cell_line, self.type)
+
 
 class CellLinepropPub(Base):
     __tablename__ = 'cell_lineprop_pub'
@@ -357,6 +443,11 @@ class CellLinepropPub(Base):
 
     cell_lineprop = relationship('CellLineprop')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CellLineproppub id={}:\n\tcell line prop:({})\n\tpub:{})".\
+            format(self.cell_lineprop_pub_id, self.cell_lineprop, self.pub)
 
 
 class Contact(Base):
@@ -373,6 +464,10 @@ class Cv(Base):
     cv_id = Column(Integer, primary_key=True, server_default=text("nextval('cv_cv_id_seq'::regclass)"))
     name = Column(String(255), nullable=False, unique=True)
     definition = Column(Text)
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Cv id={}: name:'{}'".format(self.cv_id, self.name)
 
 
 class Cvterm(Base):
@@ -392,6 +487,10 @@ class Cvterm(Base):
     cv = relationship('Cv')
     dbxref = relationship('Dbxref', uselist=False)
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Cvterm id={}: name:'{}' cv:({})".format(self.cvterm_id, self.name, self.cv)
+
 
 class CvtermDbxref(Base):
     __tablename__ = 'cvterm_dbxref'
@@ -406,6 +505,11 @@ class CvtermDbxref(Base):
 
     cvterm = relationship('Cvterm')
     dbxref = relationship('Dbxref')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CvtermDbxref id={}: is_for_definition:{}\n\tcvterm:({})\n\tdbxref:({})".\
+            format(self.cvterm_dbxref_id, self.is_for_definition, self.cvterm, self.dbxref)
 
 
 class CvtermRelationship(Base):
@@ -422,6 +526,11 @@ class CvtermRelationship(Base):
     object = relationship('Cvterm', primaryjoin='CvtermRelationship.object_id == Cvterm.cvterm_id')
     subject = relationship('Cvterm', primaryjoin='CvtermRelationship.subject_id == Cvterm.cvterm_id')
     type = relationship('Cvterm', primaryjoin='CvtermRelationship.type_id == Cvterm.cvterm_id')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "CvtermRelationship id={}:\n\tobject:({})\n\tsubject:({})\n\ttype:({})".\
+            format(self.cvterm_relationship_id, self.object, self.subject, self.type)
 
 
 t_cvterm_type = Table(
@@ -493,6 +602,10 @@ class Db(Base):
 
     contact = relationship('Contact')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Db id={}: name:'{}'".format(self.db_id, self.name)
+
 
 class Dbxref(Base):
     __tablename__ = 'dbxref'
@@ -509,6 +622,10 @@ class Dbxref(Base):
 
     db = relationship('Db')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Dbxref id={}: acc:'{}' Db:({})".format(self.dbxref_id, self.accession, self.db)
+
 
 class Dbxrefprop(Base):
     __tablename__ = 'dbxrefprop'
@@ -524,6 +641,11 @@ class Dbxrefprop(Base):
 
     dbxref = relationship('Dbxref')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Dbxrefprop id={}: value:'{}' rank:'{}'\n\tdbxref:({})\n\ttype:({})".\
+            format(self.dbxrefprop_id, self.value, self.rank, self.dbxref, self.type)
 
 
 class Eimage(Base):
@@ -565,6 +687,10 @@ class Expression(Base):
     md5checksum = Column(String(32))
     description = Column(Text)
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Expression id={}: uniquename:{} description:{}".format(self.expression_id, self.uniquename, self.description)
+
 
 class ExpressionCvterm(Base):
     __tablename__ = 'expression_cvterm'
@@ -582,6 +708,11 @@ class ExpressionCvterm(Base):
     cvterm_type = relationship('Cvterm', primaryjoin='ExpressionCvterm.cvterm_type_id == Cvterm.cvterm_id')
     expression = relationship('Expression')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "ExpressionCvterm id={}: rank:'{}'\n\tcvterm:({})\n\ttype:({})\n\texpression:({})".\
+            format(self.expression_cvterm_id, self.rank, self.cvterm, self.cvterm_type, self.expression)
+
 
 class ExpressionCvtermprop(Base):
     __tablename__ = 'expression_cvtermprop'
@@ -597,6 +728,11 @@ class ExpressionCvtermprop(Base):
 
     expression_cvterm = relationship('ExpressionCvterm')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "ExpressionCvtermprop id={}: value:'{}' rank:'{}'\n\texp_cvt:({})\n\ttype:({})".\
+            format(self.expression_cvtermprop_id, self.value, self.rank, self.expression_cvterm, self.type)
 
 
 class ExpressionImage(Base):
@@ -626,6 +762,11 @@ class ExpressionPub(Base):
     expression = relationship('Expression')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "ExpressionPub id={}:\n\texpression:({})\n\tpub:({})".\
+            format(self.expression_pub_id, self.expression, self.pub)
+
 
 class Expressionprop(Base):
     __tablename__ = 'expressionprop'
@@ -641,6 +782,11 @@ class Expressionprop(Base):
 
     expression = relationship('Expression')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Expressionprop id={}: value:'{}' rank:'{}'\n\texpression:({})\n\ttype:({})".\
+            format(self.expressionprop_id, self.expression, self.type)
 
 
 t_f_loc = Table(
@@ -696,6 +842,12 @@ class Feature(Base):
     organism = relationship('Organism')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        # ? add dbxref org?
+        return "Feature id={}: uniquename:'{}' name:'{}' obsolete:{} type:({})".\
+            format(self.feature_id, self.uniquename, self.name, self.is_obsolete, self.type)
+
 
 class FeatureCvterm(Base):
     __tablename__ = 'feature_cvterm'
@@ -713,6 +865,11 @@ class FeatureCvterm(Base):
     feature = relationship('Feature')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureCvterm id={}: is_not={}\n\tcvterm:({})\n\tfeature:({})\n\tpub:({})".\
+            format(self.feature_cvterm_id, self.is_not, self.cvterm, self.feature, self.pub)
+
 
 class FeatureCvtermDbxref(Base):
     __tablename__ = 'feature_cvterm_dbxref'
@@ -726,6 +883,11 @@ class FeatureCvtermDbxref(Base):
 
     dbxref = relationship('Dbxref')
     feature_cvterm = relationship('FeatureCvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureCvtermDbxref id={}:\n\tdbxref:({})\n\tfeat_cvterm:({})".\
+            format(self.feature_cvterm_dbxref_id, self.dbxref, self.feature_cvterm)
 
 
 class FeatureCvtermprop(Base):
@@ -743,6 +905,11 @@ class FeatureCvtermprop(Base):
     feature_cvterm = relationship('FeatureCvterm')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureCvtermprop id={}: value='{}' rank='{}'\n\tfeat_cvterm:({})\n\ttype:({})".\
+            format(self.feature_cvtermprop_id, self.value, self.rank, self.feature_cvterm, self.type)
+
 
 class FeatureDbxref(Base):
     __tablename__ = 'feature_dbxref'
@@ -757,6 +924,11 @@ class FeatureDbxref(Base):
 
     dbxref = relationship('Dbxref')
     feature = relationship('Feature')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureDbxref id={}: is_current:{}\n\tdbxref:({})\n\tfeature:({})".\
+            format(self.feature_dbxref_id, self.is_current, self.dbxref, self.feature)
 
 
 class FeatureExpression(Base):
@@ -774,6 +946,11 @@ class FeatureExpression(Base):
     feature = relationship('Feature')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureExpression id={}:\n\texpression:({})\n\tfeature:({})\n\tpub:({})".\
+            format(self.feature_expression_id, self.expression, self.feature, self.pub)
+
 
 class FeatureExpressionprop(Base):
     __tablename__ = 'feature_expressionprop'
@@ -789,6 +966,11 @@ class FeatureExpressionprop(Base):
 
     feature_expression = relationship('FeatureExpression')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureExpressionprop id={}: value:'{}' rank:'{}'\n\tfeat exp:({})\n\ttype:({})".\
+            format(self.feature_expressionprop_id, self.value, self.rank, self.feature_expression, self.type)
 
 
 class FeatureGenotype(Base):
@@ -810,6 +992,12 @@ class FeatureGenotype(Base):
     feature = relationship('Feature', primaryjoin='FeatureGenotype.feature_id == Feature.feature_id')
     genotype = relationship('Genotype')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureGenotype id={}: rank:'{}' cgroup:'{}'\n\tchrom:({})\n\tfeat:({})\n\tgenotype:({})\n\tcvterm:({})".\
+            format(self.feature_genotype_id, self.rank, self.cgroup, self.chromosome, self.feature, self.genotype, self.cvterm)
+
+
 
 class FeatureGrpmember(Base):
     __tablename__ = 'feature_grpmember'
@@ -824,6 +1012,11 @@ class FeatureGrpmember(Base):
     feature = relationship('Feature')
     grpmember = relationship('Grpmember')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureGrpmember id={}:\n\tfeature({})\n\tgrpmember:({})".\
+            format(self.feature_grpmember_id, self.feature, self.grpmember)
+
 
 class FeatureGrpmemberPub(Base):
     __tablename__ = 'feature_grpmember_pub'
@@ -837,6 +1030,11 @@ class FeatureGrpmemberPub(Base):
 
     feature_grpmember = relationship('FeatureGrpmember')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureGrpmemberPub id={}:\n\tfeature_grpmember:({})\n\tpub({})".\
+            format(self.feature_grpmember_pub_id, self.feature_grpmember, self.pub)
 
 
 class FeatureHumanhealthDbxref(Base):
@@ -853,6 +1051,11 @@ class FeatureHumanhealthDbxref(Base):
     feature = relationship('Feature')
     humanhealth_dbxref = relationship('HumanhealthDbxref')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureHumanhealthDbxref id={}:\n\tfeature:({})\n\thh_dbxref:({})\n\tpub:({})".\
+            format(self.feature_humanhealth_dbxref_id, self.feature, self.humanhealth_dbxref, self.pub)
 
 
 class FeatureInteraction(Base):
@@ -871,6 +1074,11 @@ class FeatureInteraction(Base):
     interaction = relationship('Interaction')
     role = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureInteraction id={}: rank:'{}'\n\tfeature:({})\n\tinteraction:({})\n\trole:({})".\
+            format(self.feature_interaction_id, self.rank, self.feature, self.interaction, self.role)
+
 
 class FeatureInteractionPub(Base):
     __tablename__ = 'feature_interaction_pub'
@@ -884,6 +1092,11 @@ class FeatureInteractionPub(Base):
 
     feature_interaction = relationship('FeatureInteraction')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureInteractionPub id={}:\n\tFI:({})\n\tPub:({})".\
+            format(self.feature_interaction_pub_id, self.feature_interaction, self.pub)
 
 
 class FeatureInteractionprop(Base):
@@ -901,6 +1114,11 @@ class FeatureInteractionprop(Base):
     feature_interaction = relationship('FeatureInteraction')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureInteractionprop id={}: value:'{}' rank:'{}'\n\tFI:({})\n\ttype:({})".\
+            format(self.feature_interactionprop_id, self.value, self.rank, self.feature_interaction, self.type)
+
 
 class FeaturePhenotype(Base):
     __tablename__ = 'feature_phenotype'
@@ -915,6 +1133,11 @@ class FeaturePhenotype(Base):
     feature = relationship('Feature')
     phenotype = relationship('Phenotype')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeaturePhenotype id={}:\n\tFeat:({})\n\tPhenotype:({})".\
+            format(self.feature_phenotype_id, self.feature, self.type)
+
 
 class FeaturePub(Base):
     __tablename__ = 'feature_pub'
@@ -928,6 +1151,11 @@ class FeaturePub(Base):
 
     feature = relationship('Feature')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeaturePub id={}:\n\tFeat:({})\n\tPub:({})".\
+            format(self.feature_pub_id, self.feature, self.pub)
 
 
 class FeaturePubprop(Base):
@@ -944,6 +1172,11 @@ class FeaturePubprop(Base):
 
     feature_pub = relationship('FeaturePub')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeaturePubprop id={}: value:'{}' rank:'{}'\nFeatPub:({})\n\ttype:({})".\
+            format(self.feature_pubprop_id, self.value, self.rank, self.feature_pub, self.type)
 
 
 class FeatureRelationship(Base):
@@ -963,6 +1196,11 @@ class FeatureRelationship(Base):
     subject = relationship('Feature', primaryjoin='FeatureRelationship.subject_id == Feature.feature_id')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
+            format(self.feature_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
+
 
 class FeatureRelationshipPub(Base):
     __tablename__ = 'feature_relationship_pub'
@@ -976,6 +1214,11 @@ class FeatureRelationshipPub(Base):
 
     feature_relationship = relationship('FeatureRelationship')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureRelationshipPub id={}:\n\tFR:({})\n\tPub:({})".\
+            format(self.feature_relationship_pub_id, self.feature_relationship, self.pub)
 
 
 class FeatureRelationshipprop(Base):
@@ -993,6 +1236,11 @@ class FeatureRelationshipprop(Base):
     feature_relationship = relationship('FeatureRelationship')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureRelationshipprop id={}: value:'{}' rank: '{}' \n\tFR:({})\n\ttype:({})".\
+            format(self.feature_relationshipprop_id, self.value, self.rank, self.feature_relationship, self.type)
+
 
 class FeatureRelationshippropPub(Base):
     __tablename__ = 'feature_relationshipprop_pub'
@@ -1006,6 +1254,11 @@ class FeatureRelationshippropPub(Base):
 
     feature_relationshipprop = relationship('FeatureRelationshipprop')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureRelationshipproPub id={}:\n\tFRP:({})\n\tpub:({})".\
+            format(self.feature_relationshipprop_pub_id, self.feature_relationshipprop, self.pub)
 
 
 class FeatureSynonym(Base):
@@ -1024,6 +1277,11 @@ class FeatureSynonym(Base):
     feature = relationship('Feature')
     pub = relationship('Pub')
     synonym = relationship('Synonym')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeatureSynonym id={}: is_current:'{}' is_internal:'{}'\n\tFeat:({})\n\tSyn:({})\n\tPub:({})".\
+            format(self.feature_synonym_id, self.is_current, self.is_internal, self.feature, self.synonym, self.pub)
 
 
 class Featureloc(Base):
@@ -1049,6 +1307,11 @@ class Featureloc(Base):
 
     feature = relationship('Feature', primaryjoin='Featureloc.feature_id == Feature.feature_id')
     srcfeature = relationship('Feature', primaryjoin='Featureloc.srcfeature_id == Feature.feature_id')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Featureloc id={}:fmin:'{}' fmax:'{}' is_fmin_partial:'{}' is_fmax_partial:'{}' strand:'{}' phase:'{}' residue_info:'{}' locgroup:'{}' rank:'{}'\n\tFeat:({})\n\tsrcfeat:({})".\
+            format(self.featureloc_id, self.fmin, self.fmax, self.is_fmin_partial, self.is_fmax_partial, self.strand, self.phase, self.residue_info, self.locgroup, self.rank, self.feature, self.srcfeature)
 
 
 t_featureloc_allcoords = Table(
@@ -1085,6 +1348,10 @@ class FeaturelocPub(Base):
     featureloc = relationship('Featureloc')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "FeaturelocPub id={}:\n\tFL:({})\n\tPub:({})".\
+            format(self.featureloc_pub_id, self.featureloc, self.pub)
 
 class Featuremap(Base):
     __tablename__ = 'featuremap'
@@ -1096,6 +1363,11 @@ class Featuremap(Base):
 
     unittype = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Featuremap id={}: name:'{}' description:'{}'\n\ttype:({})".\
+            format(self.featuremap_id, self.name, self.description, self.unittype)
+
 
 class FeaturemapPub(Base):
     __tablename__ = 'featuremap_pub'
@@ -1106,6 +1378,11 @@ class FeaturemapPub(Base):
 
     featuremap = relationship('Featuremap')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeaturemapPub id={}:\n\tFm:({})\n\tPub:({})".\
+            format(self.featuremap_pub_id, self.featuremap, self.pub)
 
 
 class Featurepo(Base):
@@ -1120,6 +1397,10 @@ class Featurepo(Base):
     feature = relationship('Feature', primaryjoin='Featurepo.feature_id == Feature.feature_id')
     featuremap = relationship('Featuremap')
     map_feature = relationship('Feature', primaryjoin='Featurepo.map_feature_id == Feature.feature_id')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Not used in flybase"
 
 
 class Featureprop(Base):
@@ -1137,6 +1418,11 @@ class Featureprop(Base):
     feature = relationship('Feature')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Featureprop id={}: value:'{}' rank:'{}'\n\tfeat:({})\n\ttype:({})".\
+            format(self.featureprop_id, self.value, self.rank, self.feature, self.type)
+
 
 class FeaturepropPub(Base):
     __tablename__ = 'featureprop_pub'
@@ -1150,6 +1436,11 @@ class FeaturepropPub(Base):
 
     featureprop = relationship('Featureprop')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "FeaturepropPub id={}:\n\tfeatprop:({})\n\tpub:({})".\
+            format(self.featureprop_pub_id, self.featureprop, self.pub)
 
 
 class Featurerange(Base):
@@ -1206,6 +1497,11 @@ class Genotype(Base):
     description = Column(String(255))
     name = Column(Text, index=True)
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Genotype id ={}: uniquename:'{}' name:'{}' description:'{}'".\
+            format(self.genotype_id, self.uniquename, self.name, self.description)
+
 
 t_gffatts_slim = Table(
     'gffatts_slim', metadata,
@@ -1238,6 +1534,11 @@ class Grp(Base):
 
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Grp id={}: uniquename:'{}' name:'{}' is_analysis:'{}' is_obsolete:'{}'\n\ttype:({})".\
+            format(self.grp_id, self.uniquename, self.name, self.is_analysis, self.is_obsolete, self.type)
+
 
 class GrpCvterm(Base):
     __tablename__ = 'grp_cvterm'
@@ -1255,6 +1556,11 @@ class GrpCvterm(Base):
     grp = relationship('Grp')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpCvterm id={}: is_not:'{}'\n\tgrp:({})\n\tcvterm:({})\n\tpub:({})".\
+            format(self.grp_cvterm_id, self.is_not, self.grp, self.cvterm,self.pub)
+
 
 class GrpDbxref(Base):
     __tablename__ = 'grp_dbxref'
@@ -1270,6 +1576,11 @@ class GrpDbxref(Base):
     dbxref = relationship('Dbxref')
     grp = relationship('Grp')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpDbxref id={}: is_current:'{}'\n\tgrp:({})\n\tdbxref:({})".\
+            format(self.grp_dbxref_id, self.is_current, self.grp, self.dbxref)
+
 
 class GrpPub(Base):
     __tablename__ = 'grp_pub'
@@ -1283,6 +1594,11 @@ class GrpPub(Base):
 
     grp = relationship('Grp')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpPub id={}:\n\tgrp:({})\n\tpub:({})".\
+            format(self.grp_pub_id, self.grp, self.pub)
 
 
 class GrpPubprop(Base):
@@ -1299,6 +1615,11 @@ class GrpPubprop(Base):
 
     grp_pub = relationship('GrpPub')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpPubprop id={}: value:'{}' rank:'{}'\n\tgrp_pub:({})\n\ttype:({})".\
+            format(self.grp_pubprop_id, self.value, self.rank, self.grp_pub, self.type)
 
 
 class GrpRelationship(Base):
@@ -1318,6 +1639,11 @@ class GrpRelationship(Base):
     subject = relationship('Grp', primaryjoin='GrpRelationship.subject_id == Grp.grp_id')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
+            format(self.grp_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
+
 
 class GrpRelationshipPub(Base):
     __tablename__ = 'grp_relationship_pub'
@@ -1331,6 +1657,11 @@ class GrpRelationshipPub(Base):
 
     grp_relationship = relationship('GrpRelationship')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpRelationshipPub id={}:\n\tGR:({})\n\tPub:({})".\
+            format(self.grp_relationship_pub_id, self.grp_relationship, self.pub)
 
 
 class GrpRelationshipprop(Base):
@@ -1347,6 +1678,11 @@ class GrpRelationshipprop(Base):
 
     grp_relationship = relationship('GrpRelationship')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpRelationshipprop id={}: value:'{}' rank:'{}' \n\tGR:({})\n\ttype:({})".\
+            format(self.grp_relationshipprop_id, self.value, self.rank, self.grp_relationship, self.type)
 
 
 class GrpSynonym(Base):
@@ -1381,6 +1717,11 @@ class Grpmember(Base):
     grp = relationship('Grp')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Grpmember id={}: rank:'{}'\n\tgrp:({})\n\ttype:({})".\
+            format(self.grpmember_id, self.rank, self.grp, self.type)
+
 
 class GrpmemberCvterm(Base):
     __tablename__ = 'grpmember_cvterm'
@@ -1398,6 +1739,11 @@ class GrpmemberCvterm(Base):
     grpmember = relationship('Grpmember')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpmemberCvterm id={}: is_not:'{}'\n\tGrpmem:({})\n\ttype:({})\n\tpub:({})".\
+            format(self.grpmember_cvterm_id, self.is_not, self.grpmember, self.cvterm, self.pub)
+
 
 class GrpmemberPub(Base):
     __tablename__ = 'grpmember_pub'
@@ -1411,6 +1757,11 @@ class GrpmemberPub(Base):
 
     grpmember = relationship('Grpmember')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpmemberPub id={}:\n\tGrpmem:({})\n\tGrpMemPub:({})\n\tPub:({})".\
+            format(self.grpmember_pub_id, self.grpmember, self.pub)
 
 
 class Grpmemberprop(Base):
@@ -1427,6 +1778,11 @@ class Grpmemberprop(Base):
 
     grpmember = relationship('Grpmember')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Grpmemberprop id={}: vlaue:'{}' rank:'{}' GrpMem:({})\n\ttype:({})".\
+            format(self.grpmemberprop_id. self.value, self.rank, self.grpmember, self.type)
 
 
 class GrpmemberpropPub(Base):
@@ -1458,6 +1814,11 @@ class Grpprop(Base):
     grp = relationship('Grp')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Grpprop id={}: value:'{}' rank:'{}'\n\tGrp:({})\n\ttype:({})".\
+            format(self.grpprop_id, self.value, self.rank, self.grp, self.type)
+
 
 class GrppropPub(Base):
     __tablename__ = 'grpprop_pub'
@@ -1471,6 +1832,11 @@ class GrppropPub(Base):
 
     grpprop = relationship('Grpprop')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrppropPub id={}:\n\tgrpprop:({})\n\tPub:({})".\
+            format(self.grpprop_pub_id, self.grpprop, self.pub)
 
 
 class Humanhealth(Base):
@@ -1489,6 +1855,10 @@ class Humanhealth(Base):
     dbxref = relationship('Dbxref')
     organism = relationship('Organism')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Humanhealth id={}: uniquename:'{}' name:'{}' is_obsolete:'{}'\n\rorg:({})\n\tdbxref:({})".\
+            format(self.humanhealth_id, self.uniquename, self.name, self.is_obsolete, self.organism, self.dbxref)
 
 class HumanhealthCvterm(Base):
     __tablename__ = 'humanhealth_cvterm'
@@ -1504,6 +1874,11 @@ class HumanhealthCvterm(Base):
     cvterm = relationship('Cvterm')
     humanhealth = relationship('Humanhealth')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthCvterm id={}:\n\tHH:({})\n\tcvterm:({})\n\tPub:({})".\
+            format(self.humanhealth_cvterm_id, self.humanhealth, self.cvterm, self.pub)
 
 
 class HumanhealthCvtermprop(Base):
@@ -1521,6 +1896,11 @@ class HumanhealthCvtermprop(Base):
     humanhealth_cvterm = relationship('HumanhealthCvterm')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthCvtermprop id={}: value:'{}' rank:'{}'\n\tHHcvterm:({})\n\ttype:({})".\
+            format(self.humanhealth_cvtermprop_id, self.value, self.rank, self.humanhealth_cvterm, self.type)
+
 
 class HumanhealthDbxref(Base):
     __tablename__ = 'humanhealth_dbxref'
@@ -1535,6 +1915,11 @@ class HumanhealthDbxref(Base):
 
     dbxref = relationship('Dbxref')
     humanhealth = relationship('Humanhealth')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthDbxref id={}: is_current:'{}'\n\thh:({})\n\tdbxref:({})".\
+            format(self.humanhealth_dbxref_id, self.is_current, self.humanhealth, self.dbxref)
 
 
 class HumanhealthDbxrefprop(Base):
@@ -1552,6 +1937,11 @@ class HumanhealthDbxrefprop(Base):
     humanhealth_dbxref = relationship('HumanhealthDbxref')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthDbxrefprop id={}: value:'{}' rank:'{}'\n\tHHDnxref:({})\n\ttype:({})".\
+            format(self.humanhealth_dbxrefprop_id, self.value, self.rank, self.humanhealth_dbxref, self.type)
+
 
 class HumanhealthDbxrefpropPub(Base):
     __tablename__ = 'humanhealth_dbxrefprop_pub'
@@ -1565,6 +1955,11 @@ class HumanhealthDbxrefpropPub(Base):
 
     humanhealth_dbxrefprop = relationship('HumanhealthDbxrefprop')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthDbxrefpropPub id={}:\n\tHHDp:({})\n\tPub:({})".\
+            format(self.humanhealth_dbxrefprop_pub_id, self.humanhealth_dbxrefprop, self.pub)
 
 
 class HumanhealthFeature(Base):
@@ -1582,6 +1977,11 @@ class HumanhealthFeature(Base):
     humanhealth = relationship('Humanhealth')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthFeature id={}:\n\tHH:({})\n\tFeat:({})\n\tpub:({})".\
+            format(self.humanhealth_feature_id, self.humanhealth, self.feature, self.pub)
+
 
 class HumanhealthFeatureprop(Base):
     __tablename__ = 'humanhealth_featureprop'
@@ -1597,6 +1997,11 @@ class HumanhealthFeatureprop(Base):
 
     humanhealth_feature = relationship('HumanhealthFeature')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthFeatureprop id={}: value:'{} rank:'{}'\n\tHHF:({})\n\ttype:({})".\
+            format(self.humanhealth_featureprop_id, self.value, self.rank, self.humanhealth_feature, self.type)
 
 
 class HumanhealthPhenotype(Base):
@@ -1644,6 +2049,11 @@ class HumanhealthPub(Base):
     humanhealth = relationship('Humanhealth')
     pub = relationship('Pub')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthPub id={}:\n\tHH:({})\n\tPub:({})".\
+            format(self.humanhealth_pub_id, self.humanhealth, self.pub)
+
 
 class HumanhealthPubprop(Base):
     __tablename__ = 'humanhealth_pubprop'
@@ -1659,6 +2069,11 @@ class HumanhealthPubprop(Base):
 
     humanhealth_pub = relationship('HumanhealthPub')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthPubprop id={}: value:'{}' rank:'{}'\n\tHHpub:({})\n\ttype:({})".\
+            format(self.humanhealth_pubprop_id, self.value, self.rank, self.humanhealth_pub, self.type)
 
 
 class HumanhealthRelationship(Base):
@@ -1678,6 +2093,11 @@ class HumanhealthRelationship(Base):
     subject = relationship('Humanhealth', primaryjoin='HumanhealthRelationship.subject_id == Humanhealth.humanhealth_id')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
+            format(self.humanhealth_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
+
 
 class HumanhealthRelationshipPub(Base):
     __tablename__ = 'humanhealth_relationship_pub'
@@ -1691,6 +2111,11 @@ class HumanhealthRelationshipPub(Base):
 
     humanhealth_relationship = relationship('HumanhealthRelationship')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthRelationshipPub id={}:\n\tHHR:({})\n\tPun:({})".\
+            format(self.humanhealth_relationship_pub_id, self.humanhealth_relationship, self.pub)
 
 
 class HumanhealthSynonym(Base):
@@ -1710,6 +2135,11 @@ class HumanhealthSynonym(Base):
     pub = relationship('Pub')
     synonym = relationship('Synonym')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthSynonym id={}: is_current:'{}' is_internal:'{}'\n\tHH:({})\n\tSyn:({})\n\tPub:({})".\
+            format(self.humanhealth_synonym_id, self.is_current, self.is_internal, self.humanhealth, self.synonym, self.pub)
+
 
 class Humanhealthprop(Base):
     __tablename__ = 'humanhealthprop'
@@ -1726,6 +2156,10 @@ class Humanhealthprop(Base):
     humanhealth = relationship('Humanhealth')
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Humanhealthprop id={}: value:'{}' rank:'{}'\n\tHH:({})\n\ttype:({})".\
+            format(self.humanhealthprop_id, self.value, self.rank, self.humanhealth, self.type)
 
 class HumanhealthpropPub(Base):
     __tablename__ = 'humanhealthprop_pub'
@@ -1739,6 +2173,11 @@ class HumanhealthpropPub(Base):
 
     humanhealthprop = relationship('Humanhealthprop')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "HumanhealthpropPub id={}:\n\tHHprop:({}) Pub:({})".\
+            format(self.humanhealthprop_pub_id, self.humanhealthprop, self.pub)
 
 
 class Interaction(Base):
@@ -1755,6 +2194,11 @@ class Interaction(Base):
 
     type = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Interaction id={}: uniquename:'{}' is_obsolte:'{}', description:'{}'\n\ttype:({})".\
+            format(self.interaction_id, self.uniquename, self.is_obsolete, self.description, self.type)
+
 
 class InteractionCellLine(Base):
     __tablename__ = 'interaction_cell_line'
@@ -1770,6 +2214,11 @@ class InteractionCellLine(Base):
     cell_line = relationship('CellLine')
     interaction = relationship('Interaction')
     pub = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "InteractionCellLine id={}:\n\tInteraction:({})\n\tCell line:({})\n\tPub:({})".\
+            format(self.interaction_cell_line_id, self.interaction, cell_line, self.pub)
 
 
 class InteractionCvterm(Base):
@@ -1920,6 +2369,11 @@ class Library(Base):
 
     organism = relationship('Organism')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Library id={}: uniquename:{} name:{} obsolete:{}\n\torg:({})\n\ttype:({})".\
+            format(self.library_id, self.uniquename, self.name, self.is_obsolete, self.organism, self.type)
 
 
 class LibraryCvterm(Base):
@@ -2265,6 +2719,11 @@ class Organism(Base):
     common_name = Column(String(255))
     comment = Column(Text)
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Organism id={}: abbr:'{}' genus:'{}' species:'{}'".\
+            format(self.organism_id, self.abbreviation, self.genus, self.species)
+
 
 class OrganismCvterm(Base):
     __tablename__ = 'organism_cvterm'
@@ -2534,6 +2993,11 @@ class Pub(Base):
     uniquename = Column(Text, nullable=False, unique=True)
 
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Pub id={}: uniquename:{} title:'{}' miniref:'{}' type:({}) obsolete:'{}'".\
+            format(self.pub_id, self.uniquename, self.title, self.miniref, self.type, self.is_obsolete)
 
 
 class PubDbxref(Base):
@@ -2834,6 +3298,11 @@ class Synonym(Base):
     synonym_sgml = Column(String(255), nullable=False, index=True)
 
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Synonym id={}: name:'{}' synonym_sgml:'{}'\n\ttype:({})".\
+            format(self.synonym_id, self.name, self.synonym_sgml, self.type)
 
 
 class Tableinfo(Base):
