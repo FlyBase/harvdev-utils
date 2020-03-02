@@ -23,9 +23,7 @@ from production import (
     GrpmemberCvterm, GrpmemberPub, Grpmemberprop, GrppropPub,
     HumanhealthCvtermprop, HumanhealthDbxrefpropPub, HumanhealthFeatureprop,
     HumanhealthPubprop, HumanhealthRelationshipPub, HumanhealthSynonym,
-    HumanhealthpropPub,
-    Pub, FeaturePub, Organism,
-    FeatureSynonym, Synonym
+    HumanhealthpropPub
 )
 
 
@@ -108,6 +106,9 @@ def test_output(session):
     clpp = session.query(CellLinepropPub).first()
     log.info(clpp)
     log.info('#####################################')
+    clpp = session.query(CellLineLibraryprop).first()
+    log.info(clpp)
+    log.info('#####################################')
 
     # cvterms
     cd = session.query(CvtermDbxref).first()
@@ -119,6 +120,9 @@ def test_output(session):
 
     # dbxref
     dp = session.query(Dbxrefprop).first()
+    log.info(dp)
+    log.info('#####################################')
+
     # expression
     ecp = session.query(ExpressionCvtermprop).first()
     log.info(ecp)
@@ -132,6 +136,12 @@ def test_output(session):
 
     # feature
     f = session.query(Feature).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(FeatureSynonym).first()
+    log.info(f)
+    log.info('#####################################')
+    f = session.query(Featureprop).first()
     log.info(f)
     log.info('#####################################')
     f = session.query(FeatureCvtermprop).first()
@@ -234,7 +244,6 @@ def test_output(session):
     f = session.query(HumanhealthpropPub).first()
     log.info(f)
     log.info('#####################################')
-
 
 
 if __name__ == '__main__':
