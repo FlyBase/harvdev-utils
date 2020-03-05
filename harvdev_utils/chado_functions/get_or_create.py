@@ -36,7 +36,7 @@ def get_or_create(session, model, **kwargs):
     unique_constraints_list = unique_constraints[0]['column_names']
 
     # Perform our query with only filters found as unique_constraints (minus rank).
-    constraint_kwargs = {k: kwargs[k] for k in unique_constraints_list if k != 'rank' and k in kwargs}
+    constraint_kwargs = {k: kwargs[k] for k in unique_constraints_list if k != 'rank' and k in kwargs.keys()}
 
     if 'rank' in model.__table__.columns:
         log.debug('Found rank column in {}'.format(model.__tablename__))
