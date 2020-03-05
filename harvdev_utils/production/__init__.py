@@ -1,4 +1,4 @@
-from .production import Analysi
+from .production import Analysis
 from .production import Analysisfeature
 from .production import Analysisgrp
 from .production import Analysisgrpmember
