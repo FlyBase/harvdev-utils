@@ -46,7 +46,7 @@ t_alignment_evidence = Table(
 )
 
 
-class Analysi(Base):
+class Analysis(Base):
     __tablename__ = 'analysis'
     __table_args__ = (
         UniqueConstraint('program', 'programversion', 'sourcename'),
@@ -65,7 +65,7 @@ class Analysi(Base):
 
     def __str__(self):
         """Over write the default output."""
-        return "Anaylsis id={}:  program:'{}' sourcename:'{}'".format(self.analysis_id, self.program, self.sourcename)
+        return "Analysis id={}:  program:'{}' sourcename:'{}'".format(self.analysis_id, self.program, self.sourcename)
 
 
 class Analysisfeature(Base):
@@ -82,7 +82,7 @@ class Analysisfeature(Base):
     significance = Column(Float(53))
     identity = Column(Float(53))
 
-    analysis = relationship('Analysi')
+    analysis = relationship('Analysis')
     feature = relationship('Feature')
 
     def __str__(self):
@@ -104,7 +104,7 @@ class Analysisgrp(Base):
     analysis_id = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     grp_id = Column(ForeignKey('grp.grp_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
-    analysis = relationship('Analysi')
+    analysis = relationship('Analysis')
     grp = relationship('Grp')
 
     def __str__(self):
@@ -126,7 +126,7 @@ class Analysisgrpmember(Base):
     analysis_id = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
-    analysis = relationship('Analysi')
+    analysis = relationship('Analysis')
     grpmember = relationship('Grpmember')
 
 
@@ -141,7 +141,7 @@ class Analysisprop(Base):
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
 
-    analysis = relationship('Analysi')
+    analysis = relationship('Analysis')
     type = relationship('Cvterm')
 
 
