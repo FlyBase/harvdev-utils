@@ -29,20 +29,18 @@ def get_or_create(session, model, **kwargs):
     engine = session.get_bind()
     insp = inspect(engine)  # Used for inspecting the schema when needed.
 
-    # Get our unique constraints. We need to query with *only* these in order to get the correct rank value.
-    unique_constraints = insp.get_unique_constraints(model.__tablename__)
-    log.debug('Unique constraints are {}'.format(unique_constraints))
-
-    unique_constraints_list = unique_constraints[0]['column_names']
-
-    # Perform our query with only filters found as unique_constraints (minus rank).
-    constraint_kwargs = {k: kwargs[k] for k in unique_constraints_list if k != 'rank' and k in kwargs.keys()}
-
     if 'rank' in model.__table__.columns:
         log.debug('Found rank column in {}'.format(model.__tablename__))
+        # Get our unique constraints. We need to query with *only* these in order to get the correct rank value.
+        unique_constraints = insp.get_unique_constraints(model.__tablename__)
+        unique_constraints_list = unique_constraints[0]['column_names']
+        log.debug('Unique constraints are {}'.format(unique_constraints))
+
+        # Perform our query with only filters found as unique_constraints (minus rank).
+        max_rank_kwargs = {k: kwargs[k] for k in unique_constraints_list if k != 'rank'}
 
         max_rank = session.query(func.max(model.rank)).\
-            filter_by(**constraint_kwargs).\
+            filter_by(**max_rank_kwargs).\
             one()
 
         if max_rank[0] is None:
@@ -65,7 +63,7 @@ def get_or_create(session, model, **kwargs):
             created = model(**kwargs)
     else:
         try:
-            attempt = session.query(model).filter_by(**constraint_kwargs).one()
+            attempt = session.query(model).filter_by(**kwargs).one()
             log.debug('Found previous entry for %s, insert not required.' % (kwargs))
             return attempt, False
         except NoResultFound:
