@@ -57,7 +57,7 @@ db_alias = {'omim_phenotype': 'omim'}
 
 class ExternalLookup:
     def __init__(self, dbname, external_id=None, name=None, get_synonyms=False):
-        log.info('Initializing Lookup object.')
+        log.debug('Initializing Lookup object.')
         self.external_id = external_id
         self.dbname = dbname.lower()
         self.name = name
