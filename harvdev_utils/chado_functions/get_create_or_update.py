@@ -47,7 +47,7 @@ def get_create_or_update(session, model, **kwargs):
         log.debug('Previous entry for %s not found. Checking unique constraint query.' % (kwargs))
 
         # Perform our query with only filters found as unique_constraints.
-        constraint_kwargs = {k: kwargs[k] for k in unique_constraints_list}
+        constraint_kwargs = {k: kwargs[k] for k in unique_constraints_list if k in kwargs}
         log.debug('Unique constraints are {}'.format(unique_constraints))
 
         query_result = session.query.filter_by(**constraint_kwargs).one()
