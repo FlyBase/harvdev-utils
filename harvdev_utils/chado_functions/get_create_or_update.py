@@ -52,7 +52,7 @@ def get_create_or_update(session, model, **kwargs):
         log.debug('Model unique constraints are {}'.format(unique_constraints))
         log.debug('New constraint kwargs for query are {}'.format(constraint_kwargs))
 
-        query_result = session.query.filter_by(**constraint_kwargs).one_or_none()
+        query_result = session.query(model).filter_by(**constraint_kwargs).one_or_none()
         if not query_result:
             # If we find nothing, create a new entry with our arguments.
             created = model(**kwargs)
