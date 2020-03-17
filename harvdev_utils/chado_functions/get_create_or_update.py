@@ -14,7 +14,6 @@ import sys
 
 log = logging.getLogger(__name__)
 
-
 def get_create_or_update(session, model, **kwargs):
     """
     :param session: The current session in use by SQL Alchemy
