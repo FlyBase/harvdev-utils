@@ -35,8 +35,6 @@ def get_create_or_update(session, model, **kwargs):
         log.critical('This function does not work for tables with rank.')
         sys.exit(-1)
 
-
-
     try:
         attempt = session.query(model).filter_by(**kwargs).one()
         log.debug('Found previous entry for %s, create or update not required.' % (kwargs))
