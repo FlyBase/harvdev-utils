@@ -35,21 +35,22 @@ def get_create_or_update(session, model, **kwargs):
         log.critical('This function does not work for tables with rank.')
         sys.exit(-1)
 
-    # Get our unique constraints.
-    unique_constraints = insp.get_unique_constraints(model.__tablename__)
-    unique_constraints_list = unique_constraints[0]['column_names']
 
-    attempt = session.query(model).filter_by(**kwargs).one_or_none()
-    
-    if attempt:
+
+    try:
+        attempt = session.query(model).filter_by(**kwargs).one()
         log.debug('Found previous entry for %s, create or update not required.' % (kwargs))
         return attempt, False
-    else:
+    except NoResultFound:
         log.debug('Previous entry for %s not found. Checking unique constraint query.' % (kwargs))
 
         # Perform our query with only filters found as unique_constraints.
+        unique_constraints = insp.get_unique_constraints(model.__tablename__)
+        unique_constraints_list = unique_constraints[0]['column_names']
+
         constraint_kwargs = {k: kwargs[k] for k in unique_constraints_list if k in kwargs}
-        log.debug('Unique constraints are {}'.format(unique_constraints))
+        log.debug('Model unique constraints are {}'.format(unique_constraints))
+        log.debug('New constraint kwargs for query are {}'.format(constraint_kwargs))
 
         query_result = session.query.filter_by(**constraint_kwargs).one_or_none()
         if not query_result:
