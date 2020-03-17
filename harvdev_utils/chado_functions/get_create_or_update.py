@@ -23,7 +23,6 @@ def get_create_or_update(session, model, **kwargs):
     :return: Both an SQL Alchemy object and True (if new object created) or False (if object retrieved)
     """
 
-    # If rank exists in a table, we always insert our entry and increment the rank.
     log.debug('Submitted table: {}'.format(model.__tablename__))
     log.debug('Submitted kwargs: {}'.format(kwargs))
     # We need to get our engine back from our session to create an inspector.
