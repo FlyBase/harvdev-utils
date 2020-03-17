@@ -39,11 +39,12 @@ def get_create_or_update(session, model, **kwargs):
     unique_constraints = insp.get_unique_constraints(model.__tablename__)
     unique_constraints_list = unique_constraints[0]['column_names']
 
-    try:
-        attempt = session.query(model).filter_by(**kwargs).one()
+    attempt = session.query(model).filter_by(**kwargs).one_or_none()
+    
+    if attempt:
         log.debug('Found previous entry for %s, create or update not required.' % (kwargs))
         return attempt, False
-    except NoResultFound:
+    else:
         log.debug('Previous entry for %s not found. Checking unique constraint query.' % (kwargs))
 
         # Perform our query with only filters found as unique_constraints.
