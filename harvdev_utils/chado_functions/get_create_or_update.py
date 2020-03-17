@@ -1,6 +1,6 @@
 """
 .. module:: get_create_or_update
-   :synopsis: A module to obtain a current Chado table entry or create a new one.
+   :synopsis: A module to obtain a current Chado table entry, create a new one, or update an existing one.
 
 .. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
 """
