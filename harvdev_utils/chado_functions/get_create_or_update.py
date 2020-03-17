@@ -56,7 +56,7 @@ def get_create_or_update(session, model, **kwargs):
             created = model(**kwargs)
         else:
             # If we find an entry via unique constraints, update that entry.
-            for key, value in kwargs.iteritems():
+            for key, value in kwargs.items():
                 setattr(query_result, key, value)
 
             created = query_result
