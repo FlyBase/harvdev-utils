@@ -56,7 +56,10 @@ def get_create_or_update(session, model, **kwargs):
             created = model(**kwargs)
         else:
             # If we find an entry via unique constraints, update that entry.
-            created = session.query(model).update(**kwargs)
+            for key, value in kwargs.iteritems():
+                setattr(query_result, key, value)
+
+            created = query_result
 
         # Add the change and flush (no commits, leave that for the main program.)
         session.add(created)
