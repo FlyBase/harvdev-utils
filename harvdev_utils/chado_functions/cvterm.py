@@ -7,9 +7,7 @@ cv_cvterm = {}
 
 
 def get_cvterm(session, cv_name, cvterm_name):
-    """
-    Lookup cvterm.
-    """
+    """Lookup cvterm."""
     global cv_cvterm
     try:
         return cv_cvterm[cv_name][cvterm_name]
