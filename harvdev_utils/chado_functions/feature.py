@@ -10,8 +10,7 @@
 from harvdev_utils.production import (
     Synonym, FeatureSynonym, Feature
 )
-from harvdev_utils.char_conversions import sub_sup_to_sgml
-from harvdev_utils.char_conversions import sgml_to_unicode
+from harvdev_utils.char_conversions import sub_sup_to_sgml, sgml_to_unicode
 from harvdev_utils.chado_functions import get_cvterm, DataError, CodingError
 
 # local utils
