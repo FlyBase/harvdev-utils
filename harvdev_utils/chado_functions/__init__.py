@@ -13,3 +13,4 @@ from .organism import (
     get_default_organism_id, get_default_organism,
     get_organism
 )
+from .synonym import synonym_name_details
