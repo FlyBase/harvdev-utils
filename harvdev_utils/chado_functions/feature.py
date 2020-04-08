@@ -20,6 +20,40 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
 log = logging.getLogger(__name__)
 
+#
+# feature cache
+# feature_cache[type][symbol] = feature_object
+#       "      [type][uniquename] = "
+# NOTE: name is not used this is not unique so do
+#       not want to risk overwritting/using wrong one.
+#       Symbol should be unique for a type.
+#
+feature_cache = {}
+
+
+def feature_type_lookup(session, type_name):
+    """Lookup feature type cvterm."""
+    feature_type = None
+    for cv_type_name in ['SO', 'FlyBase miscellaneous CV']:
+        if not feature_type:
+            try:
+                feature_type = get_cvterm(session, cv_type_name, type_name)
+            except CodingError:
+                pass
+        if not feature_type:
+            raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
+    return feature_type
+
+
+def add_to_cache(feature, symbol=None):
+    """Add feature to cache."""
+    if feature.type.name not in feature_cache:
+        feature_cache[feature.type.name] = {}
+    feature_cache[feature.type.name][feature.uniquename] = feature
+    if symbol:
+        feature_cache[feature.type.name][symbol] = feature
+    log.info("Added to cache {} {}".format(feature.uniquename, symbol))
+
 
 def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=None):
     """Get feature by the unique name.
@@ -46,19 +80,19 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
     feature = None
     if not type_name and not organism_id:
         feature = _simple_uniquename_lookup(session, uniquename)
+        add_to_cache(feature)
     if not feature:  # uniquename not enough or type_name and/or organism specified
         filter_spec = (Feature.uniquename == uniquename,
                        Feature.is_obsolete == 'f')
         if organism_id:
             filter_spec += (Feature.organism_id == organism_id,)
         if type_name:
-            if type_name in ['bogus symbol', 'single balancer', 'chemical entity']:
-                cv_type = 'FlyBase miscellaneous CV'
-            else:
-                cv_type = 'SO'
-            feature_type = get_cvterm(session, cv_type, type_name)
+            if type_name in feature_cache and uniquename in feature_cache[type_name]:
+                return feature_cache[type_name][uniquename]
+            feature_type = feature_type_lookup(session, type_name)
             filter_spec += (Feature.type_id == feature_type.cvterm_id,)
         feature = session.query(Feature).filter(*filter_spec).one()
+    add_to_cache(feature)
     return feature
 
 
@@ -94,6 +128,7 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
     """
     try:
         feature = get_feature_by_uniquename(session, uniquename, type_name=type_name, organism_id=organism_id)
+        add_to_cache(feature)
     except NoResultFound:
         message = "Unable to find Feature with uniquename {}.".format(uniquename)
         raise DataError(message)
@@ -102,7 +137,10 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
         raise DataError(message)
 
     try:
+        if type_name in feature_cache and synonym in feature_cache[type_name]:
+            return feature_cache[type_name][synonym]
         feat_check = feature_symbol_lookup(session, type_name, synonym)
+        add_to_cache(feature, synonym)
     except NoResultFound:
         message = "Unable to find Feature with symbol {}.".format(synonym)
         raise DataError(message)
@@ -145,12 +183,9 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
     if not organism_id:
         organism_id = get_default_organism_id(session)
 
+    feature_type = None
     if type_name:
-        if type_name in ['bogus symbol', 'single balancer', 'chemical entity', 'disease implicated variant']:
-            cv_type = 'FlyBase miscellaneous CV'
-        else:
-            cv_type = 'SO'
-        feature_type = get_cvterm(session, cv_type, type_name)
+        feature_type = feature_type_lookup(session, type_name)
         type_id = feature_type.cvterm_id
 
     filter_spec = (Feature.name == name,
@@ -162,6 +197,7 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
         feature = session.query(Feature).filter(*filter_spec).one_or_none()
     except MultipleResultsFound:
         raise DataError("DataError: Found multiple with name {} for type '{}'.".format(name, feature_type.name))
+    add_to_cache(feature)
     return feature
 
 
@@ -199,17 +235,12 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
     # convert name to sgml format for lookup
     synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
-    # get feature type expected from type_name
-    feature_type = None
-    for cv_type_name in ['SO', 'FlyBase miscellaneous CV']:
-        if not feature_type:
-            try:
-                feature_type = get_cvterm(session, cv_type_name, type_name)
-            except CodingError:
-                pass
-    if not feature_type:
-        raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
+    # check cache
+    if type_name in feature_cache and synonym_sgml in feature_cache[type_name]:
+        return feature_cache[type_name][synonym_sgml]
 
+    # get feature type expected from type_name
+    feature_type = feature_type_lookup(session, type_name)
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
     try:
@@ -235,6 +266,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
             uniquecheck = feat.uniquename
 
     if uniquecheck:
+        add_to_cache(feat)
         return feat
 
     raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
@@ -275,14 +307,11 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
         # convert name to sgml format for lookup
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
-    # get feature type expected from type_name
-    # NOTE: most are SO apart from these 3 rascals.
-    if type_name in ['bogus symbol', 'single balancer', 'chemical entity']:
-        cv_type = 'FlyBase miscellaneous CV'
-    else:
-        cv_type = 'SO'
+    # Check cache
+    if type_name in feature_cache and synonym_sgml in feature_cache[type_name]:
+        return feature_cache[type_name][synonym_sgml]
 
-    feature_type = get_cvterm(session, cv_type, type_name)
+    feature_type = feature_type_lookup(session, type_name)
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
     filter_spec = (Synonym.type_id == synonym_type.cvterm_id,
@@ -297,7 +326,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
 
     feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
         filter(*filter_spec).one()
-
+    add_to_cache(feature, synonym_sgml)
     return feature
 
 
