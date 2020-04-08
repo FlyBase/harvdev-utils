@@ -11,10 +11,10 @@ from harvdev_utils.production import (
     Synonym, FeatureSynonym, Feature
 )
 from harvdev_utils.char_conversions import sub_sup_to_sgml, sgml_to_unicode
-from harvdev_utils.chado_functions import get_cvterm, DataError, CodingError
-
-# local utils
-from harvdev_utils.chado_functions.organism import get_default_organism_id
+from harvdev_utils.chado_functions import (
+    get_cvterm, DataError, CodingError,
+    get_default_organism_id, synonym_name_details
+)
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
@@ -266,10 +266,10 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     """
     # Defualt to Dros if not organism specified.
     if not organism_id:
-        organism_id = get_default_organism_id(session)
-
-    # convert name to sgml format for lookup
-    synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+        organism, plain_name, synonym_sgml = synonym_name_details(session, synonym_name)
+    else:
+        # convert name to sgml format for lookup
+        synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
     # get feature type expected from type_name
     # NOTE: most are SO apart from these 3 rascals.
