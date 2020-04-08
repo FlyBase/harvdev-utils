@@ -201,10 +201,10 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
 
     # get feature type expected from type_name
     feature_type = None
-    for cv_name in ['SO', 'FlyBase miscellaneous CV']:
+    for cv_type_name in ['SO', 'FlyBase miscellaneous CV']:
         if not feature_type:
             try:
-                feature_type = get_cvterm(session, cv_name, type_name)
+                feature_type = get_cvterm(session, cv_type_name, type_name)
             except CodingError:
                 pass
     if not feature_type:
