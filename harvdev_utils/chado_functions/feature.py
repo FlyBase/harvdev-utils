@@ -40,8 +40,8 @@ def feature_type_lookup(session, type_name):
                 feature_type = get_cvterm(session, cv_type_name, type_name)
             except CodingError:
                 pass
-        if not feature_type:
-            raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
+    if not feature_type:
+        raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
     return feature_type
 
 
@@ -196,7 +196,8 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
         feature = session.query(Feature).filter(*filter_spec).one_or_none()
     except MultipleResultsFound:
         raise DataError("DataError: Found multiple with name {} for type '{}'.".format(name, feature_type.name))
-    add_to_cache(feature)
+    if feature:
+        add_to_cache(feature)
     return feature
 
 
