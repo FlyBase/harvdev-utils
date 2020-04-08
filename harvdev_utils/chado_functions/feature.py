@@ -303,6 +303,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     # Defualt to Dros if not organism specified.
     if not organism_id:
         organism, plain_name, synonym_sgml = synonym_name_details(session, synonym_name)
+        organism_id = organism.organism_id
     else:
         # convert name to sgml format for lookup
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
@@ -323,7 +324,6 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
 
     if type_name == 'gene':
         filter_spec += (~Feature.uniquename.contains('FBog'),)
-
     feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
         filter(*filter_spec).one()
     add_to_cache(feature, synonym_sgml)
