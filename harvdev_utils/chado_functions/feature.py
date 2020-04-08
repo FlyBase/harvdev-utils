@@ -52,7 +52,6 @@ def add_to_cache(feature, symbol=None):
     feature_cache[feature.type.name][feature.uniquename] = feature
     if symbol:
         feature_cache[feature.type.name][symbol] = feature
-    log.info("Added to cache {} {}".format(feature.uniquename, symbol))
 
 
 def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=None):
@@ -140,7 +139,7 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
         if type_name in feature_cache and synonym in feature_cache[type_name]:
             return feature_cache[type_name][synonym]
         feat_check = feature_symbol_lookup(session, type_name, synonym)
-        add_to_cache(feature, synonym)
+        add_to_cache(feat_check, synonym)
     except NoResultFound:
         message = "Unable to find Feature with symbol {}.".format(synonym)
         raise DataError(message)
