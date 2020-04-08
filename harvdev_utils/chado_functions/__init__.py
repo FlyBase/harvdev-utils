@@ -14,4 +14,3 @@ from .feature import (
     get_feature_by_uniquename, get_feature_and_check_uname_symbol,
     feature_name_lookup, feature_synonym_lookup, feature_symbol_lookup
 )
-

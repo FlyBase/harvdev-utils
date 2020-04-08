@@ -188,7 +188,8 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
         Feature object.
 
     Raises:
-        DataError: if feature cannot be found uniquely
+        DataError: If cvterm for type not found.
+                   If feature cannot be found uniquely.
 
     """
     # Default to Dros if not organism specified.
@@ -199,13 +200,16 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
     synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
     # get feature type expected from type_name
-    # NOTE: most are SO apart from these 3 rascals.
-    if type_name in ['bogus symbol', 'single balancer', 'chemical entity', 'disease implicated variant']:
-        cv_type = 'FlyBase miscellaneous CV'
-    else:
-        cv_type = 'SO'
+    feature_type = None
+    for cv_name in ['SO', 'FlyBase miscellaneous CV']:
+        if not feature_type:
+            try:
+                feature_type = get_cvterm(session, cv_name, type_name)
+            except CodingError:
+                pass
+    if not feature_type:
+        raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
 
-    feature_type = get_cvterm(session, cv_type, type_name)
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
     try:
