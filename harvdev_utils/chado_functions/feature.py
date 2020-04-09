@@ -30,9 +30,15 @@ log = logging.getLogger(__name__)
 #
 feature_cache = {}
 
+# feature type cache.
+feature_type_cache = {}
+
 
 def feature_type_lookup(session, type_name):
     """Lookup feature type cvterm."""
+    if type_name in feature_type_cache:
+        return feature_type_cache[type_name]
+
     feature_type = None
     for cv_type_name in ['SO', 'FlyBase miscellaneous CV']:
         if not feature_type:
@@ -42,6 +48,7 @@ def feature_type_lookup(session, type_name):
                 pass
     if not feature_type:
         raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
+    feature_type_cache[type_name] = feature_type
     return feature_type
 
 
