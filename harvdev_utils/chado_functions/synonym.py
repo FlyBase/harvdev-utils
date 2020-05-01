@@ -45,7 +45,7 @@ def synonym_name_details(session, synonym_name):
     """
     pattern = r"""
         ^([A-Z]:){0,1}   # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
-        (\S+)            # possible species abbreviation, Non space chars
+        ([^\\\s]+)       # possible species abbreviation, Non space chars and not a '\'
         \\               # forward slash
         (.*)             # anything else
     """
