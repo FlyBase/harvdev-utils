@@ -57,7 +57,7 @@ def synonym_name_details(session, synonym_name):
         end_name = s_res.group(3)
         try:
             organism = get_organism(session, short=abbr)
-        except CodingError:  # Not a species prefix so continue as normal
+        except CodingError:  # Not a species abbr so continue as normal
             return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
         name = "{}{}\\{}".format(t_bit or '', abbr, end_name)
