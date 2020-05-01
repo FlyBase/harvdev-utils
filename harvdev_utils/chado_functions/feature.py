@@ -285,7 +285,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     Args:
         session (sqlalchemy.orm.session.Session object): db connection  to use.
 
-        type_name (str): cvterm name, defining the type of feature.
+        type_name (str): <can be None> cvterm name, defining the type of feature.
 
         synonym_name (str): symbol to look up.
 
@@ -307,7 +307,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
 
         MultipleResultsFound: If more than one feature found matching the synonym.
     """
-    # Defualt to Dros if not organism specified.
+    # Default to Dros if not organism specified.
     if not organism_id:
         organism, plain_name, synonym_sgml = synonym_name_details(session, synonym_name)
         organism_id = organism.organism_id
@@ -319,18 +319,20 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     if type_name in feature_cache and synonym_sgml in feature_cache[type_name]:
         return feature_cache[type_name][synonym_sgml]
 
-    feature_type = feature_type_lookup(session, type_name)
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
     filter_spec = (Synonym.type_id == synonym_type.cvterm_id,
                    Synonym.synonym_sgml == synonym_sgml,
                    Feature.organism_id == organism_id,
                    Feature.is_obsolete == 'f',
-                   FeatureSynonym.is_current == 't',
-                   Feature.type_id == feature_type.cvterm_id)
+                   FeatureSynonym.is_current == 't')
 
-    if type_name == 'gene':
+    if not type_name or type_name == 'gene':
         filter_spec += (~Feature.uniquename.contains('FBog'),)
+    if type_name:
+        feature_type = feature_type_lookup(session, type_name)
+        filter_spec += (Feature.type_id == feature_type.cvterm_id,)
+
     feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
         filter(*filter_spec).one()
     add_to_cache(feature, synonym_sgml)
