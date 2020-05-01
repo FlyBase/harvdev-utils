@@ -44,11 +44,10 @@ def synonym_name_details(session, synonym_name):
         unicode version -> 'Hsap\\00005-α-<up>001</up>'
     """
     pattern = r"""
-        ^([A-Z]:){0,1}  # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
-        ([A-Z]{1}       # 1 Capital letter
-        [a-z]{3})       # 3 lower case letters
-        \\              # forward slash
-        (.*)            # anything else
+        ^([A-Z]:){0,1}   # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
+        ([A-Z,a-z]{3,4}) # 3 or 4 letter species abbreviation
+        \\               # forward slash
+        (.*)             # anything else
     """
     s_res = re.search(pattern, synonym_name, re.VERBOSE)
 
