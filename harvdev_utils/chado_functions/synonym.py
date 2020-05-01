@@ -45,7 +45,7 @@ def synonym_name_details(session, synonym_name):
     """
     pattern = r"""
         ^([A-Z]:){0,1}   # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
-        ([A-Z,a-z]{3,4}) # 3 or 4 letter species abbreviation
+        (\S+)            # possible species abbreviation, Non space chars
         \\               # forward slash
         (.*)             # anything else
     """
@@ -57,8 +57,8 @@ def synonym_name_details(session, synonym_name):
         end_name = s_res.group(3)
         try:
             organism = get_organism(session, short=abbr)
-        except CodingError:
-            organism = get_default_organism(session)
+        except CodingError:  # Not a species prefix so continue as normal
+            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
         name = "{}{}\\{}".format(t_bit or '', abbr, end_name)
         return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
