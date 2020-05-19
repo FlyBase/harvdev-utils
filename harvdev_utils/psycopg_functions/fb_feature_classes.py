@@ -43,6 +43,17 @@ class Feature(object):
         self.feature_type = feature_type
         self.analysis = analysis
         self.obsolete = obsolete
+        # Feature Class also has common stuff retrievable from other chado tables; set to None at outset.
+        self.org_abbr = None               # The organism.abbreviation for the feature's organism.
+        self.genus = None                  # The organism.genus for the feature's organism.
+        self.symbol_sgml = None            # Current symbol synonym_sgml value.
+        self.fullname_sgml = None          # Current fullname synonym_sgml value.
+        self.agr_symbol = None             # For converted symbol_sgml (sub/superscript given in html).
+        self.agr_symbol_text = None        # Demarcates allele superscript designation with chevrons.
+        self.symbol_synonym_list = None    # List of symbol synonyms.
+        self.fullname_synonym_list = None  # List of fullname synonyms.
+        self.all_synonym_set = None        # List of all synonym types (should be uniqued).
+        self.secondary_id_list = None      # List of dbxref.accession values.
 
     # feature.uniquename must be FB-type.
     uniquename_regex = r'^FB[a-z]{2}[0-9]{7,10}$'
@@ -80,6 +91,7 @@ class Feature(object):
             self.__analysis = value
         else:
             raise TypeError('The "analysis" value must be boolean.')
+
     analysis = property(_get_analysis, _set_analysis)
 
     # feature.is_obsolete must be boolean
@@ -91,19 +103,8 @@ class Feature(object):
             self.__obsolete = value
         else:
             raise TypeError('The "obsolete" value must be boolean.')
-    obsolete = property(_get_obsolete, _set_obsolete)
 
-    # Feature Class also has common stuff retrievable from other chado tables; set to None at outset.
-    org_abbr = None               # The organism.abbreviation for the feature's organism.
-    genus = None                  # The organism.genus for the feature's organism.
-    symbol_sgml = None            # Current symbol synonym_sgml value.
-    fullname_sgml = None          # Current fullname synonym_sgml value.
-    agr_symbol = None             # For converted symbol_sgml (sub/superscript given in html).
-    agr_symbol_text = None        # Demarcates allele superscript designation with chevrons.
-    symbol_synonym_list = None    # List of symbol synonyms.
-    fullname_synonym_list = None  # List of fullname synonyms.
-    all_synonym_set = None        # List of all synonym types (should be uniqued).
-    secondary_id_list = None      # List of dbxref.accession values.
+    obsolete = property(_get_obsolete, _set_obsolete)
 
     # Methods for converting FB sub/superscripts to html, uniquefying synonym/ID lists.
     def get_agr_symbol(self):
@@ -159,36 +160,35 @@ class Allele(Feature):
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
         """Initialize a FlyBase Allele class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
+        # Below are allele attributes that will be instantiated as "None" but given a value later.
+        self.gene_id = None               # Will be one item.
+        self.gene_symbol_sgml = None      # Will be one item.
+        self.expresses = None             # If applicable, will match gene_id. Should be mutually exclusive with "targets".
+        self.targets = None               # If applicable, will match gene_id. Should be mutually exclusive with "expresses".
+        self.mut_origin = None            # Will be a list.
+        self.fbtp_list = None             # Will be a list. Should have 'associated_with' rel type. Ignore rare FBmc and FBms.
+        self.fbti_list = None             # Will be a list. Should only be Dmel insertions of 'associated_with. rel type.
+        self.fbtp_via_fbti_list = None    # Will be a list. FBtp indirectly related to allele via FBti.
+        self.has_reg_region = None        # Will be a list. FBal 'has_reg_region' FBto (f_r).
+        self.tagged_with = None           # Will be a list. FBal 'tagged_with' FBto (f_r).
+        self.encodes_tool = None          # Will be a list. FBal 'encodes_tool' FBto (f_r).
+        self.carries_tool = None          # Will be a list. FBal 'carries_tool' FBto (f_r).
+        self.molecular_info = None        # Will be a list. Eponymous featureprop.
+        self.aminoacid_rep = None         # Will be a list. Eponymous featureprop.
+        self.nucleotide_sub = None        # Will be a list. Eponymous featureprop.
+        self.description = None           # Will be a string (concatenation of "nature_lesion" attribute values).
+        self.insertion = None             # Will be a bool. Determined by "is_insertion" method.
+        self.transgenic = None            # Will be a bool. Determined by "is_transgenic" method.
+        self.in_dmel = None               # Will be a bool. Determined by "exists_in_dmel" method.
+        self.drosophilidae = None         # Will be a bool. Allele of vinegar/fruit fly. Determined by "is_drosophilidae" method.
+        self.classification = None        # AGR export classification
+        self.crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
+        self.gene_action = None           # For transgenic allele, determines if transgenic allele expresses or targets its gene.
+        self.gene_for_agr_export = None   # Will be a bool. Obtained from related gene.
+        self.for_agr_export = None        # Will be a bool.
 
     # feature.uniquename must be FBal-type.
     uniquename_regex = r'^FBal[0-9]{7}$'
-
-    # Below are allele attributes that will be instantiated as "None" but given a value later.
-    gene_id = None               # Will be one item.
-    gene_symbol_sgml = None      # Will be one item.
-    expresses = None             # If applicable, will match gene_id. Should be mutually exclusive with "targets".
-    targets = None               # If applicable, will match gene_id. Should be mutually exclusive with "expresses".
-    mut_origin = None            # Will be a list.
-    fbtp_list = None             # Will be a list. Should have 'associated_with' rel type. Ignore rare FBmc and FBms.
-    fbti_list = None             # Will be a list. Should only be Dmel insertions of 'associated_with. rel type.
-    fbtp_via_fbti_list = None    # Will be a list. FBtp indirectly related to allele via FBti.
-    has_reg_region = None        # Will be a list. FBal 'has_reg_region' FBto (f_r).
-    tagged_with = None           # Will be a list. FBal 'tagged_with' FBto (f_r).
-    encodes_tool = None          # Will be a list. FBal 'encodes_tool' FBto (f_r).
-    carries_tool = None          # Will be a list. FBal 'carries_tool' FBto (f_r).
-    molecular_info = None        # Will be a list. Eponymous featureprop.
-    aminoacid_rep = None         # Will be a list. Eponymous featureprop.
-    nucleotide_sub = None        # Will be a list. Eponymous featureprop.
-    description = None           # Will be a string (concatenation of "nature_lesion" attribute values).
-    insertion = None             # Will be a bool. Determined by "is_insertion" method.
-    transgenic = None            # Will be a bool. Determined by "is_transgenic" method.
-    in_dmel = None               # Will be a bool. Determined by "exists_in_dmel" method.
-    drosophilidae = None         # Will be a bool. Allele of vinegar/fruit fly. Determined by "is_drosophilidae" method.
-    classification = None        # AGR export classification
-    crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
-    gene_action = None           # For transgenic allele, determines if transgenic allele expresses or targets its gene.
-    gene_for_agr_export = None   # Will be a bool. Obtained from related gene.
-    for_agr_export = None        # Will be a bool.
 
     # This is a more sophisticated version of "get_agr_symbol_text()" method
     # It replaces ONLY the superscript designations around the superscripted allelic suffix, after the gene.
@@ -218,9 +218,6 @@ class Allele(Feature):
         self.agr_symbol_text = new_text
         return
 
-    # molecular_info = None        # Will be a list. Eponymous featureprop.
-    # aminoacid_rep = None         # Will be a list. Eponymous featureprop.
-    # c = None        # Will be a list. Eponymous featureprop.
     def make_description(self):
         """Concatenate "nature_lesion" strings into a description."""
         if self.molecular_info is None:
@@ -240,9 +237,9 @@ class Allele(Feature):
         if len(nature_lesion_list) > 0:
             nature_lesion = ' '.join(nature_lesion_list)
             nature_lesion = nature_lesion.replace('@', '')
-            nature_lesion = sub_sup_to_sgml(nature_lesion)                   # Convert brackets into FB sub/superscript.
-            nature_lesion = sub_sup_sgml_to_html(nature_lesion)   # Convert FB sub/superscript to html.
-            nature_lesion = sgml_to_unicode(nature_lesion)                   # Convert FB "&.gr;" Greeks to unicode.
+            nature_lesion = sub_sup_to_sgml(nature_lesion)         # Convert brackets into FB sub/superscript.
+            nature_lesion = sub_sup_sgml_to_html(nature_lesion)    # Convert FB sub/superscript to html.
+            nature_lesion = sgml_to_unicode(nature_lesion)         # Convert FB "&.gr;" Greeks to unicode.
             self.description = nature_lesion
         else:
             log.debug('Allele {} has no nature_lesion to report for description'.format(self.uniquename))
@@ -418,19 +415,18 @@ class Construct(Feature):
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
         """Initialize a FlyBase Construct class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
+        # Below are construct attributes that will be instantiated as "None" but given a value later.
+        self.fbal_list = None             # Will be a list. FBal 'associated_with' FBtp.
+        self.fbti_list = None             # Will be a list. Dmel FBti 'producedby' FBtp.
+        self.has_reg_region = None        # Will be a list. FBal 'has_reg_region' FB(gn|to) (f_r).
+        self.tagged_with = None           # Will be a list. FBal 'tagged_with' FBto (f_r).
+        self.encodes_tool = None          # Will be a list. FBal 'encodes_tool' FBto (f_r).
+        self.carries_tool = None          # Will be a list. FBal 'carries_tool' FBto (f_r).
+        self.expresses_list = None          # Will be a list of FBgn IDs, via FBal. Expect no overlap with "target_list".
+        self.targets_list = None            # Will be a list of FBgn IDs, via FBal. Expect no overlap with "expresses_list".
 
     # feature.uniquename must be FBtp-type.
     uniquename_regex = r'^FBtp[0-9]{7}$'
-
-    # Below are construct attributes that will be instantiated as "None" but given a value later.
-    fbal_list = None             # Will be a list. FBal 'associated_with' FBtp.
-    fbti_list = None             # Will be a list. Dmel FBti 'producedby' FBtp.
-    has_reg_region = None        # Will be a list. FBal 'has_reg_region' FB(gn|to) (f_r).
-    tagged_with = None           # Will be a list. FBal 'tagged_with' FBto (f_r).
-    encodes_tool = None          # Will be a list. FBal 'encodes_tool' FBto (f_r).
-    carries_tool = None          # Will be a list. FBal 'carries_tool' FBto (f_r).
-    expresses_list = None          # Will be a list of FBgn IDs, via FBal. Expect no overlap with "target_list".
-    targets_list = None            # Will be a list of FBgn IDs, via FBal. Expect no overlap with "expresses_list".
 
 
 class Gene(Feature):
@@ -440,16 +436,15 @@ class Gene(Feature):
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
         """Initialize a FlyBase Gene class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
+        # Below are gene attributes that will be instantiated as "None" but given a value later.
+        self.hgnc_id_list = None          # Will be a list. All xrefs for Hsap genes where db = 'HGNC'.
+        self.mod_id_list = None           # Will be a list. All xrefs where db in ('SGD', 'WormBase', 'ZFIN', 'RGD', 'MGI').
+        self.agr_gene_id = None           # Will be unique. The ID to use for reporting genes to AGR.
+        self.promoted_gene_type = None    # Will be unique. Eponymous featureprop.
+        self.for_agr_export = None        # Will be boolean.
 
     # feature.uniquename must be FBgn-type.
     uniquename_regex = r'^FBgn[0-9]{7}$'
-
-    # Below are gene attributes that will be instantiated as "None" but given a value later.
-    hgnc_id_list = None          # Will be a list. All xrefs for Hsap genes where db = 'HGNC'.
-    mod_id_list = None           # Will be a list. All xrefs where db in ('SGD', 'WormBase', 'ZFIN', 'RGD', 'MGI').
-    agr_gene_id = None           # Will be unique. The ID to use for reporting genes to AGR.
-    promoted_gene_type = None    # Will be unique. Eponymous featureprop.
-    for_agr_export = None        # Will be boolean.
 
     def pick_gene_id(self):
         """Pick between FB, HGNC or other MOD ID to report."""
@@ -507,8 +502,6 @@ class Insertion(Feature):
     # feature.uniquename must be FBti-type.
     uniquename_regex = r'^FBti[0-9]{7}$'
 
-    # Below are insertion attributes that will be instantiated as "None" but given a value later.
-
 
 class SeqFeat(Feature):
     """Define a FlyBase SeqFeat object."""
@@ -521,8 +514,6 @@ class SeqFeat(Feature):
     # feature.uniquename must be FBsf-type.
     uniquename_regex = r'^FBsf[0-9]{10}$'
 
-    # Below are seqfeat attributes that will be instantiated as "None" but given a value later.
-
 
 class Tool(Feature):
     """Define a FlyBase Tool object."""
@@ -531,9 +522,9 @@ class Tool(Feature):
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
         """Make a FlyBase Tool class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
+        # Below are tool attributes that will be instantiated as "None" but given a value later.
+        self.originates_from = None    # Will be a list one FBgn IDs.
 
     # feature.uniquename must be FBto-type.
     uniquename_regex = r'^FBto[0-9]{7}$'
 
-    # Below are tool attributes that will be instantiated as "None" but given a value later.
-    originates_from = None    # Will be a list one FBgn IDs.
