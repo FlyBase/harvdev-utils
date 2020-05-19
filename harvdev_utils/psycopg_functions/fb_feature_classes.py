@@ -408,7 +408,7 @@ class Allele(Feature):
         return
 
 
-class Construct(Feature):
+class Constructq(Feature):
     """Define a FlyBase Construct object."""
 
     # Inherit parental feature init.
