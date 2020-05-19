@@ -44,11 +44,10 @@ def synonym_name_details(session, synonym_name):
         unicode version -> 'Hsap\\00005-α-<up>001</up>'
     """
     pattern = r"""
-        ^([A-Z]:){0,1}  # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
-        ([A-Z]{1}       # 1 Capital letter
-        [a-z]{3})       # 3 lower case letters
-        \\              # forward slash
-        (.*)            # anything else
+        ^([A-Z]:){0,1}   # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
+        ([^\\\s]+)       # possible species abbreviation, Non space chars and not a '\'
+        \\               # forward slash
+        (.*)             # anything else
     """
     s_res = re.search(pattern, synonym_name, re.VERBOSE)
 
@@ -58,8 +57,8 @@ def synonym_name_details(session, synonym_name):
         end_name = s_res.group(3)
         try:
             organism = get_organism(session, short=abbr)
-        except CodingError:
-            organism = get_default_organism(session)
+        except CodingError:  # Not a species abbr so continue as normal
+            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
         name = "{}{}\\{}".format(t_bit or '', abbr, end_name)
         return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
