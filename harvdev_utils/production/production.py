@@ -2880,6 +2880,10 @@ class Phenotype(Base):
     cvalue = relationship('Cvterm', primaryjoin='Phenotype.cvalue_id == Cvterm.cvterm_id')
     observable = relationship('Cvterm', primaryjoin='Phenotype.observable_id == Cvterm.cvterm_id')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Phenotype id={}: uniquename:'{}' value:({})\n\tassay:({})\n\tattr:({})\n\tcvalue:({})\n\tobs:({})".\
+            format(self.phenotype_id, self.uniquename, self.value, self.assay, self.attr, self.cvalue, self.observable)
 
 class PhenotypeComparison(Base):
     __tablename__ = 'phenotype_comparison'
