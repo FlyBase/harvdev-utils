@@ -56,6 +56,22 @@ current_feat_fullname_sgmls = """
           cvts.name = 'fullname';
     """
 
+# Get alternate feature FB IDs for current feature FB IDs.
+feat_fb_2o_ids = """
+    SELECT DISTINCT dbx.accession,
+                    f.uniquename
+    FROM feature f
+    JOIN feature_dbxref fdbx ON fdbx.feature_id = f.feature_id
+    JOIN dbxref dbx ON dbx.dbxref_id = fdbx.dbxref_id
+    JOIN db ON db.db_id = dbx.db_id
+    WHERE f.is_obsolete = false and
+          f.is_analysis = false and
+          f.uniquename ~ '{}' and
+          fdbx.is_current = false and
+          dbx.accession ~ '{}' and
+          db.name = 'FlyBase';
+    """
+
 # Get subject, object features for subject, object uniquename regex, and rel type.
 rel_features = """
     SELECT DISTINCT s.uniquename,
