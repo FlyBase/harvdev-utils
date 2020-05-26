@@ -301,7 +301,7 @@ def add_unique_info(data_dict, attribute, db_connection, sql_query, *arguments):
     add_cnt = 0
     for row in db_results:
         row_key, row_value = get_key_value(row)
-        confirm_attribute(data_dict, row_key)
+        # confirm_attribute(data_dict, row_key)    # This is too stringent, assumes input data has all relevant features.
         try:
             target = data_dict[row_key]
         except KeyError:
