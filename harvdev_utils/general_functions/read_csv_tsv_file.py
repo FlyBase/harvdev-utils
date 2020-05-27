@@ -81,25 +81,31 @@ def find_headers(csv_input, delimiter):
         Will raise a warning if multiple header candidates are found.
     """
     log.info('TIME: {}. Looking for header line.'.format(timenow()))
-    header_list = []
+    comment_rows = []
     # Scan the csv input.
     for row in csv_input:
         try:
             if row[0].startswith('#'):
                 log.debug('Found this comment line with {} element(s):\n\t{}'.format(len(row), row))
                 if len(row) > 1:
-                    header_list.append(row)
+                    comment_rows.append(row)
             else:
                 row_size = len(row)
                 log.debug('Stopping header scan at this line having {} elements:\n\t{}'.format(row_size, row))
                 break
         except IndexError:
             log.debug('Ignoring an empty line: {}'.format(row))
+    # Keep only those comments rows in csv reader input with length matching that of the 1st non-comment line.
+    header_list = []
+    for comment in comment_rows:
+        if len(comment) == row_size:
+            header_list.append(comment)
+    # Now assess possible header rows in "header_list".
     # If no candidate header rows found.
     if len(header_list) == 0:
         log.warning('Could not find a potential header row. Returning generic "headers" list.')
         headers = ['col{}'.format(i) for i in range(0, row_size)]
-    # If multiple header candidates found.
+    # If multiple header candidates found, pick the last one.
     elif len(header_list) > 1:
         headers = header_list[-1]
         headers[0] = headers[0].replace('#', '')    # Get rid of that first "#" char in the first column.
