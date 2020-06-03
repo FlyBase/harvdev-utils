@@ -150,9 +150,9 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
         csv_writer.writerow(data_item)
 
     try:
-        output_file.write('## Finished {} report.'.format(tsv_data_object['metaData']['title']))
+        output_file.write('## Finished {}.'.format(tsv_data_object['metaData']['title']))
     except KeyError:
-        output_file.write('## Finished unnamed report.')
+        output_file.write('## Finished report.')
 
     log.info('TIME: {}. Done writing data to output file.'.format(timenow()))
 
