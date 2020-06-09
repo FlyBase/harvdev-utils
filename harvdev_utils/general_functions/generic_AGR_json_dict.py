@@ -38,6 +38,9 @@ def generic_AGR_json_dict(database_release, strict_time):
                                           }
                          }
             }
+        This is a typical datastructure example.
+        Typically, only the "release" and "dateProduced" values change.
+        The "release" refers to the FlyBase release.
     """
     dataProviderdict = {}
     dataProviderdict['type'] = 'curated'
