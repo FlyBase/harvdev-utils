@@ -23,7 +23,21 @@ def generic_AGR_json_dict(database_release, strict_time):
 
     Returns:
         dict: A dictionary (generic AGR JSON object).
+              Metadata conforms to Alliance "agr_schemas" spec.
+              Data is an empty list to be filled with relevant Alliance "agr_schemas" JSON.
 
+        .. code-block:: JSON
+
+            {'data': [],
+             'metadata': {'release': '2020_02',
+                          'dateProduced': '2020-05-07T17:26:01-04:00',
+                          'dataProvider': {'type': 'curated',
+                                           'crossReference': {'id': 'FB', 
+                                                              'pages': ['homepage']
+                                                             }
+                                          }
+                         }
+            }
     """
     dataProviderdict = {}
     dataProviderdict['type'] = 'curated'
