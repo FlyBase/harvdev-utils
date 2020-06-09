@@ -102,11 +102,16 @@ def set_up_db_reading(report_label):
         log_filename = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.log'
     else:
         log_filename = output_dir + report_label + '_' + database + '.log'
+    file_handler = logging.FileHandler(log_filename, mode='a')
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : Line No %(lineno)d : %(message)s')
+    file_handler.setFormatter(formatter)
+    log.addHandler(file_handler)
+    # Determine log level.
     verbose = args.verbose
     if verbose is True:
-        logging.basicConfig(format='%(levelname)s:%(message)s', filename=log_filename, level=logging.DEBUG)
+        log.setLevel(logging.DEBUG)
     else:
-        logging.basicConfig(format='%(levelname)s:%(message)s', filename=log_filename, level=logging.INFO)
+        log.setLevel(logging.INFO)
     sys.stdout = open(log_filename, 'a')
     set_up_dict['log'] = logging.getLogger(__name__)
 
