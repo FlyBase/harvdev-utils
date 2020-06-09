@@ -5,7 +5,7 @@ Synopsis:
     Module parses command arguments, gets environmental variable values, connects to db, specifies filenames.
 
 Author(s):
-    Gil dos Santos dossantos@morgan.harvard.edu
+    Gil dos Santos dossantos@morgan.harvard.edu, Julie Agapite jagapite@morgan.harvard.edu
 
 """
 
