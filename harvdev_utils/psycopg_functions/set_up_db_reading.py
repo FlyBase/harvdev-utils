@@ -5,7 +5,7 @@ Synopsis:
     Module parses command arguments, gets environmental variable values, connects to db, specifies filenames.
 
 Author(s):
-    Gil dos Santos dossantos@morgan.harvard.edu
+    Gil dos Santos dossantos@morgan.harvard.edu, Julie Agapite jagapite@morgan.harvard.edu
 
 """
 
@@ -63,6 +63,7 @@ def set_up_db_reading(report_label):
         svn_username = config['default']['SVNUsername']
         svn_password = config['default']['SVNPassword']
         output_dir = './'
+        log_dir = './'
     else:
         server = os.environ['SERVER']
         database = os.environ['DATABASE']
@@ -76,6 +77,7 @@ def set_up_db_reading(report_label):
         svn_username = os.environ['SVNUSER']
         svn_password = os.environ['SVNPASSWORD']
         output_dir = '/src/output/'
+        log_dir = 'src/logs/'
 
     # Send values to a dict.
     set_up_dict = {}
@@ -101,12 +103,17 @@ def set_up_db_reading(report_label):
     if alliance is True:
         log_filename = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.log'
     else:
-        log_filename = output_dir + report_label + '_' + database + '.log'
+        log_filename = log_dir + report_label + '_' + database + '.log'
+    file_handler = logging.FileHandler(log_filename, mode='a')
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : Line No %(lineno)d : %(message)s')
+    file_handler.setFormatter(formatter)
+    log.addHandler(file_handler)
+    # Determine log level.
     verbose = args.verbose
     if verbose is True:
-        logging.basicConfig(format='%(levelname)s:%(message)s', filename=log_filename, level=logging.DEBUG)
+        log.setLevel(logging.DEBUG)
     else:
-        logging.basicConfig(format='%(levelname)s:%(message)s', filename=log_filename, level=logging.INFO)
+        log.setLevel(logging.INFO)
     sys.stdout = open(log_filename, 'a')
     set_up_dict['log'] = logging.getLogger(__name__)
 
