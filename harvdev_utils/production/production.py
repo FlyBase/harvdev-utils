@@ -2484,9 +2484,9 @@ class LibraryFeature(Base):
     feature = relationship('Feature')
     library = relationship('Library')
 
-   def __str__(self):
+    def __str__(self):
         """Over write the default output."""
-        return "LibraryFeature id={}:\n\tLibrary:({}) Feature:({})".\
+        return "LibraryFeature id={}:\n\tLibrary:({})\n\tFeature:({})".\
             format(self.library_feature_id, self.library, self.feature)
 
 class LibraryFeatureprop(Base):
@@ -2504,7 +2504,7 @@ class LibraryFeatureprop(Base):
     library_feature = relationship('LibraryFeature')
     type = relationship('Cvterm')
 
-   def __str__(self):
+    def __str__(self):
         """Over write the default output."""
         return "LibraryFeatureprop id={}: value={} rank={}\n\ttype=({})\n\tLibraryFeature:({})".\
             format(self.library_featureprop_id, self.value, self.rank, self.type, self.library_feature)
