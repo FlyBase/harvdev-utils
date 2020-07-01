@@ -86,7 +86,8 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
     feature = None
     if not type_name and not organism_id:
         feature = _simple_uniquename_lookup(session, uniquename)
-        add_to_cache(feature)
+        if feature:
+            add_to_cache(feature)
     if not feature:  # uniquename not enough or type_name and/or organism specified
         filter_spec = (Feature.uniquename == uniquename,
                        Feature.is_obsolete == 'f')
