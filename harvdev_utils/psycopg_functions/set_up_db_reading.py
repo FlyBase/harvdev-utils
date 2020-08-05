@@ -77,7 +77,7 @@ def set_up_db_reading(report_label):
         svn_username = os.environ['SVNUSER']
         svn_password = os.environ['SVNPASSWORD']
         output_dir = '/src/output/'
-        log_dir = 'src/logs/'
+        log_dir = '/src/logs/'
 
     # Send values to a dict.
     set_up_dict = {}

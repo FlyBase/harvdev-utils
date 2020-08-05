@@ -527,4 +527,3 @@ class Tool(Feature):
 
     # feature.uniquename must be FBto-type.
     uniquename_regex = r'^FBto[0-9]{7}$'
-
