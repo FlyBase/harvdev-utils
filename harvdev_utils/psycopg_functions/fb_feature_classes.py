@@ -498,6 +498,8 @@ class Insertion(Feature):
     def __init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete):
         """Initialize a FlyBase Gene class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
+        # Below are gene attributes that will be instantiated as "None" but given a value later.
+        self.fbal_list = None             # Will be a list of allele uniquenames.
 
     # feature.uniquename must be FBti-type.
     uniquename_regex = r'^FBti[0-9]{7}$'
