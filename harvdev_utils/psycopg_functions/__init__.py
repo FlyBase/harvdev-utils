@@ -6,7 +6,7 @@ from .fb_feature_classes import (
     Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
 )
 from .sql_queries import (
-    current_features, current_feat_symbol_sgmls, current_feat_fullname_sgmls,
+    current_features_by_uname_regex, current_feat_symbol_sgmls, current_feat_fullname_sgmls,
     rel_features, rel_features_rev, rel_dmel_features, rel_dmel_features_rev,
     feat_symbol_synonyms, feat_fullname_synonyms, feat_secondary_fbids,
     featureprops, feat_cvterm, feat_cvterm_cvtprop, orgid_abbr, orgid_genus,

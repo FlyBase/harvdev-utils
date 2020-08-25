@@ -10,7 +10,7 @@ Author(s):
 
 import logging
 from harvdev_utils.psycopg_functions import (
-    connect, current_features, Allele, Construct, Feature, Gene, Insertion, SeqFeat, Tool
+    connect, current_features_by_uname_regex, Allele, Construct, Feature, Gene, Insertion, SeqFeat, Tool
 )
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def get_features_by_uname_regex(db_connection, feat_regex):
         log.info('The feature.uniquename regex "{}" does not correspond to a specific Feature type. \
                   Using generic Feature Class: "{}".'.format(feat_regex, str(ThisFeature)))
 
-    formatted_sql_query = current_features.format(feat_regex)
+    formatted_sql_query = current_features_by_uname_regex.format(feat_regex)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
     log.info('Found {} results for this query.'.format(len(db_results)))
