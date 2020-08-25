@@ -323,7 +323,7 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     """Add a list of values for a given attribute to each object in some ID-keyed data_dict.
 
     For example, get a list of pubs for each Gene object.
-    Contrast with "add_uniqu_info()" function, which adds a single value for a given attribute.
+    Contrast with "add_unique_info()" function, which adds a single value for a given attribute.
 
     Args:
         arg1 (dict): An FB-ID keyed dict of dicts or objects (e.g., Gene or Allele objects).
@@ -340,11 +340,6 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
 
     Warnings:
         Raises a warning if no overlap of data_dict keys with db_results, via "check_key_overlap()".
-
-    Raises:
-        Raises an exception if values in column 1 of db_results are not unique, via "check_unique_results()".
-            In other words, the expectation is that each FB ID-keyed object has only one result in the db.
-            For example, finding multiple "current symbols" for a gene would be unexpected - raise in that case.
 
     """
     # Perform the query.
