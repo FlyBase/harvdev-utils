@@ -16,7 +16,7 @@ from harvdev_utils.psycopg_functions import (
 log = logging.getLogger(__name__)
 
 
-def get_features(db_connection, feat_regex):
+def get_features_by_uname_regex(db_connection, feat_regex):
     """Get all current, non-analysis features for a given uniquename regex.
 
     Args:

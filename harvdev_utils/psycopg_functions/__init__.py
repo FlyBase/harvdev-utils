@@ -13,7 +13,7 @@ from .sql_queries import (
     feat_id_symbol_sgml, indirect_rel_features, gene_HGNC_ids, gene_MOD_ids
 )
 from .get_db_info import (
-    get_features, confirm_attribute, get_dict_value, format_sql_query,
+    get_features_by_uname_regex, confirm_attribute, get_dict_value, format_sql_query,
     check_unique_results, check_key_overlap, get_key_value, build_uniq_db_result_dict,
     build_list_db_result_dict, add_unique_info, add_list_info, add_unique_dict_info
 )
