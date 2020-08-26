@@ -543,12 +543,12 @@ class Insertion(Feature):
                 self.fbrf_list.append(self.floc_list[0][4])
             # Onbase conversion for AGR export.
             # For true insertions in interbase, we expect fmin == fmax.
-            # About 73% of FBti fall into this category.
+            # About 73% of FBti fall into this category. There are all of type "transposable_element_insertion_site".
             # Add 1 to fmax for onbase representation.
             if self.fmin == self.fmax:
                 self.agr_start = self.fmin
                 self.agr_stop = self.fmax + 1
-            # About 9% FBti have (fmax - fmin) == 1.
+            # About 9% FBti have (fmax - fmin) == 1. 98% are "transposable_element_insertion_site".
             # For these, I assume that onbase coordinates were not converted properly from proforma.
             # No onbase conversion required.
             elif (self.fmax - self.fmin) == 1:
