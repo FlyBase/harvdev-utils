@@ -499,10 +499,72 @@ class Insertion(Feature):
         """Initialize a FlyBase Gene class object. See Feature for details."""
         Feature.__init__(self, feature_id, organism_id, name, uniquename, feature_type, analysis, obsolete)
         # Below are gene attributes that will be instantiated as "None" but given a value later.
-        self.fbal_list = None             # Will be a list of allele uniquenames.
+        self.fbal_list = None      # Will be a list of allele uniquenames.
+        self.floc_list = None      # Will be a list of (srcfeature_id, fmin, fmax, strand, FBrf ID) tuples.
+        self.notes = None          # Will be a list of (note, FBrf ID) tuples.
+        self.fbrf_list = None      # Will be a list of FBrf pub IDs.
+        # These attributes assessed by pick_floc() method after floc_list obtained.
+        self.chr_id = None         # Will be feature_id for Dmel chr/scaffold (golden_path(_region)).
+        self.fmin = None           # Will be featureloc.fmin (interbase).
+        self.fmax = None           # Will be featureloc.fmax (interbase).
+        self.strand = None         # Will be featureloc.strand.
+        self.agr_start = None      # Will be onbase "start" for export (adjusted as needed).
+        self.agr_stop = None       # Will be onbase "stop" for export (adjusted as needed).
+        # Attributes below require reference assembly info for determination.
+        self.chr_name = None       # Will be "uniquename" of the chromosome/scaffold.
+        self.chr_acc = None        # Will be the REFSEQ accession.version for the chromosome/scaffold.
+        self.ref_seq = None        # Will be the starting genomic sequence, usually "N/A" (string).
+        self.alt_seq = None        # Will be the variant genomic sequence, if known (string).
+        self.alt_acc = None        # Will be accession for inserted sequence, db:acc (string).
+        self.ins_len = None        # Will be the size of the insertion (integer).
+        self.padded_base = None    # Will be a string: A, C, G or T.
+        # Attributes below require synthesis of various Insertion data.
+        self.agr_type = None       # Will be a Sequence Ontology term ID: e.g., usually "SO:0000667".
 
     # feature.uniquename must be FBti-type.
     uniquename_regex = r'^FBti[0-9]{7}$'
+
+    def pick_floc(self):
+        """Determine featureloc specifics only if one featureloc entry found."""
+        if type(self.floc_list) is None:
+            log.warning('The "floc_list" is None - expected a list (even if empty).')
+        elif type(self.floc_list) != list:
+            log.warning('The "floc_list" is not a list - expected a list (even if empty).')
+        elif len(self.floc_list) == 0:
+            log.debug('Can\'t determine feature location for {}: no featureloc info in chado.'.format(self.uniquename))
+        elif len(self.floc_list) > 1:
+            log.debug('Can\'t determine feature location for {}: many featureloc values in chado.'.format(self.uniquename))
+        else:
+            self.chr_id = self.floc_list[0][0]
+            self.fmin = self.floc_list[0][1]
+            self.fmax = self.floc_list[0][2]
+            self.strand = self.floc_list[0][3]
+            if type(self.fbrf_list) == list and re.match(r'^FBrf[0-9]{7}$', self.floc_list[0][4]):
+                self.fbrf_list.append(self.floc_list[0][4])
+            # Onbase conversion for AGR export.
+            # For true insertions in interbase, we expect fmin == fmax.
+            # About 73% of FBti fall into this category.
+            # Add 1 to fmax for onbase representation.
+            if self.fmin == self.fmax:
+                self.agr_start = self.fmin
+                self.agr_stop = self.fmax + 1
+            # About 9% FBti have (fmax - fmin) == 1.
+            # For these, I assume that onbase coordinates were not converted properly from proforma.
+            # No onbase conversion required.
+            elif (self.fmax - self.fmin) == 1:
+                self.agr_start = self.fmin
+                self.agr_stop = self.fmax
+            # About 18% of FBti have (fmax - fmin) > 1.
+            # For these, FBti featureloc represents a range. Normal onbase conversion here.
+            # Interpretation of this range depends on the exact feature_type.
+            # For "transposable_element_insertion_site" features, range may represent ambiguity in insertion site.
+            # For "transposable_element" features, range represents portion of assembly having a TE.
+            # For "insertion_site", range represents portion of assembly deleted and replaced by a construct.
+            else:
+                self.agr_start = self.fmin + 1
+                self.agr_stop = self.fmax
+
+        return
 
 
 class SeqFeat(Feature):
