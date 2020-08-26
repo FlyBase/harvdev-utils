@@ -323,6 +323,7 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     """Add a list of values for a given attribute to each object in some ID-keyed data_dict.
 
     For example, get a list of pubs for each Gene object.
+    This new list will overwrite any previous values (usually the attribute starts as "None").
     Contrast with "add_unique_info()" function, which adds a single value for a given attribute.
 
     Args:
@@ -352,8 +353,8 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     # Check for overlap in db_result and data_dict keys.
     check_key_overlap(data_dict, db_results)
 
-    # Set targeted attribute to an empty list if None.
-    # This indicates attribute has been evaluated; an empty list means results sought but none found.
+    # Set targeted attribute to an empty list (this will overwrite any previous values).
+    # Since they're usually instantiated as "None", an empty list means results sought for the attribute but none found.
     for key, target in data_dict.items():
         # First confirm that the attribute to update exists for the object.
         empty_list = []
