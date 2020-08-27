@@ -521,6 +521,7 @@ class Insertion(Feature):
         # Attributes below require synthesis of various Insertion data.
         self.fails = []            # Will list various reasons object couldn't be exported.
         self.agr_type = None       # Will be a Sequence Ontology term ID: e.g., usually "SO:0000667".
+        self.for_agr_export = None # Will be boolean.
 
     # feature.uniquename must be FBti-type.
     uniquename_regex = r'^FBti[0-9]{7}$'
@@ -615,7 +616,7 @@ class Insertion(Feature):
         if self.agr_type is None:
             export = False
             self.fails.append('incorrect type')
-        self.agr_export = export
+        self.for_agr_export = export
 
         return
 
