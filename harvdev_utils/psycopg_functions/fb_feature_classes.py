@@ -607,9 +607,12 @@ class Insertion(Feature):
         if self.org_abbr != 'Dmel':
             export = False
             self.fails.append('not Dmel')
-        if len(self.fbal_list) != 1:
+        if len(self.fbal_list) == 0:
             export = False
-            self.fails.append('zero or many alleles')
+            self.fails.append('zero alleles')
+        if len(self.fbal_list) > 1:
+            export = False
+            self.fails.append('many alleles')
         if len(self.floc_list) != 1:
             export = False
             self.fails.append('no or ambiguous location')
