@@ -519,6 +519,7 @@ class Insertion(Feature):
         self.ins_len = None        # Will be the size of the insertion (integer).
         self.padded_base = None    # Will be a string: A, C, G or T.
         # Attributes below require synthesis of various Insertion data.
+        self.fails = []            # Will list various reasons object couldn't be exported.
         self.agr_type = None       # Will be a Sequence Ontology term ID: e.g., usually "SO:0000667".
 
     # feature.uniquename must be FBti-type.
@@ -545,16 +546,16 @@ class Insertion(Feature):
         return
 
     def get_agr_floc(self):
-        """Determine onbase start/stop coordinates and AGR type."""
+        """Determine onbase start/stop coordinates and from that, distinguish insertion from delin."""
         # First make sure necessary floc info is present.
         if self.fmin is None:
             log.debug('The fmin is None for {} - no onbase adjustments to make.'.format(self.uniquename))
         elif self.fmax is None:
             log.debug('The fmax is None for {} - no onbase adjustments to make.'.format(self.uniquename))
         # Logic depends on FBti-type.
+        # Ignore TEs - already in the reference genome, so not "insertions" relative to the reference.
+        # Consider transgenic TE insertion sites.
         elif self.feature_type == 'transposable_element_insertion_site':
-            # Assuming that all of these are insertions (not delins).
-            self.agr_type = 'SO:0000667'
             # For true insertions in interbase, we expect fmin == fmax.
             # About 73% of FBti fall into this category. They are all of type "transposable_element_insertion_site".
             # Add 1 to fmax for onbase representation.
@@ -562,8 +563,9 @@ class Insertion(Feature):
                 self.agr_start = self.fmin
                 self.agr_stop = self.fmax + 1
             # About 9% FBti have (fmax - fmin) == 1. 98% are "transposable_element_insertion_site".
-            # For these, I assume that onbase coordinates were not converted properly from proforma.
-            # No onbase conversion required.
+            # For these, I'm assuming that onbase coordinates were not converted properly from proforma.
+            # Alternatively, a single onbase position was given - so assuming insertion before that base.
+            # For these cases, no onbase conversion required.
             elif (self.fmax - self.fmin) == 1:
                 self.agr_start = self.fmin
                 self.agr_stop = self.fmax
@@ -576,6 +578,9 @@ class Insertion(Feature):
             else:
                 self.agr_start = self.fmin + 1
                 self.agr_stop = self.fmax
+            # Assign AGR type only if insertion position is precise/unambiguous.
+            if self.agr_stop - self.agr_start == 1:
+                self.agr_type = 'SO:0000667'
         elif self.feature_type == 'insertion_site':
             # For rare non-CRIMIC "insertion_site" features, floc interpretation is unclear/variable - ignore.
             # But for CRIMIC insertions, it does represent the insertion/delin.
@@ -587,6 +592,7 @@ class Insertion(Feature):
                     self.agr_start = self.fmin
                     self.agr_stop = self.fmax
                 # A delin.
+                # Odd thing is that 
                 elif self.fmax - self.fmin > 1:
                     self.agr_type = 'SO:1000032'
                     self.agr_start = self.fmin + 1
@@ -594,6 +600,32 @@ class Insertion(Feature):
 
         return
 
+    def is_for_agr_export(self):
+        """Determine if Insertion meets criteria for AGR export."""
+        export = True
+        if self.org_abbr != 'Dmel':
+            export = False
+            self.fails.append('not Dmel')
+        if len(self.fbal_list) != 1:
+            export = False
+            self.fails.append('zero or many alleles')
+        if len(self.floc_list) != 1:
+            export = False
+            self.fails.append('no or ambiguous location')
+        if self.agr_type is None:
+            export = False
+            self.fails.append('incorrect type')
+        self.agr_export = export
+
+        return
+
+    def agr_insertion_processing(self):
+        """Integrate object information in a specific order."""
+        self.pick_floc()
+        self.get_agr_floc()
+        self.is_for_agr_export()
+
+        return
 
 class SeqFeat(Feature):
     """Define a FlyBase SeqFeat object."""
