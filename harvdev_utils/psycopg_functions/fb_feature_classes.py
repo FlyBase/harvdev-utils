@@ -581,11 +581,8 @@ class Insertion(Feature):
             # But for CRIMIC insertions, it does represent the insertion/delin.
             # Assumption here is that insertion is before reported onbase fmax. Need to clarify.
             if self.name.startswith('TI{CRIMIC'):
-                # Unexpected case that I wouldn't know how to interpret.
-                if self.fmin == self.fmax:
-                    log.warning('Interbase fmin == fmax for {} - unexpected.'.format(self.uniquename))
                 # Simple insertion.
-                elif self.fmax - self.fmin == 1:
+                if self.fmax - self.fmin == 1:
                     self.agr_type = 'SO:0000667'
                     self.agr_start = self.fmin
                     self.agr_stop = self.fmax
