@@ -501,8 +501,8 @@ class Insertion(Feature):
         # Below are gene attributes that will be instantiated as "None" but given a value later.
         self.fbal_list = None      # Will be a list of allele uniquenames.
         self.floc_list = None      # Will be a list of (srcfeature_id, fmin, fmax, strand, FBrf ID) tuples.
-        self.notes = None          # Will be a list of (note, FBrf ID) tuples.
         self.fbrf_list = None      # Will be a list of FBrf pub IDs.
+        self.notes = None          # Will be a list of (string, FBrf ID) tuples.
         # These attributes assessed by pick_floc() method after floc_list obtained.
         self.chr_id = None         # Will be feature_id for Dmel chr/scaffold (golden_path(_region)).
         self.fmin = None           # Will be featureloc.fmin (interbase).
@@ -541,9 +541,22 @@ class Insertion(Feature):
             self.strand = self.floc_list[0][3]
             if type(self.fbrf_list) == list and re.match(r'^FBrf[0-9]{7}$', self.floc_list[0][4]):
                 self.fbrf_list.append(self.floc_list[0][4])
-            # Onbase conversion for AGR export.
+
+        return
+
+    def get_agr_floc(self):
+        """Determine onbase start/stop coordinates and AGR type."""
+        # First make sure necessary floc info is present.
+        if self.fmin is None:
+            log.debug('The fmin is None for {} - no onbase adjustments to make.'.format(self.uniquename))
+        elif self.fmax is None:
+            log.debug('The fmax is None for {} - no onbase adjustments to make.'.format(self.uniquename))
+        # Logic depends on FBti-type.
+        elif self.feature_type == 'transposable_element_insertion_site':
+            # Assuming that all of these are insertions (not delins).
+            self.agr_type = 'SO:0000667'
             # For true insertions in interbase, we expect fmin == fmax.
-            # About 73% of FBti fall into this category. There are all of type "transposable_element_insertion_site".
+            # About 73% of FBti fall into this category. They are all of type "transposable_element_insertion_site".
             # Add 1 to fmax for onbase representation.
             if self.fmin == self.fmax:
                 self.agr_start = self.fmin
@@ -563,6 +576,24 @@ class Insertion(Feature):
             else:
                 self.agr_start = self.fmin + 1
                 self.agr_stop = self.fmax
+        elif self.feature_type == 'insertion_site':
+            # For rare non-CRIMIC "insertion_site" features, floc interpretation is unclear/variable - ignore.
+            # But for CRIMIC insertions, it does represent the insertion/delin.
+            # Assumption here is that insertion is before reported onbase fmax. Need to clarify.
+            if self.name.startswith('TI{CRIMIC'):
+                # Unexpected case that I wouldn't know how to interpret.
+                if self.fmin == self.fmax:
+                    log.warning('Interbase fmin == fmax for {} - unexpected.'.format(self.uniquename))
+                # Simple insertion.
+                elif self.fmax - self.fmin == 1:
+                    self.agr_type = 'SO:0000667'
+                    self.agr_start = self.fmin
+                    self.agr_stop = self.fmax
+                # A delin.
+                elif self.fmax - self.fmin > 1:
+                    self.agr_type = 'SO:1000032'
+                    self.agr_start = self.fmin + 1
+                    self.agr_stop = self.fmax - 1
 
         return
 
