@@ -539,7 +539,7 @@ class Insertion(Feature):
             self.fmin = self.floc_list[0][1]
             self.fmax = self.floc_list[0][2]
             self.strand = self.floc_list[0][3]
-            if type(self.fbrf_list) == list and if re.match(r'^FBrf[0-9]{7}$', str(self.floc_list[0][4])):
+            if type(self.fbrf_list) == list and re.match(r'^FBrf[0-9]{7}$', str(self.floc_list[0][4])):
                 self.fbrf_list.append(self.floc_list[0][4])
 
         return
