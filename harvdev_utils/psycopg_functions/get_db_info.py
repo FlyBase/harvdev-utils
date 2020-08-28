@@ -42,7 +42,7 @@ def get_features_by_uname_regex(db_connection, feat_regex):
     try:
         ThisFeature = class_dict[feat_regex]
         log.info('The feature.uniquename regex "{}" corresponds to this type of Feature Class: "{}".'.format(feat_regex, str(ThisFeature)))
-    except TypeError:
+    except KeyError:
         ThisFeature = Feature
         log.info('The feature.uniquename regex "{}" does not correspond to a specific Feature type. \
                   Using generic Feature Class: "{}".'.format(feat_regex, str(ThisFeature)))
@@ -323,8 +323,8 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     """Add a list of values for a given attribute to each object in some ID-keyed data_dict.
 
     For example, get a list of pubs for each Gene object.
-    This new list will overwrite any previous values (usually the attribute starts as "None").
     Contrast with "add_unique_info()" function, which adds a single value for a given attribute.
+    Note - this new list will overwrite any previous values (usually the attribute starts as "None").
 
     Args:
         arg1 (dict): An FB-ID keyed dict of dicts or objects (e.g., Gene or Allele objects).
