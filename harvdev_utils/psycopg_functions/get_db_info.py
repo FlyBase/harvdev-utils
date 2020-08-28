@@ -9,15 +9,14 @@ Author(s):
 """
 
 import logging
-from harvdev_utils.general_functions import timenow
 from harvdev_utils.psycopg_functions import (
-    connect, current_features, Allele, Construct, Gene, Insertion, SeqFeat, Tool
+    connect, current_features_by_uname_regex, Allele, Construct, Feature, Gene, Insertion, SeqFeat, Tool
 )
 
 log = logging.getLogger(__name__)
 
 
-def get_features(db_connection, feat_regex):
+def get_features_by_uname_regex(db_connection, feat_regex):
     """Get all current, non-analysis features for a given uniquename regex.
 
     Args:
@@ -31,26 +30,27 @@ def get_features(db_connection, feat_regex):
         Raises exception if Feature-type Object to use cannot be determined from the FB-ID regex.
 
     """
-    log.info('TIME: {}. Getting FlyBase features having uniquename like "{}".'.format(timenow(), feat_regex))
-    formatted_sql_query = current_features.format(feat_regex)
+    log.info('Getting FlyBase features having uniquename like "{}".'.format(feat_regex))
+    class_dict = {
+        '^FBal[0-9]{7}$': Allele,
+        '^FBtp[0-9]{7}$': Construct,
+        '^FBgn[0-9]{7}$': Gene,
+        '^FBti[0-9]{7}$': Insertion,
+        '^FBto[0-9]{7}$': Tool,
+        '^FBsf[0-9]{10}$': SeqFeat
+    }
+    try:
+        ThisFeature = class_dict[feat_regex]
+        log.info('The feature.uniquename regex "{}" corresponds to this type of Feature Class: "{}".'.format(feat_regex, str(ThisFeature)))
+    except KeyError:
+        ThisFeature = Feature
+        log.info('The feature.uniquename regex "{}" does not correspond to a specific Feature type. \
+                  Using generic Feature Class: "{}".'.format(feat_regex, str(ThisFeature)))
+
+    formatted_sql_query = current_features_by_uname_regex.format(feat_regex)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
     log.info('Found {} results for this query.'.format(len(db_results)))
-
-    ThisFeature = None
-    class_dict = {
-        'FBal': Allele,
-        'FBtp': Construct,
-        'FBgn': Gene,
-        'FBti': Insertion,
-        'FBsf': SeqFeat,
-        'FBto': Tool
-    }
-    for prefix in class_dict:
-        if prefix in feat_regex:
-            ThisFeature = class_dict[prefix]
-    if ThisFeature is None:
-        raise TypeError('Cound not determine Feature-type Object to use.')
 
     feature_dict = {}
     for row in db_results:
@@ -63,7 +63,7 @@ def get_features(db_connection, feat_regex):
         obsolete = row[6]
         feature_dict[uname] = ThisFeature(feat_id, org_abbr, fname, uname, ftype, analysis, obsolete)
 
-    log.info('TIME: {}: Returning feature dict with {} entries.\n'.format(timenow(), len(feature_dict.keys())))
+    log.info('Returning feature dict with {} entries.\n'.format(len(feature_dict.keys())))
 
     return feature_dict
 
@@ -285,7 +285,7 @@ def add_unique_info(data_dict, attribute, db_connection, sql_query, *arguments):
 
     """
     # Perform the query.
-    log.info('TIME: {}. Adding unique db info to this attribute: {}'.format(timenow(), attribute))
+    log.info('Adding unique db info to this attribute: {}'.format(attribute))
     formatted_sql_query = format_sql_query(sql_query, *arguments)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
@@ -314,7 +314,7 @@ def add_unique_info(data_dict, attribute, db_connection, sql_query, *arguments):
             setattr(target, attribute, row_value)
             add_cnt += 1
 
-    log.info('TIME: {}. Added {} values to the {} attribute.\n'.format(timenow(), add_cnt, attribute))
+    log.info('Added {} values to the {} attribute.\n'.format(add_cnt, attribute))
 
     return data_dict
 
@@ -323,7 +323,8 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     """Add a list of values for a given attribute to each object in some ID-keyed data_dict.
 
     For example, get a list of pubs for each Gene object.
-    Contrast with "add_uniqu_info()" function, which adds a single value for a given attribute.
+    Contrast with "add_unique_info()" function, which adds a single value for a given attribute.
+    Note - this new list will overwrite any previous values (usually the attribute starts as "None").
 
     Args:
         arg1 (dict): An FB-ID keyed dict of dicts or objects (e.g., Gene or Allele objects).
@@ -341,14 +342,9 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     Warnings:
         Raises a warning if no overlap of data_dict keys with db_results, via "check_key_overlap()".
 
-    Raises:
-        Raises an exception if values in column 1 of db_results are not unique, via "check_unique_results()".
-            In other words, the expectation is that each FB ID-keyed object has only one result in the db.
-            For example, finding multiple "current symbols" for a gene would be unexpected - raise in that case.
-
     """
     # Perform the query.
-    log.info('TIME: {}. Adding list of db info to this attribute: {}'.format(timenow(), attribute))
+    log.info('Adding list of db info to this attribute: {}'.format(attribute))
     formatted_sql_query = format_sql_query(sql_query, *arguments)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
@@ -357,8 +353,8 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
     # Check for overlap in db_result and data_dict keys.
     check_key_overlap(data_dict, db_results)
 
-    # Set targeted attribute to an empty list if None.
-    # This indicates attribute has been evaluated; an empty list means results sought but none found.
+    # Set targeted attribute to an empty list (this will overwrite any previous values).
+    # Since they're usually instantiated as "None", an empty list means results sought for the attribute but none found.
     for key, target in data_dict.items():
         # First confirm that the attribute to update exists for the object.
         empty_list = []
@@ -389,7 +385,7 @@ def add_list_info(data_dict, attribute, db_connection, sql_query, *arguments):
             getattr(target, attribute).extend(db_value)
             add_cnt += 1
 
-    log.info('TIME: {}. Added values to the {} attribute of {} objects.\n'.format(timenow(), attribute, add_cnt))
+    log.info('Added values to the {} attribute of {} objects.\n'.format(attribute, add_cnt))
 
     return data_dict
 
@@ -423,7 +419,7 @@ def add_unique_dict_info(data_dict, att_key, new_att, db_connection, sql_query, 
 
     """
     # Perform the query.
-    log.info('TIME: {}. Using "{}" to look up db info for "{}".'.format(timenow(), att_key, new_att))
+    log.info('Using "{}" to look up db info for "{}".'.format(att_key, new_att))
     formatted_sql_query = format_sql_query(sql_query, *arguments)
     log.debug('Using this query string: {}'.format(formatted_sql_query))
     db_results = connect(formatted_sql_query, 'no_query', db_connection)
@@ -449,6 +445,6 @@ def add_unique_dict_info(data_dict, att_key, new_att, db_connection, sql_query, 
             setattr(target, new_att, new_value)
             add_cnt += 1
 
-    log.info('TIME: {}. Added {} values to the {} attribute.\n'.format(timenow(), add_cnt, new_att))
+    log.info('Added {} values to the {} attribute.\n'.format(add_cnt, new_att))
 
     return data_dict

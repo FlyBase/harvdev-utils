@@ -9,7 +9,7 @@ Author(s):
 """
 
 # Get all current, non-analysis features given a uniquename regex.
-current_features = """
+current_features_by_uname_regex = """
     SELECT DISTINCT f.feature_id,
                     f.organism_id,
                     f.name,
