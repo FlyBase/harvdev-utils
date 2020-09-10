@@ -537,12 +537,17 @@ class Insertion(Feature):
         elif len(self.floc_list) > 1:
             log.debug('Can\'t determine feature location for {}: many featureloc values in chado.'.format(self.uniquename))
         else:
-            self.chr_id = self.floc_list[0][0]
-            self.fmin = self.floc_list[0][1]
-            self.fmax = self.floc_list[0][2]
-            self.strand = self.floc_list[0][3]
-            if type(self.fbrf_list) == list and re.match(r'^FBrf[0-9]{7}$', str(self.floc_list[0][4])):
-                self.fbrf_list.append(self.floc_list[0][4])
+            CHR = 0
+            FMIN = 1
+            FMAX = 2
+            STR = 3
+            PUB = 4
+            self.chr_id = self.floc_list[0][CHR]
+            self.fmin = self.floc_list[0][FMIN]
+            self.fmax = self.floc_list[0][FMAX]
+            self.strand = self.floc_list[0][STR]
+            if type(self.fbrf_list) == list and re.match(r'^FBrf[0-9]{7}$', str(self.floc_list[0][PUB])):
+                self.fbrf_list.append(self.floc_list[0][PUB])
 
         return
 
@@ -554,6 +559,9 @@ class Insertion(Feature):
         elif self.fmax is None:
             log.debug('The fmax is None for {} - no onbase adjustments to make.'.format(self.uniquename))
         # Logic depends on FBti-type.
+
+        # INCORPORATE IAN'S SUGGESTION - A DICT OF TYPE:FX, RATHER THAN ALL THIS IF, ELSE.
+
         # Ignore TEs - already in the reference genome, so not "insertions" relative to the reference.
         # Consider transgenic TE insertion sites.
         elif self.feature_type == 'transposable_element_insertion_site':
