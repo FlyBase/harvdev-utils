@@ -72,6 +72,7 @@ class ExternalLookup:
         self.id_dict = {'hgnc': self._lookup_hgnc_id,
                         'chebi': self._lookup_chebi_id,
                         'pubchem': self._lookup_pubchem_id,
+                        'pubchem_sid': self._lookup_by_pubchem_substance_id,
                         'omim': self._lookup_omim_id,
                         'doid': self._lookup_doid_id}
 
@@ -229,6 +230,18 @@ class ExternalLookup:
         inchikey = results.to_dict(properties=['inchikey'])
         if 'inchikey' in inchikey:
             self.inchikey = inchikey['inchikey']
+
+    @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
+    def _lookup_by_pubchem_substance_id(self):
+        try:
+            substance = pubchempy.Substance.from_sid(self.external_id)
+        except pubchempy.BadRequestError:
+            self.error = "No results found when querying pubchem for substance {}".format(self.external_id)
+        self.name = substance.sid
+        self.inchikey = None
+        self.description = None
+        self.synonyms = substance.synonyms[0:10]  # Top 10 will do.
+        return self
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
     def _lookup_pubchem_id(self):
@@ -418,3 +431,15 @@ if __name__ == '__main__':  # noqa: C901
             print("\t Error: {}".format(hgnc.error))
         else:
             print("\tdescription: {}".format(hgnc.description))
+
+    for sid in ['348274211']:
+        print("\n\nProcessing PubChem_sid id {}".format(sid))
+        hgnc = ExternalLookup.lookup_by_id('PubChem_SID', sid)
+        if hgnc.error:
+            print("\t Error: {}".format(hgnc.error))
+        else:
+            print("\tdescription: {}".format(hgnc.description))
+            print("\tname: {}".format(hgnc.name))
+            print("\tinchikey: {}".format(hgnc.inchikey))
+            print("\tdesc: {}".format(hgnc.description))
+            print("\tsynonyms: {}".format(hgnc.synonyms))
