@@ -142,7 +142,7 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
         log.debug('The "tsv_data_object" has no "metaData" key.')
 
     # Regardless of presence/absence of metaData, write out headers.
-    output_file.write('## ')
+    output_file.write('##')
     csv_writer = csv.DictWriter(output_file, fieldnames=headers, delimiter='\t', extrasaction='ignore')
     csv_writer.writeheader()
 
