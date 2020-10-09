@@ -664,6 +664,11 @@ class Environment(Base):
     uniquename = Column(Text, nullable=False, unique=True)
     description = Column(Text)
 
+    def __str__(self):
+        """Over write the default output."""
+        return "environment_id id={}: uniquename:'{}' desc:'{}'".\
+            format(self.environment_id, self.uniquename, self.description)
+
 
 class EnvironmentCvterm(Base):
     __tablename__ = 'environment_cvterm'
@@ -2967,6 +2972,11 @@ class Phenstatement(Base):
     phenotype = relationship('Phenotype')
     pub = relationship('Pub')
     type = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Phenstatement id={}\n\tgenotype:'{}'\n\tphenotype: {}\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}".\
+            format(self.phenstatement_id, self.genotype, self.phenotype, self.environment, self.type, self.type, self.pub)
 
 
 t_prediction_evidence = Table(
