@@ -2976,7 +2976,7 @@ class Phenstatement(Base):
     def __str__(self):
         """Over write the default output."""
         return "Phenstatement id={}\n\tgenotype:'{}'\n\tphenotype: {}\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}".\
-            format(self.phenstatement_id, self.genotype, self.phenotype, self.environment, self.type, self.type, self.pub)
+            format(self.phenstatement_id, self.genotype, self.phenotype, self.environment, self.type, self.pub)
 
 
 t_prediction_evidence = Table(
