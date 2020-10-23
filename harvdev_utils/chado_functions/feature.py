@@ -301,7 +301,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     symbol lookups are kind of special and initialized here for ease of use.
 
     Returns:
-        Feature object.
+        Feature object or list of feature object if check_unique is passed as False.
 
     Raises:
         NoResultFound: If no feature found matching the synonym.
