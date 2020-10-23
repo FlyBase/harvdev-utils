@@ -296,6 +296,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
 
         cvterm_name (str): <optional> cvterm name defaults too 'symbol'
 
+        check_uniuqe (Bool): <optional> Set to false to fetch more than one feature with that symbol.
 
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
