@@ -2,7 +2,9 @@
 from .get_or_create import get_or_create
 from .get_create_or_update import get_create_or_update
 from .external_lookups import ExternalLookup
-from .cvterm import get_cvterm
+from .cvterm import (
+    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed
+)
 from .db import (
     get_db, get_dbxref
 )
