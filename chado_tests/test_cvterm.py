@@ -57,9 +57,9 @@ def startup_db():
     os.system('docker rm $(docker stop $(docker ps -a -q --filter ancestor=flybase/proformatestdb --format="{{.ID}}"))')
     os.system('docker rm $(docker stop $(docker ps -a -q --filter ancestor=testdb --format="{{.ID}}"))')
     if local_db:
-        os.system('docker run -p 127.0.0.1:5436:5432 --net proforma_net  --name proformatestdb testdb &')
+        os.system('docker run -p 127.0.0.1:5436:5432 --name proformatestdb testdb &')
     else:
-        os.system('docker run -p 127.0.0.1:5436:5432 --net proforma_net  --name proformatestdb flybase/proformatestdb &')
+        os.system('docker run -p 127.0.0.1:5436:5432 --name proformatestdb flybase/proformatestdb &')
 
     conn = None
     trys = 0
