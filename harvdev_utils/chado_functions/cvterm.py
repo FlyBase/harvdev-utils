@@ -94,11 +94,12 @@ def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
         if db_and_propname in db_propname_to_cvterm_ids:
             retained[retain_name].extend(db_propname_to_cvterm_ids[db_and_propname])
             continue
-        db_name, prop_name = db_and_propname.split(':')
-        if not prop_name:
-            raise CodingError("HarvdevError: lokkup failed as '{}' is not of the format FBxx:.......".format(db_and_propname))
+        try:
+            db_name, prop_name = db_and_propname.split(':')
+        except ValueError:
+            raise CodingError("HarvdevError: lookup failed as '{}' is not of the format xxxx:yyyyyyyy".format(db_and_propname))
+
         filter_spec = (Db.name == db_name,)
-        # filter_spec = ()
         if prop_name != 'default':
             filter_spec += (Cvtermprop.value == prop_name,)
 
@@ -107,8 +108,12 @@ def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
             join(Dbxref, Cvterm.dbxref_id == Dbxref.dbxref_id).join(Db).\
             filter(*filter_spec).all()
         db_propname_to_cvterm_ids[db_and_propname] = set()
+        count = 0
         for item in cvterms:
+            count += 1
             db_propname_to_cvterm_ids[db_and_propname].add(item.cvterm_id)
+        if not count:
+            raise CodingError("HarvdevError: lookup failed as '{}' produced no cvterms to check against".format(db_and_propname))
         retained[retain_name].update(db_propname_to_cvterm_ids[db_and_propname])
     if cvterm.cvterm_id in retained[retain_name]:
         return True

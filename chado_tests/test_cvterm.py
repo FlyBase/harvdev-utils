@@ -15,37 +15,26 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from harvdev_utils.chado_functions import (
-    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed
+    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed, CodingError
 )
-local_db = False
-debug = False
 conn2 = False
 session = None
 
 def setup_module(module):
     """ setup any state specific to the execution of the given module."""
-    global conn2,session
-    module.state = 'Started' 
+    global conn2, session
     conn2 = module.conn = startup_db()
     session = get_session()
-    print("Startup*******{}**********".format(module.conn))
 
 def teardown_module(module):
     """ teardown any state that was previously setup with a setup_module
     method.
     """
-    module.state = 'Finished'
     stop_db(module.conn)
-    print("Shutdown******{}*******".format(module.conn))
 
 def stop_db(conn):
     """Shut down the test database instance."""
-    if local_db:
-        output = subprocess.getoutput('docker rm $(docker stop $(docker ps -a -q --filter ancestor=testdb --format="{{.ID}}"))')
-    else:
-        output = subprocess.getoutput('docker rm $(docker stop $(docker ps -a -q --filter ancestor=flybase/proformatestdb --format="{{.ID}}"))')
-    if debug:
-        print(output)
+    output = subprocess.getoutput('docker rm $(docker stop $(docker ps -a -q --filter ancestor=flybase/proformatestdb --format="{{.ID}}"))')
     if conn:
         conn.close()
 
@@ -75,11 +64,6 @@ def startup_db():
         print("ERROR: Could not connect to test db")
         stop_db(None)
         exit(-1)
-    if (debug):
-        cursor = conn.cursor()
-        cursor.execute("select 1 from feature limit 2")
-        feat = cursor.fetchone()
-        print("Database reset and receiving: {}".format(feat))
 
     return conn
 
@@ -94,22 +78,6 @@ def get_session():
     return session
 
 class TestSomething:
-
-    def setup_method(self, method):
-        """ setup any state specific to the execution of the given module."""
-        self.state = 'Started in method'
-        print("Startup CVterm Module")
-
-    def teardown_method(self, method):
-        """ teardown any state that was previously setup with a setup_module
-        method.
-        """
-        self.state = 'Finished in test'
-        # stop_db(self.conn)
-        print("Shutdown CVterm Module")
-
-    def test_dummy(self):
-        pass
 
     def test_cvterm_lookup(self):
         cvterm = get_cvterm(session, 'FlyBase miscellaneous CV', 'pheno1')
@@ -127,11 +95,18 @@ class TestSomething:
         allowed = check_cvterm_is_allowed(session, cvterm, ['FBcv:environmental_qualifier', 'FBcv:phenotypic_class'])
         assert allowed == True
 
-        # Check it is cached using join
-
     def test_cvterm_not_allowed(self):
         cvterm = get_cvterm(session, 'property type', 'GO_internal_notes')
         assert cvterm.cvterm_id != 0
         allowed = check_cvterm_is_allowed(session, cvterm, ['FBcv:environmental_qualifier', 'FBcv:phenotypic_class'])
         assert allowed == False
 
+    def test_bad_list(self):
+        cvterm = get_cvterm(session, 'FlyBase miscellaneous CV', 'pheno1')
+        with pytest.raises(CodingError):
+            allowed = check_cvterm_is_allowed(session, cvterm, ['badformat'])
+
+    def test_empty_list(self):
+        cvterm = get_cvterm(session, 'FlyBase miscellaneous CV', 'pheno1')
+        with pytest.raises(CodingError):
+            allowed = check_cvterm_is_allowed(session, cvterm, ['FBcv:madeupcvterm'])
