@@ -15,7 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from harvdev_utils.chado_functions import (
-    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed
+    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed, retained
 )
 local_db = False
 debug = False
@@ -126,6 +126,8 @@ class TestSomething:
         assert cvterm.cvterm_id != 0
         allowed = check_cvterm_is_allowed(session, cvterm, ['FBcv:environmental_qualifier', 'FBcv:phenotypic_class'])
         assert allowed == True
+
+        # Check it is cached using join
 
     def test_cvterm_not_allowed(self):
         cvterm = get_cvterm(session, 'property type', 'GO_internal_notes')

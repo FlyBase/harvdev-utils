@@ -1,8 +1,8 @@
-# store easy lookup for cv, cvterm lookups
-# Also cvterm methids are here.
-# should save time in the long run
+"""Cvterm and associated method.
+
+Store easy lookup for Cvterm lookups and related methods.
+"""
 from sqlalchemy.orm.exc import NoResultFound
-# from sets import Set
 
 from .chado_errors import CodingError
 from harvdev_utils.production import (
@@ -96,8 +96,7 @@ def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
             continue
         db_name, prop_name = db_and_propname.split(':')
         if not prop_name:
-            print("AHHHHHH {} failed to be split. Need to raise excpetion etc".format(db_and_propname))
-            pass  # some sort of exception raise here.
+            raise CodingError("HarvdevError: lokkup failed as '{}' is not of the format FBxx:.......".format(db_and_propname))
         filter_spec = (Db.name == db_name,)
         # filter_spec = ()
         if prop_name != 'default':
@@ -110,9 +109,7 @@ def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
         db_propname_to_cvterm_ids[db_and_propname] = set()
         for item in cvterms:
             db_propname_to_cvterm_ids[db_and_propname].add(item.cvterm_id)
-            print("adding {}".format(item))
         retained[retain_name].update(db_propname_to_cvterm_ids[db_and_propname])
-    print(str(retained[retain_name]))
     if cvterm.cvterm_id in retained[retain_name]:
         return True
     return False
