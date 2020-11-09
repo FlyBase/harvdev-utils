@@ -15,7 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from harvdev_utils.chado_functions import (
-    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed, retained
+    get_cvterm, check_cvterm_has_prop, check_cvterm_is_allowed
 )
 local_db = False
 debug = False
