@@ -77,6 +77,9 @@ def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
             will allow faster lookup later on if we anticipate
             this being used a lot.
         If not set it will create a name by joining list element into a str.
+
+    Raise Exception CodingError: if each one of the list of props does not fit the xxxx:bbbbbbb format
+                                 or does not find any cvterms (Useless addition).
     """
     global db_propname_to_cvterm_ids, retained
 
