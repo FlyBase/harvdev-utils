@@ -559,9 +559,6 @@ class Insertion(Feature):
         elif self.fmax is None:
             log.debug('The fmax is None for {} - no onbase adjustments to make.'.format(self.uniquename))
         # Logic depends on FBti-type.
-
-        # INCORPORATE IAN'S SUGGESTION - A DICT OF TYPE:FX, RATHER THAN ALL THIS IF, ELSE.
-
         # Ignore TEs - already in the reference genome, so not "insertions" relative to the reference.
         # Consider transgenic TE insertion sites.
         elif self.feature_type == 'transposable_element_insertion_site':
