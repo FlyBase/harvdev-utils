@@ -115,7 +115,8 @@ def set_up_db_reading(report_label):
     else:
         log.setLevel(logging.INFO)
     sys.stdout = open(log_filename, 'a')
-    # set_up_dict['log'] = logging.getLogger(__name__)    # GIL TEST BOB
+    # set_up_dict['log'] = logging.getLogger(__name__)    # GIL old
+    set_up_dict['log'] = log                            # GIL new
 
     # Establish database connection.
     set_up_dict['conn'] = establish_db_connection(server, database, username, password)
