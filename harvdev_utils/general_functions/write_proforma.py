@@ -96,9 +96,9 @@ def get_proforma_masters(svn_username, svn_password):
                     log.debug('Found "header": {}'.format(proforma_master_dict[pro_name]['header']))
                     line_counter += 1
                 # Look for proforma field leader.
-                elif re.match(r'!\s{1,6}[A-Z]{1,2}[0-9]{1,2}[a-z]{0,1}\.', line):
-                    left_line = re.match(r'!\s{1,6}[A-Z]{1,2}[0-9]{1,2}[a-z]{0,1}\.', line).group(0)
-                    field_tag = re.search(r'(?<=\s)[A-Z]{1,2}[0-9]{1,2}[a-z]{0,1}', left_line).group(0)
+                elif re.match(r'!\s{1,6}[A-Z]{1,3}[0-9]{1,2}[a-z]{0,1}\.', line):
+                    left_line = re.match(r'!\s{1,6}[A-Z]{1,3}[0-9]{1,2}[a-z]{0,1}\.', line).group(0)
+                    field_tag = re.search(r'(?<=\s)[A-Z]{1,3}[0-9]{1,2}[a-z]{0,1}', left_line).group(0)
                     field = line.split(':')[0] + ':'
                     proforma_master_dict[pro_name][field_tag] = field
                     log.debug('Found tag: {}, line: {}'.format(field_tag, field))
@@ -150,7 +150,7 @@ def get_distinct_proforma_field_prefixes(all_proforma_dict):
         field_tag_prefixes = []
         for key in pro_dict.keys():
             try:
-                field_tag_prefix = re.match(r'[A-Z]{1,2}', key).group(0)
+                field_tag_prefix = re.match(r'[A-Z]{1,3}', key).group(0)
                 field_tag_prefixes.append(field_tag_prefix)
             except AttributeError:
                 log.debug('Ignoring this proforma key: {}'.format(key))
@@ -198,9 +198,9 @@ def detect_proforma_type(data_object, field_to_proforma_dict):
     # Scan the dictionary keys.
     proforma_types_detected = []
     for key in data_object:
-        if re.match(r'[A-Z]{1,2}', key):
+        if re.match(r'[A-Z]{1,3}', key):
             try:
-                key_prefix = re.match(r'[A-Z]{1,2}', key).group(0)
+                key_prefix = re.match(r'[A-Z]{1,3}', key).group(0)
                 proforma_type = field_to_proforma_dict[key_prefix]
                 log.debug('Key "{}" corresponds to proforma type: {}'.format(key, proforma_type))
                 proforma_types_detected.append(proforma_type)
