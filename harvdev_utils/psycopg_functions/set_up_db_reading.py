@@ -15,7 +15,6 @@ import sys
 import os
 import logging
 import strict_rfc3339
-from harvdev_utils.general_functions import timenow
 from harvdev_utils.psycopg_functions import establish_db_connection
 
 log = logging.getLogger(__name__)
@@ -31,8 +30,6 @@ def set_up_db_reading(report_label):
         dict: A dict of various values for the script to make db_connection, name files, etc.
 
     """
-    log.info('TIME: {}. Setting up environment, db connections and logging.'.format(timenow()))
-
     # Parse command line inputs.
     parser = argparse.ArgumentParser(description='inputs')
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
@@ -42,7 +39,6 @@ def set_up_db_reading(report_label):
     # Extra arguments that may be relevant to specific scripts using this module are safely ignored.
     # args = parser.parse_args()
     args, extra_args = parser.parse_known_args()
-    log.info('These extra arguments not used by set_up_db_reading(): {}'.format(extra_args))
 
     # Determine whether script is to run locally or in docker.
     config_file = args.config_file
@@ -122,5 +118,8 @@ def set_up_db_reading(report_label):
 
     # Official timestamp for this script.
     set_up_dict['the_time'] = strict_rfc3339.now_to_rfc3339_localoffset()
+
+    log.info('Done setting up the environment, db connections and logging.')
+    log.info('These extra arguments were not used by set_up_db_reading(): {}'.format(extra_args))
 
     return set_up_dict
