@@ -124,4 +124,7 @@ def set_up_db_reading(report_label):
     # Official timestamp for this script.
     set_up_dict['the_time'] = strict_rfc3339.now_to_rfc3339_localoffset()
 
+    log.info('Done setting up environment, db connections and logging.')
+    log.info('These extra arguments were not used by set_up_db_reading(): {}'.format(extra_args))
+
     return set_up_dict
