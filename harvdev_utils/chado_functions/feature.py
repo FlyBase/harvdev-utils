@@ -61,7 +61,7 @@ def add_to_cache(feature, symbol=None):
         feature_cache[feature.type.name][symbol] = feature
 
 
-def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=None):
+def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=None, obsolete='f'):
     """Get feature by the unique name.
 
     Get the feature from the uniquename and aswell optionally from the organsism_id and type i.e. 'gene', 'chemical entity'
@@ -75,6 +75,11 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
 
         organism_id (int): <optional> chado organism_id.
 
+        obsolete ('t', 'f', 'e'): <optional> is feature obsolete
+                                  t = true
+                                  f = false (default)
+                                  e = either not fussed.
+
     Returns:
         Feature object
 
@@ -82,6 +87,8 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
         NoResultFound: Feature not found.
 
         MultipleResultsFound: uniquename is not unique.
+
+       CodingError: obsolete not set to one of allowed values,
     """
     feature = None
     if not type_name and not organism_id:
@@ -89,8 +96,12 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
         if feature:
             add_to_cache(feature)
     if not feature:  # uniquename not enough or type_name and/or organism specified
-        filter_spec = (Feature.uniquename == uniquename,
-                       Feature.is_obsolete == 'f')
+        check_obs = _check_obsolete(obsolete)
+
+        filter_spec = (Feature.uniquename == uniquename,)
+        if check_obs:
+            filter_spec += (Feature.is_obsolete == obsolete,)
+
         if organism_id:
             filter_spec += (Feature.organism_id == organism_id,)
         if type_name:
@@ -161,7 +172,7 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
     return feature
 
 
-def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id=None):
+def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id=None, obsolete='f'):
     """Get feature by its name.
 
     Lookup feature using the feature name.
@@ -177,12 +188,18 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
 
         organism_id (int): <optional> chado organism_id.
 
+        obsolete ('t', 'f', 'e'): <optional> is feature obsolete
+                                  t = true
+                                  f = false (default)
+                                  e = either not fussed.
+
     Returns:
         Feature object.
 
     Raises:
         DataError: if feature not found uniquely.
     """
+    check_obs = _check_obsolete(obsolete)
     if type_name and type_id:
         raise CodingError("Cannot specify type_name and type_id")
 
@@ -196,8 +213,9 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
         type_id = feature_type.cvterm_id
 
     filter_spec = (Feature.name == name,
-                   Feature.is_obsolete == 'f',
                    Feature.organism_id == organism_id)
+    if check_obs:
+        filter_spec += (Feature.is_obsolete == obsolete,)
     if type_id:
         filter_spec += (Feature.type_id == type_id,)
     try:
@@ -209,7 +227,7 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
     return feature
 
 
-def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol', check_unique=False):
+def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol', check_unique=False, obsolete='f'):
     """Get feature from the synonym.
 
     Lookup to see if the synonym has been used before. Even if not current.
@@ -228,6 +246,11 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
 
         cvterm_name (str): <optional> cvterm name defaults too 'symbol'
 
+        obsolete ('t', 'f', 'e'): <optional> is feature obsolete
+                                  t = true
+                                  f = false (default)
+                                  e = either not fussed.
+
     Returns:
         Feature object.
 
@@ -236,6 +259,8 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
                    If feature cannot be found uniquely.
 
     """
+    check_obs = _check_obsolete(obsolete)
+
     # Default to Dros if not organism specified.
     if not organism_id:
         organism_id = get_default_organism_id(session)
@@ -251,13 +276,17 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
     feature_type = feature_type_lookup(session, type_name)
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
-    try:
-        features = session.query(Feature).join(FeatureSynonym).join(Synonym).\
-            filter(Synonym.type_id == synonym_type.cvterm_id,
+    filter_spec = (Synonym.type_id == synonym_type.cvterm_id,
                    Synonym.synonym_sgml == synonym_sgml,
                    Feature.organism_id == organism_id,
-                   Feature.is_obsolete == 'f',
-                   Feature.type_id == feature_type.cvterm_id).all()
+                   Feature.type_id == feature_type.cvterm_id,)
+
+    if check_obs:
+        filter_spec += (Feature.is_obsolete == obsolete,)
+
+    try:
+        features = session.query(Feature).join(FeatureSynonym).join(Synonym).\
+            filter(*filter_spec).all()
     except NoResultFound:
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
 
@@ -280,7 +309,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
     raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
 
 
-def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol', check_unique=True):
+def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol', check_unique=True, obsolete='f'):
     """Lookup feature that has a specific type and synonym name.
 
     Args:
@@ -297,6 +326,11 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
         cvterm_name (str): <optional> cvterm name defaults too 'symbol'
 
         check_uniuqe (Bool): <optional> Set to false to fetch more than one feature with that symbol.
+
+        obsolete ('t', 'f', 'e'): <optional> is feature obsolete
+                                  t = true
+                                  f = false (default)
+                                  e = either not fussed.
 
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
@@ -322,13 +356,14 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
         return feature_cache[type_name][synonym_sgml]
 
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
-
+    check_obs = _check_obsolete(obsolete)
     filter_spec = (Synonym.type_id == synonym_type.cvterm_id,
                    Synonym.synonym_sgml == synonym_sgml,
                    Feature.organism_id == organism_id,
-                   Feature.is_obsolete == 'f',
                    FeatureSynonym.is_current == 't')
 
+    if check_obs:
+        filter_spec += (Feature.is_obsolete == obsolete,)
     if not type_name or type_name == 'gene':
         filter_spec += (~Feature.uniquename.contains('FBog'),)
     if type_name:
@@ -360,3 +395,17 @@ def _simple_uniquename_lookup(session, uniquename):
         return feature
     except MultipleResultsFound:
         return None
+
+
+def _check_obsolete(obsolete):
+    """Check if obsolete.
+
+    check if obsolete is one of the 3 allowed values and
+    return wether obsolete should be checked.
+    """
+    check_obs = False
+    if obsolete == 'e':
+        check_obs = False
+    elif obsolete != 't' or obsolete != 'f':
+        raise CodingError("If specifed obsolete must be 't', 'f' or 'e'")
+    return check_obs
