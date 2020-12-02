@@ -91,12 +91,12 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
        CodingError: obsolete not set to one of allowed values,
     """
     feature = None
+    check_obs = _check_obsolete(obsolete)
     if not type_name and not organism_id:
-        feature = _simple_uniquename_lookup(session, uniquename)
+        feature = _simple_uniquename_lookup(session, uniquename, obsolete=obsolete)
         if feature:
             add_to_cache(feature)
     if not feature:  # uniquename not enough or type_name and/or organism specified
-        check_obs = _check_obsolete(obsolete)
 
         filter_spec = (Feature.uniquename == uniquename,)
         if check_obs:
@@ -252,7 +252,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
                                   e = either not fussed.
 
     Returns:
-        Feature object.
+        List of feature objects or Feature depending on check_unique.
 
     Raises:
         DataError: If cvterm for type not found.
@@ -381,7 +381,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     return feature
 
 
-def _simple_uniquename_lookup(session, uniquename):
+def _simple_uniquename_lookup(session, uniquename, obsolete='f'):
     """
     Lookup feature by uniquename only. Will probably work most times.
 
@@ -389,9 +389,12 @@ def _simple_uniquename_lookup(session, uniquename):
 
     Raises error NoResultFound if not found
     """
+    check_obs = _check_obsolete(obsolete)
+    filter_spec = (Feature.uniquename == uniquename,)
+    if check_obs:
+        filter_spec += (Feature.is_obsolete == obsolete,)
     try:
-        feature = session.query(Feature).filter(Feature.uniquename == uniquename,
-                                                Feature.is_obsolete == 'f').one_or_none()
+        feature = session.query(Feature).filter((*filter_spec)).one_or_none()
         return feature
     except MultipleResultsFound:
         return None
@@ -403,9 +406,9 @@ def _check_obsolete(obsolete):
     check if obsolete is one of the 3 allowed values and
     return wether obsolete should be checked.
     """
-    check_obs = False
+    check_obs = True
     if obsolete == 'e':
         check_obs = False
-    elif obsolete != 't' or obsolete != 'f':
+    elif obsolete != 't' and obsolete != 'f':
         raise CodingError("If specifed obsolete must be 't', 'f' or 'e'")
     return check_obs
