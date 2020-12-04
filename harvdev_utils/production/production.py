@@ -857,7 +857,7 @@ class Feature(Base):
 class FeatureCvterm(Base):
     __tablename__ = 'feature_cvterm'
     __table_args__ = (
-        UniqueConstraint('feature_id', 'cvterm_id', 'pub_id'),
+        UniqueConstraint('feature_id', 'cvterm_id', 'pub_id', 'is_not'),
     )
 
     feature_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_cvterm_feature_cvterm_id_seq'::regclass)"))
