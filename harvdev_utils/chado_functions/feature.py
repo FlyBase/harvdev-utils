@@ -356,7 +356,6 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
     if not convert:
         synonym_sgml = synonym_name
-    log.warning("convert is {} value is now '{}'".format(convert, synonym_sgml))
 
     # Check cache
     if type_name in feature_cache and synonym_sgml in feature_cache[type_name]:
