@@ -309,7 +309,8 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
     raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
 
 
-def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol', check_unique=True, obsolete='f'):
+def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type',
+                          cvterm_name='symbol', check_unique=True, obsolete='f', convert=True):
     """Lookup feature that has a specific type and synonym name.
 
     Args:
@@ -332,6 +333,9 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
                                   f = false (default)
                                   e = either not fussed.
 
+        convert (Bool): <optional> set to True
+                        wether to convert chars i.e. '[' to '<up' etc
+
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
 
@@ -350,6 +354,9 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     else:
         # convert name to sgml format for lookup
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+    if not convert:
+        synonym_sgml = synonym_name
+    log.warning("convert is {} value is now '{}'".format(convert, synonym_sgml))
 
     # Check cache
     if type_name in feature_cache and synonym_sgml in feature_cache[type_name]:
