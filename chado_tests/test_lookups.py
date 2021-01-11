@@ -180,6 +180,10 @@ class TestSomething:
         feature = feature_symbol_lookup(session, None, 'symbol-21')
         assert feature.uniquename == 'FBgn0002100'
 
+        # Test bracket names with no conversion (convert = false)
+        feature = feature_symbol_lookup(session, None, 'C9orf72:n.intron14[30GGGGCC]', convert=False)
+        assert feature.name == 'C9orf72:n.intron14[30GGGGCC]'
+    
     def test_symbol_lookup_bad(self):
         """Test symbol bad lookups."""
 
@@ -199,6 +203,10 @@ class TestSomething:
         # wrong type.
         with pytest.raises(NoResultFound):
             feature = feature_symbol_lookup(session, 'allele', 'genechar-&agr;-[0002]')
+
+        # DIVS do not convert but do not specift here so it should fail
+        with pytest.raises(NoResultFound):
+            feature = feature_symbol_lookup(session, None, 'C9orf72:n.intron14[30GGGGCC]')
 
     def test_synonym_lookup_good(self):
         """Test synonym good lookups."""
