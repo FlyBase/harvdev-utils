@@ -5,6 +5,9 @@ from .set_up_db_reading import set_up_db_reading
 from .fb_feature_classes import (
     Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
 )
+from .fb_chado_classes import (
+    Author, Pub, Reference, Resource
+)
 from .sql_queries import (
     current_features_by_uname_regex, current_feat_symbol_sgmls, current_feat_fullname_sgmls,
     rel_features, rel_features_rev, rel_dmel_features, rel_dmel_features_rev,
