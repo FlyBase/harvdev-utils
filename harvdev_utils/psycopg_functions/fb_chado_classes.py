@@ -10,7 +10,7 @@ Author(s):
 
 import logging
 import re
-from harvdev_utils.char_conversions import sub_sup_to_sgml, sub_sup_sgml_to_html, sgml_to_unicode
+from harvdev_utils.char_conversions import sub_sup_sgml_to_html, sgml_to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ class Reference(Pub):
         This Class is limited to chado pub entries corresponding to publications, which have "FBrf"-type IDs.
         Excluded are ~10K "resources" (journals, books and compendiums), which have "multipub"-type uniquenames.
         Excluded are ~50 "internal" pubs, which have non-"FBrf"/"multipub"-type IDs (e.g., "unattributed", "gadfly3").
-        
+
         """
         Pub.__init__(self, pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename)
         # Additional attributes to be retrieved from FlyBase chado.
@@ -423,14 +423,13 @@ class Reference(Pub):
 
 
 class Resource(Pub):
-
     """Define a FlyBase Resource object."""
 
     def __init__(self, pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename):
         """Initialize a FlyBase Resource Class object. See Pub Class for details.
 
         This Class is limited to current chado pub entries corresponding to books, journals and compendia, which have "multipub_"-type IDs.
-        
+
         """
         Pub.__init__(self, pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename)
         # Additional attributes to be retrieved from FlyBase chado.
