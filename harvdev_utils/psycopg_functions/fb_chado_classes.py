@@ -10,6 +10,8 @@ Author(s):
 
 import logging
 import re
+import datetime
+import strict_rfc3339
 from harvdev_utils.char_conversions import sub_sup_sgml_to_html, sgml_to_unicode
 
 log = logging.getLogger(__name__)
@@ -231,11 +233,10 @@ class Reference(Pub):
         for attribute in attribute_list:
             if attribute.endswith('timelastmodified') and getattr(self, attribute) is not None:
                 timestamp_list.append(getattr(self, attribute))
-        # Sort the timestamps and take the last one (i.e., the latest timestamp). Convert into AGR format.
-        max_timestamp = str(sorted(timestamp_list)[-1]).replace(' ', 'T')
-        # log.info('Have this as max timestamp: {}'.format(max_timestamp))
-        # log.info('Timestamp has this type: {}.'.format(type(max_timestamp)))
-        self.agr_date_last_modified = max_timestamp
+        # Sort the timestamps and take the last one (i.e., the latest timestamp).
+        max_timestamp = sorted(timestamp_list)[-1]
+        # Convert datetime to strict_rfc3339 (via timestamp).
+        self.agr_date_last_modified = strict_rfc3339.timestamp_to_rfc3339_localoffset(datetime.datetime.timestamp(max_timestamp))
 
         return
 
