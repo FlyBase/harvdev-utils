@@ -208,6 +208,8 @@ class Reference(Pub):
         self.agr_authors = []                  # List of pubauthor entries for the pub.
         # Optional AGR attributes for ONLY referenceExchange.json.
         self.agr_mod_id = None                 # Will be the MOD ID.
+        # AGR attribute for reporting pub as evidence.
+        self.agr_pub_evidence = None
         # Ignoring these AGR reference.json attributes: dateArrivedPubMed, keywords, pubMedType, issueDate, meshTerms.
 
     # pub.uniquename must be "FBrf"-type.
@@ -241,12 +243,22 @@ class Reference(Pub):
         return
 
     def get_agr_primary_id(self):
-        """Pick primary ID for AGR reporting."""
+        """Pick primary ID for AGR reporting of references or evidence supporting other submitted data."""
         if self.pubmed_id is not None:
-            self.agr_primary_id = 'PMID:' + self.pubmed_id
             self.agr_pubmed_id = 'PMID:' + self.pubmed_id
+            self.agr_primary_id = self.agr_pubmed_id
+            self.agr_pub_evidence = {
+                'publicationId': self.agr_primary_id,
+                'crossReference': {
+                    'id': 'FB:' + self.uniquename,
+                    'pages': ['reference']
+                }
+            }
         else:
             self.agr_primary_id = 'FB:' + self.uniquename
+            self.agr_pub_evidence = {
+                'publicationId': self.agr_primary_id
+            }
 
         return
 
@@ -556,4 +568,133 @@ class Resource(Pub):
         return
 
 
-# Cvterm, Genotype, Environment, Phenotype, Phenstatement
+class Cvterm(object):
+    """Define a FlyBase Cvterm object."""
+
+    def __init__(self, cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name):
+        """Initialize a FlyBase Cvterm Class object.
+
+        Args:
+            arg1 (int): The chado cvterm.cvterm_id.
+            arg2 (int): The chado cvterm.cv_id.
+            arg3 (str): The chado cvterm.definition. Can be NULL.
+            arg4 (int): The chado cvterm.dbxref_id.
+            arg5 (int): The chado cvterm.is_obsolete (0 or 1).
+            arg6 (int): The chado cvterm.is_relationshiptype (0 or 1).
+            arg7 (str): The chado cvterm.name.
+
+        Returns:
+            Cvterm: A FlyBase "Cvterm" object.
+
+        """
+        self.cvterm_id = cvterm_id
+        self.cv_id = cv_id
+        self.definition = definition
+        self.dbxref_id = dbxref_id
+        self.is_obsolete = is_obsolete
+        self.is_relationshiptype = is_relationshiptype
+        self.name = name
+        # Additional attributes to be retrieved from FlyBase chado.
+        self.cv_name = None             # Name of the CV for the CV term.
+        self.dbxref_accession = None    # The dbxref.accession corresponding to cvterm.dbxref_id.
+        self.db_name = None             # The db.name corresponding to the cvterm.dbxref_id.
+        # Additional intermediate attributes to be synthesized from FlyBase Reference info.
+        self.processing_errors = []       # A list of errors that prevent export of FB reference to AGR.
+        self.processing_warnings = []     # A list of warnings that don't prevent export but should be logged.
+        self.is_for_agr_export = None     # Boolean that reports if Reference is to be exported.
+        self.export_description = None    # A string that identifies the pub for logging.
+        # AGR attributes.
+        self.agr_term_id = None           # Concatenation of the db.name and dbx.accession for a CV term's 1o ID.
+
+    # cvterm.cvterm_id must be an integer
+    def _get_cvterm_id(self):
+        return self.__cvterm_id
+
+    def _set_cvterm_id(self, value):
+        if isinstance(value, int):
+            self.__cvterm_id = value
+        else:
+            raise TypeError('The "cvterm_id" must be an integer.')
+
+    cvterm_id = property(_get_cvterm_id, _set_cvterm_id)
+
+    # cvterm.cv_id must be an integer
+    def _get_cv_id(self):
+        return self.__cv_id
+
+    def _set_cv_id(self, value):
+        if isinstance(value, int):
+            self.__cv_id = value
+        else:
+            raise TypeError('The "cv_id" must be an integer.')
+
+    cv_id = property(_get_cv_id, _set_cv_id)
+
+    # cvterm.dbxref_id must be an integer
+    def _get_dbxref_id(self):
+        return self.__dbxref_id
+
+    def _set_dbxref_id(self, value):
+        if isinstance(value, int):
+            self.__dbxref_id = value
+        else:
+            raise TypeError('The "dbxref_id" must be an integer.')
+
+    dbxref_id = property(_get_dbxref_id, _set_dbxref_id)
+
+    # cvterm.is_obsolete must an integer
+    def _get_is_obsolete(self):
+        return self.__is_obsolete
+
+    def _set_is_obsolete(self, value):
+        if isinstance(value, int):
+            self.__is_obsolete = value
+        else:
+            raise TypeError('The "is_obsolete" value must an integer.')
+
+    is_obsolete = property(_get_is_obsolete, _set_is_obsolete)
+
+    # cvterm.is_relationshiptype must an integer
+    def _get_is_relationshiptype(self):
+        return self.__is_relationshiptype
+
+    def _set_is_relationshiptype(self, value):
+        if isinstance(value, int):
+            self.__is_relationshiptype = value
+        else:
+            raise TypeError('The "is_relationshiptype" value must an integer.')
+
+    is_obsolete = property(_get_is_relationshiptype, _set_is_relationshiptype)
+
+    def get_agr_term_id(self):
+        """Determine CV term ID for AGR export, if applicable."""
+        exportable_cvterm_db_list = ['DOID', 'FBbt', 'FBcv', 'FBdv', 'GO', 'SO']
+        if self.db_name in exportable_cvterm_db_list:
+            self.agr_term_id = '{}:{}'.format(self.db_name, self.dbxref_accession)
+        else:
+            self.processing_errors.append('CV term not from a valid CV.')
+        return
+
+    def process_for_agr_export(self):
+        """Run set of simple methods for conversion of FB info into AGR format."""
+        self.get_agr_term_id()
+        # Determine exportability.
+        if self.processing_errors == []:
+            self.is_for_agr_export = True
+        else:
+            self.is_for_agr_export = False
+        # Generate a string that summarizes Reference AGR export issues for logging.
+        export_description = 'Exported? {}. {} ({}:{}). '.format(self.is_for_agr_export, self.name, self.db_name, self.dbxref_accession)
+        if self.processing_errors != []:
+            error_messages = 'ERRORS: ' + ' '.join(self.processing_errors)
+            export_description = export_description + error_messages
+        if self.processing_warnings != []:
+            warning_messages = 'WARNINGS: ' + ' '.join(self.processing_warnings)
+            export_description = export_description + warning_messages
+        self.export_description = export_description
+
+        return
+
+
+
+# Genotype, Environment, Phenotype, Phenstatement
