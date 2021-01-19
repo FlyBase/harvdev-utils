@@ -446,6 +446,7 @@ class Resource(Pub):
         """
         Pub.__init__(self, pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename)
         # Additional attributes to be retrieved from FlyBase chado.
+        self.pub_type = None              # The CV term corresponding to pub.type_id.
         self.isbn_ids = []                # 0-many. 1320/9913 resources have ISBN (db.name = 'isbn').
         self.issn_ids = []                # 0-many. 4729/9913 resources have ISSN (db.name = 'issn'), print or online.
         self.pubauthor_ids = []           # 0-many. 1970/9913 resources have pubauthor (editor) entries.
@@ -494,14 +495,17 @@ class Resource(Pub):
     def get_agr_title(self):
         """Convert chars and sub/superscript tags in FlyBase title for AGR export."""
         # First determine if there's any title and/or volumetitle.
-        if self.title is None:
-            self.processing_warnings.append('No pub.title available.')
-            title_to_use = 'No title available.'
-        elif self.volumetitle is None:
+        if self.title is not None and self.volumetitle is not None:
+            title_to_use = self.title + ' ' + self.volumetitle
+        elif self.title is not None:
             title_to_use = self.title
         else:
-            title_to_use = self.title + ' ' + self.volumetitle
-        # Next convert, handling odd chars that will raise error in "sgml_to_unicode" function.
+            # Special exception for compendia: use pub.miniref if pub.title is null.
+            if self.pub_type == 'compendium':
+                title_to_use = self.miniref
+            else:
+                self.processing_warnings.append('No pub.title available.')
+                title_to_use = 'No title available.'
         title_to_use = sub_sup_sgml_to_html(title_to_use)
         try:
             title_to_use = sgml_to_unicode(title_to_use)
