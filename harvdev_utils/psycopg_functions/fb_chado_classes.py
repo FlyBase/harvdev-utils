@@ -555,8 +555,8 @@ class Resource(Pub):
             self.agr_volumes.append(self.volume)
         elif self.volumetitle is not None:
             self.agr_volumes.append(self.volumetitle)
-        elif self.published_in_volume is not None:
-            self.agr_volumes.append(self.published_in_volume)
+        elif self.published_in_volume != []:
+            self.agr_volumes.extend(self.published_in_volume)
 
         return
 
