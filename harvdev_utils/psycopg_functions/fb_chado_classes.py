@@ -451,29 +451,36 @@ class Resource(Pub):
         """
         Pub.__init__(self, pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename)
         # Additional attributes to be retrieved from FlyBase chado.
-        self.pub_type = None              # The CV term corresponding to pub.type_id.
-        self.isbn_ids = []                # 0-many. 1320/9913 resources have ISBN (db.name = 'isbn').
-        self.issn_ids = []                # 0-many. 4729/9913 resources have ISSN (db.name = 'issn'), print or online.
-        self.pubauthor_ids = []           # 0-many. 1970/9913 resources have pubauthor (editor) entries.
+        self.pub_type = None               # The CV term corresponding to pub.type_id.
+        self.pubauthor_ids = []            # 0-many. 1970/9913 resources have pubauthor (editor) entries.
+        self.published_in_volume = None    # A pubprop for ~800 resources, almost always when volume IS NULL.
+        self.published_in_issue = None     # A pubprop for ~90 resources where issue IS NULL.
+        self.isbn_ids = []                 # 0-many. 1320/9913 resources have ISBN (db.name = 'isbn').
+        self.issn_ids = []                 # 0-many. 4729/9913 resources have ISSN (db.name = 'issn'), print or online.
         # Additional intermediate attributes to be synthesized from FlyBase Reference info.
-        self.processing_errors = []       # A list of errors that prevent export of FB reference to AGR.
-        self.processing_warnings = []     # A list of warnings that don't prevent export but should be logged.
-        self.is_for_agr_export = None     # Boolean that reports if Reference is to be exported.
-        self.export_description = None    # A string that identifies the pub for logging.
+        self.processing_errors = []        # A list of errors that prevent export of FB reference to AGR.
+        self.processing_warnings = []      # A list of warnings that don't prevent export but should be logged.
+        self.is_for_agr_export = None      # Boolean that reports if Reference is to be exported.
+        self.export_description = None     # A string that identifies the pub for logging.
         # If attribute is required, value can't be none: either hold from export, or fill in value with a placeholder.
         # Required AGR attributes for resource.json.
-        self.agr_primary_id = None        # NLM, MOD or ISBN ID.
-        self.agr_title = None             # Title of resource.
-        self.agr_iso_abbr = None          # ISO abbreviation. ISSUE - I don't know if FB abbr are MedLine or ISO.
-        self.agr_medline_abbr = None      # MedLine abbreviation. ISSUE - I don't know if FB abbr are MedLine or ISO.
-        # Optional AGR attributes for resource.json.
+        self.agr_primary_id = None         # Use internal FB pub.uniquename as "FB:FB{}.format(pub.uniquename)".
+        self.agr_title = None              # Use pub.title (journal, book) or pub.miniref (compendium).
+        # Optional AGR attributes for resource.json that we'll use.
+        self.agr_abbreviation_synonyms = []    # Abbreviation synonyms. Will be pub.miniref for journals only.
         self.agr_publisher = None              # Will be publisher, and if present, pubplace.
-        self.agr_volumes = None                # ISSUE - Must be an array. Request string.
-        self.agr_pages = None                  # ISSUE - Must be number. Request string.
+        self.agr_volumes = []                  # Will be pub.volume (but submit as an array).
+        self.agr_pages = None                  # Will be pub.pages.
         self.agr_editors = []                  # List of pubauthor (editor) entries for the pub.
-        # Ignoring these AGR resource.json attributes: titleSynonyms, copyrightDate, abstractOrSummary.
-        # Ignoring these AGR resource.json attributes: crossReferences (because we have no pages for resources).
-        # Ignoring these AGR resource.json attributes: onlineISSN, printISSN (don't distinguish them in chado).
+        self.agr_xrefs = []                    # Crossreferences. Will be ISSN and ISBN IDs.
+        # Optional AGR attributes for resource.json that we'll ignore.
+        self.agr_title_synonyms = []       # Synonyms for title. Don't think I'll use this.
+        self.agr_iso_abbr = None           # ISO abbr. We won't use this now (we can't determine abbreviation type).
+        self.agr_medline_abbr = None       # MedLine abbr. We won't use this now (we can't determine abbreviation type).
+        self.agr_print_issn = None         # Won't use this for now (we can't determine ISSN type).
+        self.agr_online_issn = None        # Won't use this for now (we can't determine ISSN type).
+        self.agr_summary = None            # AGR abstractOrSummary.
+        self.agr_copyright_date = None     # AGR copyrightDate.
 
     # pub.uniquename must be "multipub_"-type.
     uniquename_regex = r'^multipub_[0-9]{1,5}$'
@@ -490,10 +497,11 @@ class Resource(Pub):
 
     uniquename = property(_get_uniquename, _set_uniquename)
 
-    # Various methods for synthesizing and converting Reference attributes.
+    # Various methods for synthesizing and converting Resource attributes.
     def get_agr_primary_id(self):
-        """Pick primary ID for AGR reporting."""
-        self.agr_primary_id = 'FB:' + self.uniquename
+        """Pick and format primary ID for AGR reporting."""
+        # Adding "FB:FB" prefix ahead of "multipub" ID to keep with expectation of FB ID.
+        self.agr_primary_id = 'FB:FB' + self.uniquename
 
         return
 
@@ -511,6 +519,8 @@ class Resource(Pub):
             else:
                 self.processing_warnings.append('No pub.title available.')
                 title_to_use = 'No title available.'
+
+        # Once title to use had been chosen, convert problematic characters.
         title_to_use = sub_sup_sgml_to_html(title_to_use)
         try:
             title_to_use = sgml_to_unicode(title_to_use)
@@ -520,21 +530,11 @@ class Resource(Pub):
 
         return
 
-    def get_agr_iso_abbr(self):
-        """Check miniref and use as abbreviation if present (excepting compendia)."""
-        if self.miniref is not None and self.pub_type != 'compendium':
-            self.agr_iso_abbr = self.miniref
-        else:
-            self.agr_iso_abbr = 'isoAbbreviation unavailable.'
-
-        return
-
-    def get_agr_medline_abbr(self):
-        """Check miniref and use as abbreviation if present (excepting compendia)."""
-        if self.miniref is not None and self.pub_type != 'compendium':
-            self.agr_medline_abbr = self.miniref
-        else:
-            self.agr_medline_abbr = 'medlineAbbreviation unavailable.'
+    def get_agr_abbreviation_synonyms(self):
+        """Get abbreviations for the resource."""
+        # If title is NULL, then ignore the miniref since that's being used as a title.
+        if self.title is not None:
+            self.agr_abbreviation_synonyms.append(self.miniref)
 
         return
 
@@ -547,18 +547,34 @@ class Resource(Pub):
 
         return
 
+    def get_agr_volumes(self):
+        """Generate a volume string."""
+        if self.volume is not None:
+            self.agr_volumes.append(self.volume)
+        elif self.volumetitle is not None:
+            self.agr_volumes.append(self.volumetitle)
+
+        return
+
+    def get_agr_xrefs(self):
+        """Format ISSN and ISBN accessions into AGR xrefs."""
+        for accession in self.isbn_ids:
+            self.agr_xrefs.append({'id': 'ISBN:{}'.format(accession)})
+        for accession in self.issn_ids:
+            self.agr_xrefs.append({'id': 'ISSN:{}'.format(accession)})
+
+        return
+
     def process_for_agr_export(self):
         """Run set of simple methods for conversion of FB info into AGR format."""
         self.get_agr_primary_id()
         self.get_agr_title()
-        self.get_agr_iso_abbr()
-        self.get_agr_medline_abbr()
+        self.get_agr_abbreviation_synonyms()
         self.get_agr_publisher()
+        self.get_agr_volumes()
+        self.get_agr_xrefs()
         # No special conversion required for these attributes, yet.
-        # self.agr_volumes = self.volume
-        self.agr_volumes = ['bob']    # TEMP - to pass spec for now.
-        # self.agr_pages = self.pages
-        self.agr_pages = 99                 # TEMP - to pass spec for now.
+        self.agr_pages = self.pages
         # Determine exportability.
         if self.processing_errors == []:
             self.is_for_agr_export = True
