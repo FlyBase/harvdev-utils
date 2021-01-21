@@ -549,10 +549,14 @@ class Resource(Pub):
 
     def get_agr_volumes(self):
         """Generate a volume string."""
+        # We have three sources.
+        # As vast majority of resources have only one of these, picking the best one available.
         if self.volume is not None:
             self.agr_volumes.append(self.volume)
         elif self.volumetitle is not None:
             self.agr_volumes.append(self.volumetitle)
+        elif self.published_in_volume is not None:
+            self.agr_volumes.append(self.published_in_volume)
 
         return
 
