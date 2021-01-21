@@ -56,7 +56,9 @@ class Author(object):
         if self.pub_uniquename is None:
             return
         else:
-            agr_author_dict = {}
+            agr_author_dict = {
+                'authorRank': self.rank
+            }
 
         # Pick the best ID.
         if self.pubmed_id is not None:
@@ -166,6 +168,7 @@ class Reference(Pub):
         """
         Pub.__init__(self, pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename)
         # Additional attributes to be retrieved from FlyBase chado.
+        self.language = None                     # A string corresponding to "languages" pubprop.
         self.pubmed_id = None                    # A string of type '^PMID:[0-9]{1,}$' corresponding to the PubMed ID.
         self.pub_type = None                     # The cvterm.name corresponding to pub.type_id.
         self.pubauthor_ids = []                  # The pubauthor entries (IDs) for the pub.
@@ -199,6 +202,7 @@ class Reference(Pub):
         self.agr_tags = None                   # Will be a list of AGR tags. All FBrfs are "inCorpus"; some are "notRelevant" to fly researchers.
         # Optional AGR attributes for ONLY reference.json.
         self.agr_abstract = None               # Convert odd chars/tags.
+        self.agr_language = None               # Should match FB "languages" pubprop.
         self.agr_publisher = None              # Will be publisher, and if present, pubplace.
         self.agr_resource_abbr = None          # Abbreviation for any related journal/book/compendium.
         self.agr_volume = None                 # Same as volume.
@@ -410,6 +414,7 @@ class Reference(Pub):
         self.get_agr_tags()
         self.get_agr_publisher()
         # No special conversion required for these attributes, yet.
+        self.agr_language = self.language
         self.agr_mod_id = 'FB:' + self.uniquename
         self.agr_resource_abbr = self.resource_abbr
         self.agr_volume = self.volume
@@ -516,8 +521,8 @@ class Resource(Pub):
         return
 
     def get_agr_iso_abbr(self):
-        """Check miniref and use as abbreviation if present."""
-        if self.miniref is not None:
+        """Check miniref and use as abbreviation if present (excepting compendia)."""
+        if self.miniref is not None and self.pub_type != 'compendium':
             self.agr_iso_abbr = self.miniref
         else:
             self.agr_iso_abbr = 'isoAbbreviation unavailable.'
@@ -525,8 +530,8 @@ class Resource(Pub):
         return
 
     def get_agr_medline_abbr(self):
-        """Check miniref and use as abbreviation if present."""
-        if self.miniref is not None:
+        """Check miniref and use as abbreviation if present (excepting compendia)."""
+        if self.miniref is not None and self.pub_type != 'compendium':
             self.agr_medline_abbr = self.miniref
         else:
             self.agr_medline_abbr = 'medlineAbbreviation unavailable.'
@@ -602,12 +607,14 @@ class Cvterm(object):
         self.cv_name = None             # Name of the CV for the CV term.
         self.dbxref_accession = None    # The dbxref.accession corresponding to cvterm.dbxref_id.
         self.db_name = None             # The db.name corresponding to the cvterm.dbxref_id.
+        self.language = None            # Corresponds to "languages" pubprop.
         # Additional intermediate attributes to be synthesized from FlyBase Reference info.
         self.processing_errors = []       # A list of errors that prevent export of FB reference to AGR.
         self.processing_warnings = []     # A list of warnings that don't prevent export but should be logged.
         self.is_for_agr_export = None     # Boolean that reports if Reference is to be exported.
         self.export_description = None    # A string that identifies the pub for logging.
         # AGR attributes.
+        self.agr_language = None               # Should match FB "languages" pubprop.
         self.agr_term_id = None           # Concatenation of the db.name and dbx.accession for a CV term's 1o ID.
 
     # cvterm.cvterm_id must be an integer
