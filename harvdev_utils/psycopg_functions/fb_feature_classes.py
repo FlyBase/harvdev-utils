@@ -468,16 +468,30 @@ class Gene(Feature):
 
     def is_for_agr_export(self):
         """Assess organism and gene type to determine if gene is for AGR export."""
+        ## Post-SO-update
+        # exportable_gene_types = [
+        #     '@SO0001217:protein_coding_gene@',
+        #     '@SO0001263:ncRNA_gene@',
+        #     '@SO0000336:pseudogene@',
+        #     '@SO0000087:nuclear_gene@',
+        #     '@SO0001265:miRNA_gene@',
+        #     '@SO0001637:rRNA_gene@',
+        #     '@SO0001267:snoRNA_gene@',
+        #     '@SO0001268:snRNA_gene@',
+        #     '@SO0001272:tRNA_gene@',
+        #     '@SO0000704:gene@'
+        # ]
+        ## Pre-SO-update
         exportable_gene_types = [
-            '@SO0001217:protein_coding_gene@',
-            '@SO0001263:ncRNA_gene@',
-            '@SO0000336:pseudogene@',
+            '@SO0000010:protein_coding_gene@',
+            '@SO0000011:non_protein_coding_gene@',
+            '@SO0000042:pseudogene_attribute@',
             '@SO0000087:nuclear_gene@',
-            '@SO0001265:miRNA_gene@',
-            '@SO0001637:rRNA_gene@',
-            '@SO0001267:snoRNA_gene@',
-            '@SO0001268:snRNA_gene@',
-            '@SO0001272:tRNA_gene@',
+            '@SO0000571:miRNA_gene@',
+            '@SO0000573:rRNA_gene@',
+            '@SO0000578:snoRNA_gene@',
+            '@SO0000623:snRNA_gene@',
+            '@SO0000663:tRNA_gene@',
             '@SO0000704:gene@'
         ]
         self.for_agr_export = False
