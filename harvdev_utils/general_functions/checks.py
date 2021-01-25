@@ -37,7 +37,7 @@ def xort_logfile_check(filename):
     if not count:  # Must be a problem if empty
         error_lines = "Empty log file.This should not be possible!!"
         okay = False
-    if not bingo_you_success:
+    elif not bingo_you_success:
         error_lines = "Error: NO 'bingo ....you success' found"
         okay = False
     return okay, error_lines
