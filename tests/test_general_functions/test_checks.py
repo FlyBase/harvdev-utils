@@ -5,7 +5,7 @@
 import unittest
 
 from harvdev_utils.general_functions import (
-    xort_logfile_check, proforma_logfile_check, check_xml, new_proforma_log_check
+    xort_logfile_check, proforma_logfile_check, check_xml, new_proforma_logfile_check
 )
 
 def test_xml_good():
@@ -61,3 +61,22 @@ def test_xort_log_empty():
     okay, error_string = xort_logfile_check("./tests/test_general_functions/test_data_files/xort_empty.log")
     assert not okay
     assert "Empty" in error_string
+
+def test_new_proforma_good():
+    # will not get here unless all the module are installed.
+    okay, error_string = new_proforma_logfile_check("./tests/test_general_functions/test_data_files/new_proforma_good.log")
+    assert okay
+    assert error_string == ""
+
+def test_new_proforma_bad():
+    # will not get here unless all the module are installed.
+    okay, error_string = new_proforma_logfile_check("./tests/test_general_functions/test_data_files/new_proforma_bad.log")
+    assert not okay
+    assert "Error: NO 'bingo ....you success' found" in error_string
+
+def test_new_proforma_empty():
+    # Test we get an error and message lives up to that.
+    okay, error_string = new_proforma_logfile_check("./tests/test_general_functions/test_data_files/new_proforma_empty.log")
+    assert not okay
+    assert "Empty" in error_string
+

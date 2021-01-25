@@ -15,5 +15,5 @@ from .read_csv_tsv_file import (
     extract_data_from_tsv, extract_date_from_filename
 )
 from .checks import (
-    xort_logfile_check, proforma_logfile_check, check_xml, new_proforma_log_check
+    xort_logfile_check, proforma_logfile_check, check_xml, new_proforma_logfile_check
 )

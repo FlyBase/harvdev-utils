@@ -110,7 +110,7 @@ def check_xml(xmlfile):
     return okay, error
 
 
-def new_proforma_log_check(filename):
+def new_proforma_logfile_check(filename):
     """Check this log file to make and pass back success status.
 
     return wether okay or not and an error string
