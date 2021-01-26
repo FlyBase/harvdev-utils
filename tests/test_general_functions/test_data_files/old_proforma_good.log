@@ -1,0 +1,38 @@
+Subroutine trim redefined at /src/lib/perl5/FlyBase/Proforma/ExpressionParser.pm line 1904.
+
+==Opening: ./proforma/al2794.edit.==
+------------------
+processing Pub FBrf0233148
+CHECK: PLoS Genet. in DB multipub_9816
+CHECK: check if FBrf0233148 has a parent_pub miniref = to P2 PLoS Genet.
+CHECK: P2 uniquename for multipub PLoS Genet. check  returns 	0
+Action Items: !c log, FBrf0233148 P41
+Action Item: FBrf0233148 == al2794.edit
+------------------
+------------------
+------------------
+
+==Opening: ./proforma/al2795.edit.==
+------------------
+processing Pub FBrf0233083
+Action Item: FBrf0233083 == al2795.edit
+CHECK: PLoS ONE in DB multipub_10137
+CHECK: check if FBrf0233083 has a parent_pub miniref = to P2 PLoS ONE
+CHECK: P2 uniquename for multipub PLoS ONE check  returns 	0
+Action Items: !c log, FBrf0233083 P41
+------------------
+------------------
+------------------
+
+==Opening: ./proforma/al2796.edit.==
+------------------
+processing Pub FBrf0232656
+Action Items: !c log, FBrf0232656 P41
+CHECK: Mol. Biol. Cell in DB multipub_2595
+CHECK: check if FBrf0232656 has a parent_pub miniref = to P2 Mol. Biol. Cell
+CHECK: P2 uniquename for multipub Mol. Biol. Cell check  returns 	0
+Action Item: FBrf0232656 == al2796.edit
+------------------
+------------------
+------------------
+========END========

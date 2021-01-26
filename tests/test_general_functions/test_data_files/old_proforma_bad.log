@@ -1,0 +1,13 @@
+==Opening: ./proforma/al2794.edit.==
+	line: processing Allele Hsap\HTT[Q93.ex1.UAS]...
+	line: Action Items: allele FBal0127292 == Hsap\HTT[Q93.ex1.UAS] with pub FBrf0188282
+	line: GGG photoreceptor cell { Scer\GAL4[elav-C155] },  suppressible | partially,  Zzzz\scFv[C4.UAS.Tag:HA], Scer\GAL4[elav-C155]
+	line: FFF photoreceptor cell, , Scer\GAL4[elav-C155], suppressible | partially,  Zzzz\scFv[C4.UAS.Tag:HA], Scer\GAL4[elav-C155] 
+	line: GA29bphotoreceptor cell
+	line: G56 photoreceptor cell { Scer\GAL4[elav-C155] },  Zzzz\scFv[C4.UAS.Tag:HA], Scer\GAL4[elav-C155]
+	line: get_feat_ukeys_by_name Scer\\GAL4[elav-C155]
+	line: get_feat_ukeys_by_name Zzzz\\scFv[C4.UAS.Tag:HA]
+	line: Warning: could not get uniquename for Zzzz\\scFv[C4.UAS.Tag:HA]
+	line: ERROR:not found in DB GA56/GA17 Zzzz\scFv[C4.UAS.Tag:HA] 
+------------------
+========END========
