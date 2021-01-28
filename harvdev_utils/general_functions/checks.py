@@ -18,6 +18,7 @@ def xort_logfile_check(filename):
     # check log file for the word ERROR
     count = 0
     old_lines = deque(maxlen=10)
+    count = 0
     bingo_you_success = False
     with open(filename, "r") as log_file:
         for line in log_file:
@@ -31,13 +32,13 @@ def xort_logfile_check(filename):
     error_lines = ""
     if not okay:
         for item in errors:
-            error_lines += "file:{}, line {}, 10 previous lines were {}".format(item[1], item[0], item[2])
+            error_lines += "file:{}, line {}, 10 subsequent lines were {}".format(item[1], item[0], item[2])
 
     if not count:  # Must be a problem if empty
-        error_lines += "Empty log file.This should not be possible!!"
+        error_lines = "Empty log file.This should not be possible!!"
         okay = False
     elif not bingo_you_success:
-        error_lines += "Error: NO 'bingo ....you success' found"
+        error_lines = "Error: NO 'bingo ....you success' found"
         okay = False
     return okay, error_lines
 
@@ -76,7 +77,7 @@ def proforma_logfile_check(logfile):
     error_lines = ""
     if not okay:
         for item in errors:
-            error_lines += "file:{}, line {}, 10 previous lines were:-\n{}".format(item[1], item[0], item[2])
+            error_lines += "file:{}, line {}, 10 subsequent lines were:-\n{}".format(item[1], item[0], item[2])
 
     if not count:  # Must be a problem if empty
         error_lines += "Empty log file.This should not be possible!!"
