@@ -32,7 +32,7 @@ def generic_AGR_json_dict(database_release, strict_time):
              'metadata': {'release': '2020_02',
                           'dateProduced': '2020-05-07T17:26:01-04:00',
                           'dataProvider': {'type': 'curated',
-                                           'crossReference': {'id': 'FB', 
+                                           'crossReference': {'id': 'FB',
                                                               'pages': ['homepage']
                                                              }
                                           }
