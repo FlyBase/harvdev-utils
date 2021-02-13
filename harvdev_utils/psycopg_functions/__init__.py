@@ -6,7 +6,7 @@ from .fb_feature_classes import (
     Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
 )
 from .fb_chado_classes import (
-    Author, Pub, Reference, Resource, Cvterm    #, Genotype, Phenotype, Phenstatement
+    Author, Pub, Reference, Resource, Cvterm
 )
 from .sql_queries import (
     current_features_by_uname_regex, current_feat_symbol_sgmls, current_feat_fullname_sgmls,

@@ -468,7 +468,7 @@ class Gene(Feature):
 
     def is_for_agr_export(self):
         """Assess organism and gene type to determine if gene is for AGR export."""
-        ## Post-SO-update
+        # Post-SO-update
         exportable_gene_types = [
             '@SO0001217:protein_coding_gene@',
             '@SO0001263:ncRNA_gene@',
