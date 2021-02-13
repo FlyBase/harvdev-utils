@@ -725,7 +725,3 @@ class Cvterm(object):
         self.export_description = export_description
 
         return
-
-
-
-# Genotype, Environment, Phenotype, Phenstatement
