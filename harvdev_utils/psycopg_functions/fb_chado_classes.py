@@ -18,8 +18,8 @@ log = logging.getLogger(__name__)
 
 
 # Classes
-class Author(object):
-    """Define a FlyBase Author object."""
+class Pubauthor(object):
+    """Define a FlyBase Pubauthor object."""
 
     def __init__(self, pubauthor_id, pub_id, rank, editor, surname, givennames, suffix):
         """Initialize a FlyBase Author Class object.
@@ -34,7 +34,7 @@ class Author(object):
             arg7 (str): The chado pubauthor.suffix (max 255 char).
 
         Returns:
-            Author: A FlyBase "Author" object.
+            Pubauthor: A FlyBase "Pubauthor" object.
 
         """
         self.pubauthor_id = pubauthor_id
