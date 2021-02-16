@@ -54,6 +54,7 @@ Sphinx>=1.8.1
 sphinx-rtd-theme>=0.4.2
 sphinxcontrib-websupport>=1.1.0
 sqlalchemy
+svn
 toml>=0.10.0
 tox>=3.5.2
 tqdm>=4.29.0
