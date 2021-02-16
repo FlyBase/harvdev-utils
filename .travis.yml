@@ -8,5 +8,6 @@ cache: pip
 
 script:
     - docker pull flybase/proformatestdb
+    - python -m pip install -U pip
     - python -m pytest -v
     - pip install .
