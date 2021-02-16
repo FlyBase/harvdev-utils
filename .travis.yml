@@ -4,10 +4,8 @@ dist: trusty
 language: python
 python:
     - "3.6"
-cache: pip
 
 script:
     - docker pull flybase/proformatestdb
     - python -m pytest -v
-    - python -m pip install -U pip
     - pip install .
