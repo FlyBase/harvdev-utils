@@ -22,7 +22,7 @@ class Pubauthor(object):
     """Define a FlyBase Pubauthor object."""
 
     def __init__(self, pubauthor_id, pub_id, rank, editor, surname, givennames, suffix):
-        """Initialize a FlyBase Author Class object.
+        """Initialize a FlyBase Pubauthor Class object.
 
         Args:
             arg1 (int): The chado pubauthor.pubauthor_id.
@@ -44,11 +44,11 @@ class Pubauthor(object):
         self.surname = surname
         self.givennames = givennames
         self.suffix = suffix
-        # Additional author attributes to be retrieved from FlyBase chado.
+        # Additional pubauthor attributes to be retrieved from FlyBase chado.
         self.pub_uniquename = None    # This will be the uniquename of the related pub (if applicable).
         self.pubmed_id = None         # The PubMed ID for the pub, if available.
         # AGR attributes.
-        self.agr_author = None         # Author info transformed into AGR format.
+        self.agr_author = None         # Pubauthor info transformed into AGR format.
 
     def make_agr_author(self):
         """Convert FlyBase pubauthor info into AGR authorReference.json spec."""
@@ -176,7 +176,7 @@ class Reference(Pub):
         self.not_drospub = None                  # Will be "y" if not a Dros pub.
         self.resource_abbr = None                # The abbreviation for the resource in which the Reference was published.
         self.pub_timelastmodified = None         # Last audit_chado timestamp for "pub" table.
-        self.author_timelastmodified = None      # Last audit_chado timestamp for "pubauthor" table.
+        self.pubauthor_timelastmodified = None      # Last audit_chado timestamp for "pubauthor" table.
         self.abstract_timelastmodified = None    # Last audit_chado timestamp for "pubprop" (abstract).
         self.pmid_timelastmodified = None        # Last audit_chado timestamp for "pub_dbxref" (PMID).
         self.journal_timelastmodified = None     # Last audit_chado timestamp for "pub_relationship" (journal).
