@@ -35,6 +35,7 @@ def set_up_db_reading(report_label):
     parser.add_argument('-v', '--verbose', action='store_true', help='DEBUG-level logging.', required=False)
     parser.add_argument('-a', '--alliance', action='store_true', help='Filenames for AGR export.', required=False)
     parser.add_argument('-c', '--config_file', help='Supply filepath to credentials, optional.', required=False)
+    parser.add_argument('-t', '--testing', action='store_true', help='Rollback db writes.', required=False)
     # Use parse_known_args() instead of parse_args() to handle only the args relevant here without crashing.
     # Extra arguments that may be relevant to specific scripts using this module are safely ignored.
     # args = parser.parse_args()
@@ -79,6 +80,8 @@ def set_up_db_reading(report_label):
     set_up_dict = {}
     set_up_dict['server'] = server
     set_up_dict['database'] = database
+    set_up_dict['username'] = username
+    set_up_dict['password'] = password
     set_up_dict['database_release'] = database_release
     set_up_dict['assembly'] = assembly
     set_up_dict['annotation_release'] = annotation_release
@@ -87,6 +90,9 @@ def set_up_db_reading(report_label):
     set_up_dict['svn_username'] = svn_username
     set_up_dict['svn_password'] = svn_password
     set_up_dict['output_dir'] = output_dir
+
+    # Determine if testing variable is True or false.
+    set_up_dict['testing'] = args.testing
 
     # Output filename
     alliance = args.alliance
@@ -120,6 +126,7 @@ def set_up_db_reading(report_label):
     set_up_dict['the_time'] = strict_rfc3339.now_to_rfc3339_localoffset()
 
     log.info('Done setting up the environment, db connections and logging.')
-    log.info('These extra arguments were not used by set_up_db_reading(): {}'.format(extra_args))
+    if extra_args != []:
+        log.info('These extra arguments were not used by set_up_db_reading(): {}'.format(extra_args))
 
     return set_up_dict
