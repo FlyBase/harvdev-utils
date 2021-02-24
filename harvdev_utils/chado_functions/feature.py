@@ -203,21 +203,19 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
     if type_name and type_id:
         raise CodingError("Cannot specify type_name and type_id")
 
-    # Default to Dros if no organism specified.
-    if not organism_id:
-        organism_id = get_default_organism_id(session)
-
     feature_type = None
     if type_name:
         feature_type = feature_type_lookup(session, type_name)
         type_id = feature_type.cvterm_id
 
-    filter_spec = (Feature.name == name,
-                   Feature.organism_id == organism_id)
+    filter_spec = (Feature.name == name,)
+    if organism_id:
+        filter_spec += (Feature.organism_id == organism_id,)
     if check_obs:
         filter_spec += (Feature.is_obsolete == obsolete,)
     if type_id:
         filter_spec += (Feature.type_id == type_id,)
+
     try:
         feature = session.query(Feature).filter(*filter_spec).one_or_none()
     except MultipleResultsFound:
