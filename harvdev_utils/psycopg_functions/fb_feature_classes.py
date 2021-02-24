@@ -480,6 +480,15 @@ class Gene(Feature):
             '@SO0001268:snRNA_gene@',
             '@SO0001272:tRNA_gene@',
             '@SO0000704:gene@',
+            '@SO0001269:SRP_RNA_gene@',
+            '@SO0001639:RNase_P_RNA_gene@',
+            '@SO0001640:RNase_MRP_RNA_gene@',
+            '@SO0002127:lncRNA_gene@',
+            '@SO0002182:antisense_lncRNA_gene@',
+            '@SO0002236:rRNA_18S_gene@',
+            '@SO0002238:rRNA_5S_gene@',
+            '@SO0002239:rRNA_28S_gene@',
+            '@SO0002240:rRNA_5_8S_gene@',
             '@SO0000010:protein_coding_gene@',        # Pre-SO-update term needed when querying older db.
             '@SO0000011:non_protein_coding_gene@',    # Pre-SO-update term needed when querying older db.
             '@SO0000042:pseudogene_attribute@',       # Pre-SO-update term needed when querying older db.
