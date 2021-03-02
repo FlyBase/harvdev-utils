@@ -18,7 +18,13 @@ from sqlalchemy.orm.exc import NoResultFound
 from harvdev_utils.chado_functions import (
     get_feature_by_uniquename, feature_name_lookup,
     feature_symbol_lookup, feature_synonym_lookup,
-    get_organism, CodingError, DataError
+    get_organism, CodingError, DataError,
+    synonym_name_details, get_cvterm
+)
+
+from harvdev_utils.chado_functions.get_or_create import get_or_create
+from harvdev_utils.production import (
+    Feature, Synonym, FeatureSynonym
 )
 conn2 = False
 session = None
@@ -255,4 +261,26 @@ class TestSomething:
         assert not features
 
 
+    def test_create_and_lookup(self):
+        """Create and then lookup."""
 
+        name = "TP{1}Tao[1]"
+        feat_type = get_cvterm(session, 'SO', 'transposable_element_insertion_site')
+        organism, plain_name, sgml = synonym_name_details(session, name)
+        new_feat, _ = get_or_create(session, Feature, name=plain_name,
+                                    type_id=feat_type.cvterm_id, uniquename="FBti:temp_1",
+                                    organism_id=organism.organism_id)
+
+        feature = feature_name_lookup(session, name, type_name='transposable_element_insertion_site')
+        assert feature.name == 'TP{1}Tao[1]'
+
+        syn_type = get_cvterm(session, 'synonym type', 'symbol')
+
+        synonym, _ = get_or_create(session, Synonym, type_id=syn_type.cvterm_id, name=plain_name, synonym_sgml=sgml)
+
+        fs, _ = get_or_create(session, FeatureSynonym, feature_id=new_feat.feature_id, synonym_id=synonym.synonym_id,
+                              pub_id=1)
+        fs.is_current = True
+        fs.is_internal = False
+        feature = feature_symbol_lookup(session, 'transposable_element_insertion_site', name, convert=True)
+        assert feature.name == 'TP{1}Tao[1]'
