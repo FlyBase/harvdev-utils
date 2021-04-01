@@ -32,8 +32,7 @@ def get_cvterm(session, cv_name, cvterm_name):
             cv_cvterm[cv_name] = {}
         cv_cvterm[cv_name][cvterm_name] = cvterm
     except NoResultFound:
-        raise CodingError("HarvdevError: Could not find cv {}, cvterm {}.".format(cv_name, cvterm_name))
-        return None
+        raise CodingError("HarvdevError: Could not find cv '{}', cvterm '{}'.".format(cv_name, cvterm_name))
     return cv_cvterm[cv_name][cvterm_name]
 
 ########################
