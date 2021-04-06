@@ -27,7 +27,7 @@ class Feature(object):
             arg1 (int): The feature.feature_id.
             arg2 (int): The feature.organism_id.
             arg3 (str): The feature.name.
-            arg4 (str): The feature.uniquename; r'^FB[a-z]{2}[0-9]{7,10}$'.
+            arg4 (str): The feature.uniquename; usually r'^FB[a-z]{2}[0-9]{7,10}$'.
             arg5 (str): The cvterm.name corresponding to feature.type_id.
             arg6 (bool): The feature.is_analysis value.
             arg7 (bool): The feature.is_obsolete value.
