@@ -299,7 +299,7 @@ class Allele(Feature):
         return
 
     def exists_in_dmel(self):
-        """Determine if this allele is carried in Dmel (regardless of allele's feature.orgnanism)."""
+        """Determine if this allele is carried in Dmel (regardless of allele's feature.organism)."""
         if self.org_abbr is None:
             log.warning('Allele {} missing org_abbr to determine if it exists in Dmel.'.format(self.uniquename))
             conclusion = None
