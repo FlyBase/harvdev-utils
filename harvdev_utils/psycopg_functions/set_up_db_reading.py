@@ -127,7 +127,6 @@ def set_up_db_reading(report_label):
 
     log.info('Done setting up the environment, db connections and logging.')
     log.info(conn_description)
-    log.info('BOBO')
     if extra_args != []:
         log.info('These extra arguments were not used by set_up_db_reading(): {}'.format(extra_args))
 
