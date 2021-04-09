@@ -55,10 +55,11 @@ class Feature(object):
         self.all_synonym_set = None        # List of all synonym types (should be uniqued).
         self.secondary_id_list = None      # List of dbxref.accession values.
         # For collecting info about the feature regarding data integrity and Alliance exportability.
-        self.desc = None                 # Pithy feature descriptor for logging info.
+        self.feat_desc = None            # Pithy feature descriptor for logging info - content depends on subclass.
         self.data_issues = []            # Data issues that should be investigated at FB; won't block Alliance export.
         self.data_errors = []            # Data problems that should be corrected at FB; will block Alliance export.
         self.agr_export_blockers = []    # Reasons for not exporting the annotation
+        self.for_agr_export = None       # Will be boolean.
 
     # feature.uniquename must be FB-type.
     uniquename_regex = r'^FB[a-z]{2}[0-9]{7,10}$'
@@ -190,7 +191,6 @@ class Allele(Feature):
         self.crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
         self.gene_action = None           # For transgenic allele, determines if transgenic allele expresses or targets its gene.
         self.gene_for_agr_export = None   # Will be a bool. Obtained from related gene.
-        self.for_agr_export = None        # Will be a bool.
 
     # feature.uniquename must be FBal-type.
     uniquename_regex = r'^FBal[0-9]{7}$'
@@ -446,7 +446,6 @@ class Gene(Feature):
         self.mod_id_list = None           # Will be a list. All xrefs where db in ('SGD', 'WormBase', 'ZFIN', 'RGD', 'MGI').
         self.agr_gene_id = None           # Will be unique. The ID to use for reporting genes to AGR.
         self.promoted_gene_type = None    # Will be unique. Eponymous featureprop.
-        self.for_agr_export = None        # Will be boolean.
 
     # feature.uniquename must be FBgn-type.
     uniquename_regex = r'^FBgn[0-9]{7}$'
