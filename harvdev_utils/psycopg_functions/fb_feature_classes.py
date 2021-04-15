@@ -55,11 +55,11 @@ class Feature(object):
         self.all_synonym_set = None        # List of all synonym types (should be uniqued).
         self.secondary_id_list = None      # List of dbxref.accession values.
         # For collecting info about the feature regarding data integrity and Alliance exportability.
-        self.feat_desc = None            # Pithy feature descriptor for logging info - content depends on subclass.
-        self.data_issues = []            # Data issues that should be investigated at FB; won't block Alliance export.
-        self.data_errors = []            # Data problems that should be corrected at FB; will block Alliance export.
-        self.agr_export_blockers = []    # Reasons for not exporting the annotation
-        self.for_agr_export = None       # Will be boolean.
+        self.feat_desc = None              # Pithy feature descriptor for logging info - content depends on subclass.
+        self.data_warnings = []            # Data warnings that should be reviewed by FB; won't block Alliance export.
+        self.data_errors = []              # Data problems that should be corrected at FB; will block Alliance export.
+        self.agr_export_blockers = []      # Reasons for not exporting the annotation
+        self.for_agr_export = None         # Will be boolean.
 
     # feature.uniquename must be FB-type.
     uniquename_regex = r'^FB[a-z]{2}[0-9]{7,10}$'
