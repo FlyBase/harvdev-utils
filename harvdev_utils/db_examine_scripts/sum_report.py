@@ -10,14 +10,14 @@ from harvdev_utils.chado_functions import (feature_name_lookup,
                                            feature_symbol_lookup,
                                            get_feature_by_uniquename)
 from harvdev_utils.production import (FeatureCvterm, FeatureCvtermDbxref,
-                                      FeatureCvtermprop,
+                                      FeatureCvtermprop, FeatureDbxref,
                                       FeatureExpression, FeatureGenotype,
                                       FeatureGrpmember,
                                       FeatureHumanhealthDbxref,
                                       FeatureInteraction, Featureloc, FeaturePhenotype,
                                       Featureprop, FeaturepropPub, FeaturePub,
                                       FeatureRelationship, FeatureRelationshipPub,
-                                      FeatureRelationshipprop,
+                                      FeatureRelationshipprop, FeatureSynonym,
                                       HumanhealthFeature,
                                       LibraryFeature, LibraryFeatureprop,
                                       Phenstatement)
@@ -114,7 +114,16 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
 
     if not feature:
         raise ValueError("Feature NOT found")
-    print("'{}' feature: '{}' '{}' org:'{}'".format(feature.type.name, feature.name, feature.uniquename, feature.organism.abbreviation))
+    syns = session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == feature.feature_id)
+    syn_seen = {}
+    current = ""
+    for syn in syns:
+        syn_seen[syn.synonym.synonym_sgml] = 1
+        if syn.is_current and syn.synonym.type.name == 'symbol':
+            current = "{}".format(syn.synonym.name)
+    mess = "'{}' feature: '{}' '{}' org:'{}' current symbol: {} syn:'{}'".\
+        format(feature.type.name, feature.name, feature.uniquename, feature.organism.abbreviation, current, syn_seen.keys())
+    print(mess)
 
     fis = session.query(Featureloc).filter(Featureloc.feature_id == feature.feature_id)
     for fd in fis:
@@ -129,6 +138,13 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             pub_list.append(fp.pub.uniquename)
     if pub_list:
         print("Pubs linked: {}".format(pub_list))
+    fds = session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == feature.feature_id)
+    count = 0
+    for fd in fds:
+        if not count:
+            print("Dbxrefs")
+        count += 1
+        print("\t{}:{} {}".format(fd.dbxref.db.name, fd.dbxref.accession, fd.is_current))
 
     fps = session.query(Featureprop).filter(Featureprop.feature_id == feature.feature_id)
     count = 0
@@ -146,14 +162,6 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
                 format(fp.type.name, fp.value, pub_list)
             print(message)
 
-    # print("################### Synonyms ##############################")
-    # fss = session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == feature.feature_id)
-    # count = 0
-    # for fs in fss:
-    #     count += 1
-    #     if not limit or count <= limit:
-    #         print(fs)
-
     frs = session.query(FeatureRelationship).filter(FeatureRelationship.subject_id == feature.feature_id)
     count = 0
     for fr in frs:
@@ -170,7 +178,9 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             filter(FeatureRelationshipPub.feature_relationship_id == fr.feature_relationship_id)
         for frpub in frpubs:
             pub_list.append(frpub.pub.uniquename)
-        print("\tObject '{}' '{}': cvterm:'{}' props: '{}' pubs '{}'".format(fr.object.uniquename, fr.object.name, fr.type.name, prop_list, pub_list))
+        mess = "\tObject '{}' '{}' '{}': cvterm:'{}' props: '{}' pubs '{}'".\
+            format(fr.object.type.name, fr.object.uniquename, fr.object.name, fr.type.name, prop_list, pub_list)
+        print(mess)
 
     frs = session.query(FeatureRelationship).filter(FeatureRelationship.object_id == feature.feature_id)
     for fr in frs:
@@ -187,7 +197,9 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             filter(FeatureRelationshipPub.feature_relationship_id == fr.feature_relationship_id)
         for frpub in frpubs:
             pub_list.append(frpub.pub.uniquename)
-        print("\tSubject '{}' '{}': type:'{}' props: '{}' pubs '{}'".format(fr.subject.uniquename, fr.subject.name, fr.type.name, prop_list, pub_list))
+        mess = "\tSubject '{}' '{}' '{}': cvterm:'{}' props: '{}' pubs '{}'".\
+            format(fr.subject.type.name, fr.subject.uniquename, fr.subject.name, fr.type.name, prop_list, pub_list)
+        print(mess)
 
     if (0):  # TODO
         print("############# HumanhealthFeature #######")
@@ -222,20 +234,12 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             count += 1
         print("\tcvterm:'{}' dbxs:'{}' props"'{}'.format(fc.cvterm.name, dbx_list, prop_list))
 
-    # fds = session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == feature.feature_id)
-    # count = 0
-    # for fd in fds:
-    #    if not count:
-    #        print("############ FeatureDbxref #############")
-    #    count += 1
-    #    print(fd)
-
     fds = session.query(FeatureExpression).filter(FeatureExpression.feature_id == feature.feature_id)
     count = 0
     for fd in fds:
         if not count:
-            print("############ FeatureExpression #############")
-        print(fd)
+            print("FeatureExpression:-")
+        print("\t {} {} {}".format(fd.expression.uniquename, fd.expression.description or "", fd.pub.uniquename))
         count += 1
 
     fgs = session.query(FeatureGenotype).filter(FeatureGenotype.feature_id == feature.feature_id)
@@ -281,9 +285,9 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
     count = 0
     for fd in fds:
         if not count:
-            print("############ FeatureGrpMember #############")
+            print("FeatureGrpMember:-")
         count += 1
-        print(fd)
+        print("\t{}".format(fd.grpmember.grp.name))
 
     fis = session.query(FeatureInteraction).filter(FeatureInteraction.feature_id == feature.feature_id)
     count = 0
@@ -307,3 +311,4 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             print(lfp)
         if not seen:
             print(lf)
+    print("")

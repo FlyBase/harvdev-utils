@@ -66,6 +66,8 @@ def get_sql_query():
         feat_sql = "SELECT name FROM feature where type_id = {} AND name like '%{}%'".format(cvterm.cvterm_id, args.regex)
     if args.obsolete:
         feat_sql += " AND is_obsolete = True"
+    else:
+        feat_sql += " AND is_obsolete = False"
     try:
         results = session.execute(feat_sql)
     except Exception:
