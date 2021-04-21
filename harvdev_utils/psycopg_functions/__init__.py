@@ -3,7 +3,7 @@ from .establish_db_connection import establish_db_connection
 from .connect import connect
 from .set_up_db_reading import set_up_db_reading
 from .fb_feature_classes import (
-    Feature, Allele, Construct, Gene, Insertion, SeqFeat, Tool
+    Feature, Allele, Construct, Gene, SeqFeat, Tool
 )
 from .fb_chado_classes import (
     Pubauthor, Pub, Reference, Resource, Cvterm

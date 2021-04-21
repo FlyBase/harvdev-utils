@@ -120,12 +120,13 @@ def set_up_db_reading(report_label):
     set_up_dict['log'] = logging.getLogger(__name__)
 
     # Establish database connection.
-    set_up_dict['conn'] = establish_db_connection(server, database, username, password)
+    set_up_dict['conn'], conn_description = establish_db_connection(server, database, username, password)
 
     # Official timestamp for this script.
     set_up_dict['the_time'] = strict_rfc3339.now_to_rfc3339_localoffset()
 
     log.info('Done setting up the environment, db connections and logging.')
+    log.info(conn_description)
     if extra_args != []:
         log.info('These extra arguments were not used by set_up_db_reading(): {}'.format(extra_args))
 
