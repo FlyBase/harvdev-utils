@@ -1,10 +1,14 @@
 sudo: false
 dist: trusty
+
 language: python
 python:
 - '3.6'
 cache: pip
+
 script:
+- echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+- docker pull flybase/proformatestdb
 - python -m pytest -v
 - pip install .
 env:
