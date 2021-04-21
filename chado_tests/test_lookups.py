@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """Tests for `harvdev_utils` package."""
-import unittest
 import pytest
 import os
 import time
@@ -29,21 +28,22 @@ from harvdev_utils.production import (
 conn2 = False
 session = None
 
+
 def setup_module(module):
-    """ setup any state specific to the execution of the given module."""
+    """Start db."""
     global conn2, session
     conn2 = module.conn = startup_db()
     session = get_session()
 
+
 def teardown_module(module):
-    """ teardown any state that was previously setup with a setup_module
-    method.
-    """
+    """Teardown any state that was previously setup with a setup_module method."""
     stop_db(module.conn)
+
 
 def stop_db(conn):
     """Shut down the test database instance."""
-    output = subprocess.getoutput('docker rm $(docker stop $(docker ps -a -q --filter ancestor=flybase/proformatestdb --format="{{.ID}}"))')
+    subprocess.getoutput('docker rm $(docker stop $(docker ps -a -q --filter ancestor=flybase/proformatestdb --format="{{.ID}}"))')
     if conn:
         conn.close()
 
@@ -72,7 +72,9 @@ def startup_db():
 
     return conn
 
+
 def get_session():
+    """Create session."""
     # Create our SQL Alchemy engine from our environmental variables.
     engine_var = 'postgresql://' + 'tester' + ":" + 'tester' + '@' + '127.0.0.1' + ':' + '5436' '/' + 'fb_test'
 
@@ -82,84 +84,80 @@ def get_session():
     session = Session()
     return session
 
+
 class TestSomething:
+    """Test smethings."""
 
     def test_unique_lookup_good(self):
         """Test uniquename good lookups."""
-
         # standard lookup
-        feature = get_feature_by_uniquename(session, "FBgn0004700")
-        assert feature.name == 'symbol-47'
+        feature = get_feature_by_uniquename(session, "FBgn0000001")
+        assert feature.name == 'symbol-1'
 
         # lookup with obsolete set.
-        feature = get_feature_by_uniquename(session, "FBgn0004800", obsolete='f')
-        assert feature.name == 'symbol-48'
+        feature = get_feature_by_uniquename(session, "FBgn0000002", obsolete='f')
+        assert feature.name == 'symbol-2'
 
-        # check obsolete = 'e' => either. 
-        feature = get_feature_by_uniquename(session, "FBgn0004900", obsolete='e')
+        # check obsolete = 'e' => either.
+        feature = get_feature_by_uniquename(session, "FBgn0000049", obsolete='e')
         assert feature.name == 'symbol-49'
 
     def test_unique_lookup_bad(self):
         """Test uniquename bad lookups."""
-
-       # lookup up non allowed obsolete value
+        # lookup up non allowed obsolete value
         with pytest.raises(CodingError):
-            feature = get_feature_by_uniquename(session, "FBgn0004600", obsolete='madeup')
+            get_feature_by_uniquename(session, "FBgn0004600", obsolete='madeup')
 
         # obsolete wrong.
         with pytest.raises(NoResultFound):
-            feature = get_feature_by_uniquename(session, "FBgn0004500", obsolete='t')
+            get_feature_by_uniquename(session, "FBgn0004500", obsolete='t')
 
         # lookup up non existant uniquename
         with pytest.raises(NoResultFound):
-            feature = get_feature_by_uniquename(session, "Made_Ip", obsolete='t')
-        
+            get_feature_by_uniquename(session, "Made_Ip", obsolete='t')
 
     def test_name_lookup_good(self):
         """Test name good lookups."""
-
         # check basic lookup
         feature = feature_name_lookup(session, 'symbol-1')
-        assert feature.uniquename == 'FBgn0000100'
+        assert feature.uniquename.startswith('FBgn')
 
         # check type_name and obsolete work
         feature = feature_name_lookup(session, 'symbol-2', type_name='gene', obsolete='f')
-        assert feature.uniquename == 'FBgn0000200'
+        assert feature.name == 'symbol-2'
 
-        # check obsolete 'e' 
+        # check obsolete 'e'
         feature = feature_name_lookup(session, 'symbol-3', obsolete='e')
-        assert feature.uniquename == 'FBgn0000300'
+        assert feature.name == 'symbol-3'
 
         # check organism start in name
         organism = get_organism(session, short='Hsap')
         feature = feature_name_lookup(session, 'Hsap\\symbol-1', organism_id=organism.organism_id)
-        assert feature.uniquename == 'FBgn0000101'
+        assert feature.uniquename.startswith('FBgn')
 
         # check converted greek chars are done correctly.
-        feature = feature_name_lookup(session, 'genechar-alpha-[0002]')
-        feature.name == 'genechar-alpha-[0002]'
+        feature = feature_name_lookup(session, 'gene_with_alpha1')
+        feature.name == 'gene_with_alpha1'
 
     def test_name_lookup_bad(self):
         """Test name bad lookups."""
-
         # check for bad made up name
         feature = feature_name_lookup(session, 'madeup_name')
-        assert feature == None
+        assert feature is None
 
         # Check that obsolete is used and checked
         feature = feature_name_lookup(session, 'symbol-4', type_name='gene', obsolete='t')
-        assert feature == None
+        assert feature is None
 
         # check type_name is checked
         feature = feature_name_lookup(session, 'symbol-5', type_name='allele', obsolete='f')
-        assert feature == None
+        assert feature is None
 
     def test_symbol_lookup_good(self):
         """Test symbol good lookups.
-        
+
         Note symbols are unique, synonyms are NOT, that is the difference.
         """
-
         # Check standard use.
         feature = feature_symbol_lookup(session, 'gene', 'symbol-10')
         assert feature.name == 'symbol-10'
@@ -171,99 +169,92 @@ class TestSomething:
         # Add obsolete as 'e'
         feature = feature_symbol_lookup(session, 'gene', 'symbol-12', obsolete='e')
         assert feature.name == 'symbol-12'
- 
+
         # lookup diff species.
         organism = get_organism(session, short='Hsap')
-        feature = feature_symbol_lookup(session, 'gene', 'Hsap\\symbol-20', organism_id=organism.organism_id)
-        assert feature.name == 'Hsap\\symbol-20'
+        feature = feature_symbol_lookup(session, 'gene', 'Hsap\\symbol-2', organism_id=organism.organism_id)
+        assert feature.name == 'Hsap\\symbol-2'
         assert feature.organism_id == organism.organism_id
 
         # check greek chars are done correctly.
-        feature = feature_symbol_lookup(session, 'gene', 'genechar-&agr;-[0002]')
-        assert feature.name == 'genechar-alpha-[0002]'
+        feature = feature_symbol_lookup(session, 'gene', 'gene_with_&agr;1')
+        assert feature.name == 'gene_with_alpha1'
 
-       # DO NOT specify a type, look for all 
+        # DO NOT specify a type, look for all
         feature = feature_symbol_lookup(session, None, 'symbol-21')
-        assert feature.uniquename == 'FBgn0002100'
+        assert feature.name == 'symbol-21'
 
         # Test bracket names with no conversion (convert = false)
         feature = feature_symbol_lookup(session, None, 'C9orf72:n.intron14[30GGGGCC]', convert=False)
         assert feature.name == 'C9orf72:n.intron14[30GGGGCC]'
-    
+
     def test_symbol_lookup_bad(self):
         """Test symbol bad lookups."""
-
         # Lookup non existent symbol
         with pytest.raises(NoResultFound):
-            feature = feature_symbol_lookup(session, 'gene', 'made up')
+            feature_symbol_lookup(session, 'gene', 'made up')
 
         # Lookup with incorrect obsolete value
         with pytest.raises(NoResultFound):
-            feature = feature_symbol_lookup(session, 'gene', 'symbol-30', obsolete='t')
+            feature_symbol_lookup(session, 'gene', 'symbol-30', obsolete='t')
 
         # default org is Dmel so choose Hsap synonym as test
         organism = get_organism(session, short='Hsap')
         with pytest.raises(NoResultFound):
-            feature = feature_symbol_lookup(session, 'gene', 'symbol-30', organism_id=organism.organism_id)
+            feature_symbol_lookup(session, 'gene', 'symbol-30', organism_id=organism.organism_id)
 
         # wrong type.
         with pytest.raises(NoResultFound):
-            feature = feature_symbol_lookup(session, 'allele', 'genechar-&agr;-[0002]')
+            feature_symbol_lookup(session, 'allele', 'genechar-&agr;-[0002]')
 
         # DIVS do not convert but do not specift here so it should fail
         with pytest.raises(NoResultFound):
-            feature = feature_symbol_lookup(session, None, 'C9orf72:n.intron14[30GGGGCC]')
+            feature_symbol_lookup(session, None, 'C9orf72:n.intron14[30GGGGCC]')
 
     def test_synonym_lookup_good(self):
         """Test synonym good lookups."""
-
         # return array if cheque_unique not used
         features = feature_synonym_lookup(session, 'gene', 'symbol-1')
         for feature in features:
-            assert feature.uniquename in ['FBgn0000100']
+            assert feature.name in ['symbol-1']
 
         # lookup diff species.
         organism = get_organism(session, short='Hsap')
-        feature = feature_synonym_lookup(session, 'gene', 'Hsap\\symbol-20', organism_id=organism.organism_id)
-        assert feature.uniquename in ['FBgn0002001']
+        feature = feature_synonym_lookup(session, 'gene', 'Hsap\\symbol-2', organism_id=organism.organism_id)
+        assert feature.name in ['Hsap\\symbol-2']
 
-         # return feature if check_unique if set
+        # return feature if check_unique if set
         feature = feature_synonym_lookup(session, 'gene', 'symbol-2', check_unique=True)
-        assert feature.uniquename in ['FBgn0000200']
+        assert feature.name in ['symbol-2']
 
         # return feature if check_unique if set and obsolete is 'f'
         feature = feature_synonym_lookup(session, 'gene', 'symbol-3', check_unique=True, obsolete='f')
-        assert feature.uniquename in ['FBgn0000300']
+        assert feature.name in ['symbol-3']
 
         # return feature if check_unique if set and obsolete is 'e' => either
         feature = feature_synonym_lookup(session, 'gene', 'symbol-4', check_unique=True, obsolete='e')
-        assert feature.uniquename in ['FBgn0000400']
-
-
+        assert feature.name in ['symbol-4']
 
     def test_synonym_lookup_bad(self):
         """Test synonym bad lookups."""
-
         # gene does not exist
         features = feature_synonym_lookup(session, 'gene', 'made_up')
         assert not features
 
         # gene does not exist make it unique
         with pytest.raises(DataError):
-            feature = feature_synonym_lookup(session, 'gene', 'made_up', check_unique=True)
+            feature_synonym_lookup(session, 'gene', 'made_up', check_unique=True)
 
         # return feature if check_unique if set and obsolete is 'e' => either
         with pytest.raises(DataError):
-            feature = feature_synonym_lookup(session, 'gene', 'symbol-6', check_unique=True, obsolete='t')
+            feature_synonym_lookup(session, 'gene', 'symbol-6', check_unique=True, obsolete='t')
 
         # return feature  obsolete is 't' NO checkunique
         features = feature_synonym_lookup(session, 'gene', 'symbol-6', obsolete='t')
         assert not features
 
-
     def test_create_and_lookup(self):
         """Create and then lookup."""
-
         name = "TP{1}Tao[1]"
         feat_type = get_cvterm(session, 'SO', 'transposable_element_insertion_site')
         organism, plain_name, sgml = synonym_name_details(session, name)
