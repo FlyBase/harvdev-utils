@@ -60,6 +60,7 @@ def set_up_db_reading(report_label):
         svn_username = config['default']['SVNUsername']
         svn_password = config['default']['SVNPassword']
         output_dir = './'
+        input_dir = './'
         log_dir = './'
     else:
         server = os.environ['SERVER']
@@ -74,6 +75,7 @@ def set_up_db_reading(report_label):
         svn_username = os.environ['SVNUSER']
         svn_password = os.environ['SVNPASSWORD']
         output_dir = '/src/output/'
+        input_dir = '/src/input/'
         log_dir = '/src/logs/'
 
     # Send values to a dict.
@@ -89,6 +91,7 @@ def set_up_db_reading(report_label):
     set_up_dict['alliance_release'] = alliance_release
     set_up_dict['svn_username'] = svn_username
     set_up_dict['svn_password'] = svn_password
+    set_up_dict['input_dir'] = input_dir
     set_up_dict['output_dir'] = output_dir
 
     # Determine if testing variable is True or false.
