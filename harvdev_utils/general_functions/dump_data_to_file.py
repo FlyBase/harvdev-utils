@@ -137,6 +137,8 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
         output_file.write('## {}\n'.format(tsv_data_object['metaData']['title']))
         output_file.write('## Generated: {}\n'.format(tsv_data_object['metaData']['dateProduced']))
         output_file.write('## Using datasource: {}\n'.format(tsv_data_object['metaData']['database']))
+        if 'note' in tsv_data_object['metaData'].keys():
+            output_file.write('## Note: {}\n'.format(tsv_data_object['metaData']['note']))
         output_file.write('##\n')
     except KeyError:
         log.debug('The "tsv_data_object" has no "metaData" key.')
