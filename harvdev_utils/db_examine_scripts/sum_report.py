@@ -158,8 +158,8 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             if not limit or count <= limit:
                 pub_list.append(fpp.pub.uniquename)
         if not limit or count <= limit:
-            message = "\tprop:'{}' value:'{}' pubs:'{}'".\
-                format(fp.type.name, fp.value, pub_list)
+            message = "\tprop:'{}' rank: {} value:'{}' pubs:'{}'".\
+                format(fp.type.name, fp.rank, fp.value, pub_list)
             print(message)
 
     frs = session.query(FeatureRelationship).filter(FeatureRelationship.subject_id == feature.feature_id)
