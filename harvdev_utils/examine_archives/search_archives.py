@@ -1,6 +1,8 @@
-"""Search archives for specific fields WITH values.
-
-   Start with most recent and search backwards.
+"""Search archives for specific fields WITH values."""
+import re
+import argparse
+import subprocess
+help = """   Start with most recent and search backwards.
 
    Required field name: (-f --field)
      OR
@@ -14,13 +16,12 @@
 
    # Later maybe Option to lookup specific value too.
 
-   Usage
+   Usage examples
    python search_archives.py -l 5 -f GA2c
-"""
-import re
-import argparse
-import subprocess
 
+   python search_archives.py -v Oseg3
+
+"""
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('-l', '--limit', help='Limit to x finds', type=int, default=1, required=False)
 parser.add_argument('-s', '--site', help="Restrict to harvard or cambridge", default=None, required=False)
@@ -38,6 +39,7 @@ if args.debug:
 field_search = True
 if not (args.field or args.value):
     print("field or value is required")
+    print(help)
     exit(-1)
 if args.field and args.value:
     print("field OR value is required. Not both")
