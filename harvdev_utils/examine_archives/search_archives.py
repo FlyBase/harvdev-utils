@@ -96,6 +96,8 @@ def search_proforma(grep_dir_string, field=None, value=None):
             continue
         if debug:
             print("line is {}".format(line))
+        if 'Is a directory' in line:
+            continue
         if field:  # make sure it has a value
             parts = line.strip().split(':')
             if parts[2]:
