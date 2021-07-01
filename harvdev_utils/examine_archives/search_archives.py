@@ -2,10 +2,10 @@
 import re
 import argparse
 import subprocess
-help = """   Start with most recent and search backwards.
+help = r"""   Search archive file, start with most recent and search backwards.
 
    Required field name: (-f --field)
-     OR
+     AND/OR
    Required value: (-v --value)
 
    Option to find a certain number of these.
@@ -17,32 +17,39 @@ help = """   Start with most recent and search backwards.
    # Later maybe Option to lookup specific value too.
 
    Usage examples
+   # Find examples of GA2c that have value and NOT blank
    python search_archives.py -l 5 -f GA2c
 
-   python search_archives.py -v Oseg3
+   # Find up to 999 examples maximum of Oseg1
+   python search_archives.py -v Oseg3 -l 999
 
+   # find examples of GA1a with the value 'zyd[JF01872]'
+   # NOTE: Safer to put ANY names with special chars like []!\ etc in quotes.
+   python search_archives.py -f GA1a -v 'zyd[JF01872]'
+
+   Disclaimer:
+      When specifying a field and a value it will NOT find examples where they are on seperate lines.
+      i.e. when we have multiple values and it is not on the same line.
 """
-parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=help)
 parser.add_argument('-l', '--limit', help='Limit to x finds', type=int, default=1, required=False)
 parser.add_argument('-s', '--site', help="Restrict to harvard or cambridge", default=None, required=False)
 parser.add_argument('-f', '--field', help="Proforma filed name", default=None, required=False)
 parser.add_argument('-v', '--value', help="value, symbol name etc", default=None, required=False)
-parser.add_argument('-d', '--debug', help="For debugging NOT recomended", default=False, required=False)
-
+parser.add_argument('-d', '--debug', help="For debugging NOT recomended", default=False, action='store_true', required=False)
 args = parser.parse_args()
 
 cam_start = '/data/camdata/proforma/'
 harv_start = '/data/harvcur/archive/'
 debug = False
+
 if args.debug:
     debug = True
 field_search = True
+
 if not (args.field or args.value):
     print("field or value is required")
     print(help)
-    exit(-1)
-if args.field and args.value:
-    print("field OR value is required. Not both")
     exit(-1)
 
 process_cam = False
@@ -53,7 +60,7 @@ if args.site:
     elif args.site == 'harvard':
         process_harv = True
     else:
-        print("Site must be unspeicified OR cambridge or harvard NOT {}".format(args.site))
+        print("Site must be unspecified OR cambridge or harvard NOT {}".format(args.site))
 else:
     process_cam = True
     process_harv = True
@@ -80,10 +87,12 @@ def get_ordered_directory_list(base_dir):
     return dir_list
 
 
-def search_proforma(grep_dir_string, field=None, value=None):
+def search_proforma(grep_dir_string, field=None, value=None):  # noqa
     """Lookup field or value in the files represented by grep_dir_string."""
-    if field:
-        cmd = "grep '!.{}' {}".format(field, grep_dir_string)
+    if field and value:
+        cmd = "grep '\\![c]* {}[.]' {} | grep {}".format(field, grep_dir_string, value)
+    elif field:
+        cmd = "grep '\\![c]* {}[.]' {}".format(field, grep_dir_string)
     else:
         cmd = "grep '{}' {}".format(value, grep_dir_string)
 
@@ -101,10 +110,10 @@ def search_proforma(grep_dir_string, field=None, value=None):
         if 'Is a directory' in line:
             continue
         if field:  # make sure it has a value
-            parts = line.strip().split(':')
-            if parts[2]:
+            (filename, prof_desc, prof_value) = line.strip().split(':')
+            if prof_value:
                 count += 1
-                print("{}\t{}\t{}".format(parts[0], field, parts[2]))
+                print("{}\t{}\t{}".format(filename, field, prof_value))
         else:
             count += 1
             print(line)
