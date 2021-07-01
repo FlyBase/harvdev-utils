@@ -88,7 +88,7 @@ if __name__ == '__main__':
         while (count < args.limit):
             count += 1
             try:
-                result = query_results.next()
+                result = next(query_results)
                 if result:
                     report(session, result[0], feat_type, True, args.limit, 'name', obsolete, noheader=True)
                     print()
