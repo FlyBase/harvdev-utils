@@ -76,14 +76,7 @@ class Pubauthor(object):
         else:
             agr_author_dict['name'] = self.givennames + ' ' + self.surname
             agr_author_dict['lastName'] = self.surname
-            agr_author_dict['firstName'] = self.givennames.split('.')[0] + '.'
-            # If givennames has anything after a period, we have to process middle initials.
-            if re.search(r'\..+', self.givennames):
-                # Names like "da Silva" appear has " da S." in pubauthor.givennames - just strip leading space.
-                # Otherwise, split at ".", ignore first element and last empty element after last "."
-                middle_inits = [i.lstrip(' ') + '.' for i in self.givennames.split('.')[1:-1]]
-                agr_author_dict['middleNames'] = middle_inits
-
+            agr_author_dict['firstName'] = self.givennames
         self.agr_author = agr_author_dict
 
         return
