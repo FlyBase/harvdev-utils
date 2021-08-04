@@ -113,7 +113,6 @@ def search_proforma(grep_dir_string, field=None, value=None):  # noqa
             col_split = line.strip().split(':')
             FILENAME = 0
             VALUE = 2
-            #print("col_split {}, {}".format(col_split, len(col_split)))
             if len(col_split) >= 4:
                 prof_value = ':'.join(col_split[VALUE:])
             else:
