@@ -110,10 +110,16 @@ def search_proforma(grep_dir_string, field=None, value=None):  # noqa
         if 'Is a directory' in line:
             continue
         if field:  # make sure it has a value
-            (filename, prof_desc, prof_value) = line.strip().split(':')
+            col_split = line.strip().split(':')
+            FILENAME = 0
+            VALUE = 2
+            if len(col_split) >= 4:
+                prof_value = ':'.join(col_split[VALUE:])
+            else:
+                prof_value = col_split[VALUE]
             if prof_value:
                 count += 1
-                print("{}\t{}\t{}".format(filename, field, prof_value))
+                print("{}\t{}\t{}".format(col_split[FILENAME], field, prof_value))
         else:
             count += 1
             print(line)
