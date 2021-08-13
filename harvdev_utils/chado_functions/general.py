@@ -1,12 +1,9 @@
 from harvdev_utils.production import Synonym
 from harvdev_utils.char_conversions import sub_sup_to_sgml, sgml_to_unicode
 from harvdev_utils.chado_functions import (
-    get_cvterm,  # DataError, CodingError,
+    get_cvterm,  DataError, CodingError,
     # get_default_organism_id,
-    synonym_name_details
-)
-from harvdev_utils.chado_functions import (
-    CodingError
+    # synonym_name_details
 )
 #
 # general cache
@@ -20,6 +17,24 @@ general_cache = {}
 
 # feature type cache.
 general_type_cache = {}
+
+
+def general_type_lookup(session, type_name):
+    """Lookup type cvterm."""
+    if type_name in general_type_cache:
+        return general_type_cache[type_name]
+
+    feature_type = None
+    for cv_type_name in ['SO', 'FlyBase miscellaneous CV']:
+        if not feature_type:
+            try:
+                feature_type = get_cvterm(session, cv_type_name, type_name)
+            except CodingError:
+                pass
+    if not feature_type:
+        raise DataError("DataError: Could not find cvterm for feature type {}".format(type_name))
+    general_type_cache[type_name] = feature_type
+    return feature_type
 
 
 def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, synonym_name, organism_id=None, cv_name='synonym type',
@@ -63,11 +78,11 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
         MultipleResultsFound: If more than one feature found matching the synonym.
     """
     # Default to Dros if not organism specified.
-    #if not organism_id:
-    #    organism, plain_name, synonym_sgml = synonym_name_details(session, synonym_name)
-    #    organism_id = organism.organism_id
-    #else:
-    #    # convert name to sgml format for lookup
+    # if not organism_id:
+    #     organism, plain_name, synonym_sgml = synonym_name_details(session, synonym_name)
+    #     organism_id = organism.organism_id
+    # else:
+    #     # convert name to sgml format for lookup
     synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
     if not convert:
         synonym_sgml = synonym_name
@@ -87,21 +102,18 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
 
     if check_obs:
         filter_spec += (sql_object_type.is_obsolete == obsolete,)
-    # if not type_name or type_name == 'gene':
-    #     filter_spec += (~sql_object_type.uniquename.contains('FBog'),)
-    #if type_name:
-    #    feature_type = feature_type_lookup(session, type_name)
-    #    filter_spec += (Feature.type_id == feature_type.cvterm_id,)
+    if type_name:
+        feature_type = general_type_lookup(session, type_name)
+        filter_spec += (sql_object_type.type_id == feature_type.cvterm_id,)
 
-    #if check_unique:
-    #    feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
-    #        filter(*filter_spec).one()
-    #    add_to_cache(feature, synonym_sgml)
-    #else:
-    feature = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
-        filter(*filter_spec).all()
+    if check_unique:
+        object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
+            filter(*filter_spec).one()
+    else:
+        object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
+            filter(*filter_spec).all()
 
-    return feature
+    return object
 
 
 def _check_obsolete(obsolete):

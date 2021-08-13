@@ -1358,6 +1358,7 @@ class FeaturelocPub(Base):
         return "FeaturelocPub id={}:\n\tFL:({})\n\tPub:({})".\
             format(self.featureloc_pub_id, self.featureloc, self.pub)
 
+
 class Featuremap(Base):
     __tablename__ = 'featuremap'
 
@@ -1706,6 +1707,11 @@ class GrpSynonym(Base):
     grp = relationship('Grp')
     pub = relationship('Pub')
     synonym = relationship('Synonym')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GrpSynonym id={}: is_current:'{}' is_internal:'{}'\n\tGrp:({})\n\tSyn:({})\n\tPub:({})".\
+            format(self.grp_synonym_id, self.is_current, self.is_internal, self.grp, self.synonym, self.pub)
 
 
 class Grpmember(Base):
