@@ -1545,6 +1545,9 @@ class Grp(Base):
         return "Grp id={}: uniquename:'{}' name:'{}' is_analysis:'{}' is_obsolete:'{}'\n\ttype:({})".\
             format(self.grp_id, self.uniquename, self.name, self.is_analysis, self.is_obsolete, self.type)
 
+    def id(self):
+        """Get grp id."""
+        return self.grp_id
 
 class GrpCvterm(Base):
     __tablename__ = 'grp_cvterm'
@@ -1650,6 +1653,10 @@ class GrpRelationship(Base):
         return "GrpRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
             format(self.grp_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
 
+    def id(self):
+        """Get grp relationship id."""
+        return self.grp_relationship_id
+
 
 class GrpRelationshipPub(Base):
     __tablename__ = 'grp_relationship_pub'
@@ -1712,6 +1719,13 @@ class GrpSynonym(Base):
         """Over write the default output."""
         return "GrpSynonym id={}: is_current:'{}' is_internal:'{}'\n\tGrp:({})\n\tSyn:({})\n\tPub:({})".\
             format(self.grp_synonym_id, self.is_current, self.is_internal, self.grp, self.synonym, self.pub)
+
+    def gen_id(self):
+        """Get grp_id.
+
+        defined as gen_id so all similar can have this and make code general
+        """
+        return self.grp_id
 
 
 class Grpmember(Base):
@@ -1830,6 +1844,9 @@ class Grpprop(Base):
         return "Grpprop id={}: value:'{}' rank:'{}'\n\tGrp:({})\n\ttype:({})".\
             format(self.grpprop_id, self.value, self.rank, self.grp, self.type)
 
+    def id(self):
+        """Get grp id."""
+        return self.grpprop_id
 
 class GrppropPub(Base):
     __tablename__ = 'grpprop_pub'
