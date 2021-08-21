@@ -1866,6 +1866,13 @@ class GrppropPub(Base):
         return "GrppropPub id={}:\n\tgrpprop:({})\n\tPub:({})".\
             format(self.grpprop_pub_id, self.grpprop, self.pub)
 
+    def gen_id(self):
+        """Get grpprop_id.
+
+        defined as gen_id so all similar can have this and make code general
+        """
+        return self.grpprop_id
+
 
 class Humanhealth(Base):
     __tablename__ = 'humanhealth'
