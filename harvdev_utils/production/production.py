@@ -1676,6 +1676,13 @@ class GrpRelationshipPub(Base):
         return "GrpRelationshipPub id={}:\n\tGR:({})\n\tPub:({})".\
             format(self.grp_relationship_pub_id, self.grp_relationship, self.pub)
 
+    def gen_id(self):
+        """Get grp_relationship_id.
+
+        defined as gen_id so all similar can have this and make code general
+        """
+        return self.grp_relationship_id
+
 
 class GrpRelationshipprop(Base):
     __tablename__ = 'grp_relationshipprop'
