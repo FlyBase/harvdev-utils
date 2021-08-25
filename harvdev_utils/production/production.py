@@ -185,6 +185,10 @@ class CellLine(Base):
         """Over write the default output."""
         return "CellLine id={}: uniquename:'{}' name:'{}' organism:({})".format(self.cell_line_id, self.uniquename, self.name, self.organism)
 
+    def id(self):
+        """Allow id to be used to featch cellline_id."""
+        return self.cell_line_id
+
 
 class CellLineCvterm(Base):
     __tablename__ = 'cell_line_cvterm'
@@ -330,6 +334,10 @@ class CellLinePub(Base):
         return "CellLinePub id={}:\n\tcell line:({})\n\tpub:({})".\
             format(self.cell_line_pub_id, self.cell_line, self.pub)
 
+    def id(self):
+        """Allow id to be used to featch cellline_id."""
+        return self.cell_line_pub_id
+
 
 class CellLineRelationship(Base):
     __tablename__ = 'cell_line_relationship'
@@ -438,6 +446,10 @@ class CellLineprop(Base):
         """Over write the default output."""
         return "CellLineprop id={}: value:'{}' rank:'{}'\n\tcell line:({})\n\ttype::({})".\
             format(self.cell_lineprop_id, self.value, self.rank, self.cell_line, self.type)
+
+    def id(self):
+        """Allow id to be used to featch cellline_id."""
+        return self.cell_lineprop_id
 
 
 class CellLinepropPub(Base):
