@@ -10,7 +10,10 @@ NOTE: If you run this again do not overwrite, instead do a diff.
       many __str__ methods have been added to this file and this will be removed if overwritten.
 
 """
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer, SmallInteger, String, Table, Text, UniqueConstraint, text
+from sqlalchemy import (
+    Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer,
+    SmallInteger, String, Table, Text, UniqueConstraint, text
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -101,7 +104,8 @@ class Analysisgrp(Base):
     normscore = Column(Float(53))
     significance = Column(Float(53))
     identity = Column(Float(53))
-    analysis_id = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    analysis_id = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', onupdate='CASCADE',
+                                    deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     grp_id = Column(ForeignKey('grp.grp_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     analysis = relationship('Analysis')
@@ -123,8 +127,10 @@ class Analysisgrpmember(Base):
     normscore = Column(Float(53))
     significance = Column(Float(53))
     identity = Column(Float(53))
-    analysis_id = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    analysis_id = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', onupdate='CASCADE',
+                                    deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE',
+                                     deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     analysis = relationship('Analysis')
     grpmember = relationship('Grpmember')
@@ -239,7 +245,7 @@ class CellLineDbxref(Base):
     def __str__(self):
         """Over write the default output."""
         return "CellLineDbxref id={}: CellLine:({}) dbxef:({}) current:{}".\
-            format(self.cell_line_dbxref_id, self.cell_line, self.dbxef)
+            format(self.cell_line_dbxref_id, self.cell_line, self.dbxref, self.is_current)
 
 
 class CellLineFeature(Base):
@@ -291,7 +297,8 @@ class CellLineLibraryprop(Base):
     )
 
     cell_line_libraryprop_id = Column(Integer, primary_key=True, server_default=text("nextval('cell_line_libraryprop_cell_line_libraryprop_id_seq'::regclass)"))
-    cell_line_library_id = Column(ForeignKey('cell_line_library.cell_line_library_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    cell_line_library_id = Column(ForeignKey('cell_line_library.cell_line_library_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                  nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -330,7 +337,8 @@ class CellLineRelationship(Base):
         UniqueConstraint('subject_id', 'object_id', 'type_id'),
     )
 
-    cell_line_relationship_id = Column(Integer, primary_key=True, server_default=text("nextval('cell_line_relationship_cell_line_relationship_id_seq'::regclass)"))
+    cell_line_relationship_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('cell_line_relationship_cell_line_relationship_id_seq'::regclass)"))
     subject_id = Column(ForeignKey('cell_line.cell_line_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
     object_id = Column(ForeignKey('cell_line.cell_line_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
@@ -373,7 +381,8 @@ class CellLineStrainprop(Base):
     )
 
     cell_line_strainprop_id = Column(Integer, primary_key=True, server_default=text("nextval('cell_line_strainprop_cell_line_strainprop_id_seq'::regclass)"))
-    cell_line_strain_id = Column(ForeignKey('cell_line_strain.cell_line_strain_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    cell_line_strain_id = Column(ForeignKey('cell_line_strain.cell_line_strain_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                 nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -791,7 +800,7 @@ class Expressionprop(Base):
     def __str__(self):
         """Over write the default output."""
         return "Expressionprop id={}: value:'{}' rank:'{}'\n\texpression:({})\n\ttype:({})".\
-            format(self.expressionprop_id, self.expression, self.type)
+            format(self.expressionprop_id, self.value, self.rank, self.expression, self.type)
 
 
 t_f_loc = Table(
@@ -883,7 +892,8 @@ class FeatureCvtermDbxref(Base):
     )
 
     feature_cvterm_dbxref_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_cvterm_dbxref_feature_cvterm_dbxref_id_seq'::regclass)"))
-    feature_cvterm_id = Column(ForeignKey('feature_cvterm.feature_cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_cvterm_id = Column(ForeignKey('feature_cvterm.feature_cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                               nullable=False, index=True)
     dbxref_id = Column(ForeignKey('dbxref.dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     dbxref = relationship('Dbxref')
@@ -963,8 +973,10 @@ class FeatureExpressionprop(Base):
         UniqueConstraint('feature_expression_id', 'type_id', 'rank'),
     )
 
-    feature_expressionprop_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_expressionprop_feature_expressionprop_id_seq'::regclass)"))
-    feature_expression_id = Column(ForeignKey('feature_expression.feature_expression_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_expressionprop_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('feature_expressionprop_feature_expressionprop_id_seq'::regclass)"))
+    feature_expression_id = Column(ForeignKey('feature_expression.feature_expression_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                   nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -1003,7 +1015,6 @@ class FeatureGenotype(Base):
             format(self.feature_genotype_id, self.rank, self.cgroup, self.chromosome, self.feature, self.genotype, self.cvterm)
 
 
-
 class FeatureGrpmember(Base):
     __tablename__ = 'feature_grpmember'
     __table_args__ = (
@@ -1011,8 +1022,10 @@ class FeatureGrpmember(Base):
     )
 
     feature_grpmember_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_grpmember_feature_grpmember_id_seq'::regclass)"))
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    feature_id = Column(ForeignKey('feature.feature_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                          nullable=False, index=True)
+    feature_id = Column(ForeignKey('feature.feature_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                        nullable=False, index=True)
 
     feature = relationship('Feature')
     grpmember = relationship('Grpmember')
@@ -1031,7 +1044,8 @@ class FeatureGrpmemberPub(Base):
 
     feature_grpmember_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_grpmember_pub_feature_grpmember_pub_id_seq'::regclass)"))
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    feature_grpmember_id = Column(ForeignKey('feature_grpmember.feature_grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_grpmember_id = Column(ForeignKey('feature_grpmember.feature_grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True,
+                                             initially='DEFERRED'), nullable=False, index=True)
 
     feature_grpmember = relationship('FeatureGrpmember')
     pub = relationship('Pub')
@@ -1048,8 +1062,10 @@ class FeatureHumanhealthDbxref(Base):
         UniqueConstraint('humanhealth_dbxref_id', 'feature_id', 'pub_id'),
     )
 
-    feature_humanhealth_dbxref_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_humanhealth_dbxref_feature_humanhealth_dbxref_id_seq'::regclass)"))
-    humanhealth_dbxref_id = Column(ForeignKey('humanhealth_dbxref.humanhealth_dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_humanhealth_dbxref_id = Column(Integer, primary_key=True,
+                                           server_default=text("nextval('feature_humanhealth_dbxref_feature_humanhealth_dbxref_id_seq'::regclass)"))
+    humanhealth_dbxref_id = Column(ForeignKey('humanhealth_dbxref.humanhealth_dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                   nullable=False, index=True)
     feature_id = Column(ForeignKey('feature.feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
 
@@ -1091,8 +1107,10 @@ class FeatureInteractionPub(Base):
         UniqueConstraint('feature_interaction_id', 'pub_id'),
     )
 
-    feature_interaction_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_interaction_pub_feature_interaction_pub_id_seq'::regclass)"))
-    feature_interaction_id = Column(ForeignKey('feature_interaction.feature_interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_interaction_pub_id = Column(Integer, primary_key=True,
+                                        server_default=text("nextval('feature_interaction_pub_feature_interaction_pub_id_seq'::regclass)"))
+    feature_interaction_id = Column(ForeignKey('feature_interaction.feature_interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                    nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     feature_interaction = relationship('FeatureInteraction')
@@ -1110,8 +1128,10 @@ class FeatureInteractionprop(Base):
         UniqueConstraint('feature_interaction_id', 'type_id', 'rank'),
     )
 
-    feature_interactionprop_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_interactionprop_feature_interactionprop_id_seq'::regclass)"))
-    feature_interaction_id = Column(ForeignKey('feature_interaction.feature_interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_interactionprop_id = Column(Integer, primary_key=True,
+                                        server_default=text("nextval('feature_interactionprop_feature_interactionprop_id_seq'::regclass)"))
+    feature_interaction_id = Column(ForeignKey('feature_interaction.feature_interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                    nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -1213,8 +1233,10 @@ class FeatureRelationshipPub(Base):
         UniqueConstraint('feature_relationship_id', 'pub_id'),
     )
 
-    feature_relationship_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_relationship_pub_feature_relationship_pub_id_seq'::regclass)"))
-    feature_relationship_id = Column(ForeignKey('feature_relationship.feature_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_relationship_pub_id = Column(Integer, primary_key=True,
+                                         server_default=text("nextval('feature_relationship_pub_feature_relationship_pub_id_seq'::regclass)"))
+    feature_relationship_id = Column(ForeignKey('feature_relationship.feature_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                     nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     feature_relationship = relationship('FeatureRelationship')
@@ -1232,8 +1254,10 @@ class FeatureRelationshipprop(Base):
         UniqueConstraint('feature_relationship_id', 'type_id', 'rank'),
     )
 
-    feature_relationshipprop_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_relationshipprop_feature_relationshipprop_id_seq'::regclass)"))
-    feature_relationship_id = Column(ForeignKey('feature_relationship.feature_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_relationshipprop_id = Column(Integer, primary_key=True,
+                                         server_default=text("nextval('feature_relationshipprop_feature_relationshipprop_id_seq'::regclass)"))
+    feature_relationship_id = Column(ForeignKey('feature_relationship.feature_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                     nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -1253,8 +1277,10 @@ class FeatureRelationshippropPub(Base):
         UniqueConstraint('feature_relationshipprop_id', 'pub_id'),
     )
 
-    feature_relationshipprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('feature_relationshipprop_pub_feature_relationshipprop_pub_i_seq'::regclass)"))
-    feature_relationshipprop_id = Column(ForeignKey('feature_relationshipprop.feature_relationshipprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_relationshipprop_pub_id = Column(Integer, primary_key=True,
+                                             server_default=text("nextval('feature_relationshipprop_pub_feature_relationshipprop_pub_i_seq'::regclass)"))
+    feature_relationshipprop_id = Column(ForeignKey('feature_relationshipprop.feature_relationshipprop_id', ondelete='CASCADE', deferrable=True,
+                                                    initially='DEFERRED'), nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     feature_relationshipprop = relationship('FeatureRelationshipprop')
@@ -1315,8 +1341,12 @@ class Featureloc(Base):
 
     def __str__(self):
         """Over write the default output."""
-        return "Featureloc id={}:fmin:'{}' fmax:'{}' is_fmin_partial:'{}' is_fmax_partial:'{}' strand:'{}' phase:'{}' residue_info:'{}' locgroup:'{}' rank:'{}'\n\tFeat:({})\n\tsrcfeat:({})".\
-            format(self.featureloc_id, self.fmin, self.fmax, self.is_fmin_partial, self.is_fmax_partial, self.strand, self.phase, self.residue_info, self.locgroup, self.rank, self.feature, self.srcfeature)
+        mess = "Featureloc id={}:fmin:'{}' fmax:'{}' is_fmin_partial:'{}' is_fmax_partial:'{}'".\
+            format(self.featureloc_id, self.fmin, self.fmax, self.is_fmin_partial, self.is_fmax_partial,)
+        mess += " strand:'{}' phase:'{}' residue_info:'{}' locgroup:'{}' rank:'{}'".\
+            format(self.strand, self.phase, self.residue_info, self.locgroup, self.rank)
+        mess += "\n\tFeat:({})\n\tsrcfeat:({})".format(self.feature, self.srcfeature)
+        return mess
 
 
 t_featureloc_allcoords = Table(
@@ -1395,7 +1425,8 @@ class Featurepo(Base):
     __tablename__ = 'featurepos'
 
     featurepos_id = Column(Integer, primary_key=True, server_default=text("nextval('featurepos_featurepos_id_seq'::regclass)"))
-    featuremap_id = Column(ForeignKey('featuremap.featuremap_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, server_default=text("nextval('featurepos_featuremap_id_seq'::regclass)"))
+    featuremap_id = Column(ForeignKey('featuremap.featuremap_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                           nullable=False, index=True, server_default=text("nextval('featurepos_featuremap_id_seq'::regclass)"))
     feature_id = Column(ForeignKey('feature.feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     map_feature_id = Column(ForeignKey('feature.feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     mappos = Column(Float(53), nullable=False)
@@ -1549,6 +1580,7 @@ class Grp(Base):
         """Get grp id."""
         return self.grp_id
 
+
 class GrpCvterm(Base):
     __tablename__ = 'grp_cvterm'
     __table_args__ = (
@@ -1557,7 +1589,8 @@ class GrpCvterm(Base):
 
     grp_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('grp_cvterm_grp_cvterm_id_seq'::regclass)"))
     is_not = Column(Boolean, nullable=False, server_default=text("false"))
-    cvterm_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    cvterm_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                       nullable=False, index=True)
     grp_id = Column(ForeignKey('grp.grp_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
@@ -1568,7 +1601,7 @@ class GrpCvterm(Base):
     def __str__(self):
         """Over write the default output."""
         return "GrpCvterm id={}: is_not:'{}'\n\tgrp:({})\n\tcvterm:({})\n\tpub:({})".\
-            format(self.grp_cvterm_id, self.is_not, self.grp, self.cvterm,self.pub)
+            format(self.grp_cvterm_id, self.is_not, self.grp, self.cvterm, self.pub)
 
 
 class GrpDbxref(Base):
@@ -1579,7 +1612,8 @@ class GrpDbxref(Base):
 
     grp_dbxref_id = Column(Integer, primary_key=True, server_default=text("nextval('grp_dbxref_grp_dbxref_id_seq'::regclass)"))
     is_current = Column(Boolean, nullable=False, server_default=text("true"))
-    dbxref_id = Column(ForeignKey('dbxref.dbxref_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    dbxref_id = Column(ForeignKey('dbxref.dbxref_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                       nullable=False, index=True)
     grp_id = Column(ForeignKey('grp.grp_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     dbxref = relationship('Dbxref')
@@ -1620,7 +1654,8 @@ class GrpPubprop(Base):
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
-    grp_pub_id = Column(ForeignKey('grp_pub.grp_pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grp_pub_id = Column(ForeignKey('grp_pub.grp_pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                        nullable=False, index=True)
 
     grp_pub = relationship('GrpPub')
     type = relationship('Cvterm')
@@ -1666,7 +1701,9 @@ class GrpRelationshipPub(Base):
 
     grp_relationship_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('grp_relationship_pub_grp_relationship_pub_id_seq'::regclass)"))
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grp_relationship_id = Column(ForeignKey('grp_relationship.grp_relationship_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grp_relationship_id = Column(ForeignKey('grp_relationship.grp_relationship_id', ondelete='CASCADE', onupdate='CASCADE',
+                                            deferrable=True, initially='DEFERRED'),
+                                 nullable=False, index=True)
 
     grp_relationship = relationship('GrpRelationship')
     pub = relationship('Pub')
@@ -1694,7 +1731,9 @@ class GrpRelationshipprop(Base):
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grp_relationship_id = Column(ForeignKey('grp_relationship.grp_relationship_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grp_relationship_id = Column(ForeignKey('grp_relationship.grp_relationship_id', ondelete='CASCADE', onupdate='CASCADE',
+                                            deferrable=True, initially='DEFERRED'),
+                                 nullable=False, index=True)
 
     grp_relationship = relationship('GrpRelationship')
     type = relationship('Cvterm')
@@ -1712,7 +1751,8 @@ class GrpSynonym(Base):
     )
 
     grp_synonym_id = Column(Integer, primary_key=True, server_default=text("nextval('grp_synonym_grp_synonym_id_seq'::regclass)"))
-    synonym_id = Column(ForeignKey('synonym.synonym_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    synonym_id = Column(ForeignKey('synonym.synonym_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                        nullable=False, index=True)
     grp_id = Column(ForeignKey('grp.grp_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     is_current = Column(Boolean, nullable=False, server_default=text("false"))
@@ -1763,8 +1803,10 @@ class GrpmemberCvterm(Base):
 
     grpmember_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('grpmember_cvterm_grpmember_cvterm_id_seq'::regclass)"))
     is_not = Column(Boolean, nullable=False, server_default=text("false"))
-    cvterm_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    cvterm_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                       nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                          nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     cvterm = relationship('Cvterm')
@@ -1785,14 +1827,15 @@ class GrpmemberPub(Base):
 
     grpmember_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('grpmember_pub_grpmember_pub_id_seq'::regclass)"))
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                          nullable=False, index=True)
 
     grpmember = relationship('Grpmember')
     pub = relationship('Pub')
 
     def __str__(self):
         """Over write the default output."""
-        return "GrpmemberPub id={}:\n\tGrpmem:({})\n\tGrpMemPub:({})\n\tPub:({})".\
+        return "GrpmemberPub id={}:\n\tGrpmem:({})\n\tPub:({})".\
             format(self.grpmember_pub_id, self.grpmember, self.pub)
 
 
@@ -1806,15 +1849,16 @@ class Grpmemberprop(Base):
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                          nullable=False, index=True)
 
     grpmember = relationship('Grpmember')
     type = relationship('Cvterm')
 
     def __str__(self):
         """Over write the default output."""
-        return "Grpmemberprop id={}: vlaue:'{}' rank:'{}' GrpMem:({})\n\ttype:({})".\
-            format(self.grpmemberprop_id. self.value, self.rank, self.grpmember, self.type)
+        return "Grpmemberprop id={}: value:'{}' rank:'{}' GrpMem:({})\n\ttype:({})".\
+            format(self.grpmemberprop_id, self.value, self.rank, self.grpmember, self.type)
 
 
 class GrpmemberpropPub(Base):
@@ -1825,7 +1869,8 @@ class GrpmemberpropPub(Base):
 
     grpmemberprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('grpmemberprop_pub_grpmemberprop_pub_id_seq'::regclass)"))
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grpmemberprop_id = Column(ForeignKey('grpmemberprop.grpmemberprop_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmemberprop_id = Column(ForeignKey('grpmemberprop.grpmemberprop_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                              nullable=False, index=True)
 
     grpmemberprop = relationship('Grpmemberprop')
     pub = relationship('Pub')
@@ -1855,6 +1900,7 @@ class Grpprop(Base):
         """Get grp id."""
         return self.grpprop_id
 
+
 class GrppropPub(Base):
     __tablename__ = 'grpprop_pub'
     __table_args__ = (
@@ -1863,7 +1909,8 @@ class GrppropPub(Base):
 
     grpprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('grpprop_pub_grpprop_pub_id_seq'::regclass)"))
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    grpprop_id = Column(ForeignKey('grpprop.grpprop_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpprop_id = Column(ForeignKey('grpprop.grpprop_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                        nullable=False, index=True)
 
     grpprop = relationship('Grpprop')
     pub = relationship('Pub')
@@ -1902,6 +1949,7 @@ class Humanhealth(Base):
         return "Humanhealth id={}: uniquename:'{}' name:'{}' is_obsolete:'{}'\n\rorg:({})\n\tdbxref:({})".\
             format(self.humanhealth_id, self.uniquename, self.name, self.is_obsolete, self.organism, self.dbxref)
 
+
 class HumanhealthCvterm(Base):
     __tablename__ = 'humanhealth_cvterm'
     __table_args__ = (
@@ -1929,7 +1977,8 @@ class HumanhealthCvtermprop(Base):
         UniqueConstraint('humanhealth_cvterm_id', 'type_id', 'rank'),
     )
 
-    humanhealth_cvtermprop_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_cvtermprop_humanhealth_cvtermprop_id_seq'::regclass)"))
+    humanhealth_cvtermprop_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('humanhealth_cvtermprop_humanhealth_cvtermprop_id_seq'::regclass)"))
     humanhealth_cvterm_id = Column(ForeignKey('humanhealth_cvterm.humanhealth_cvterm_id', ondelete='CASCADE'), nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
@@ -1970,8 +2019,10 @@ class HumanhealthDbxrefprop(Base):
         UniqueConstraint('humanhealth_dbxref_id', 'type_id', 'rank'),
     )
 
-    humanhealth_dbxrefprop_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_dbxrefprop_humanhealth_dbxrefprop_id_seq'::regclass)"))
-    humanhealth_dbxref_id = Column(ForeignKey('humanhealth_dbxref.humanhealth_dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealth_dbxrefprop_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('humanhealth_dbxrefprop_humanhealth_dbxrefprop_id_seq'::regclass)"))
+    humanhealth_dbxref_id = Column(ForeignKey('humanhealth_dbxref.humanhealth_dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                   nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -1991,8 +2042,11 @@ class HumanhealthDbxrefpropPub(Base):
         UniqueConstraint('humanhealth_dbxrefprop_id', 'pub_id'),
     )
 
-    humanhealth_dbxrefprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_dbxrefprop_pub_humanhealth_dbxrefprop_pub_id_seq'::regclass)"))
-    humanhealth_dbxrefprop_id = Column(ForeignKey('humanhealth_dbxrefprop.humanhealth_dbxrefprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealth_dbxrefprop_pub_id = Column(Integer, primary_key=True,
+                                           server_default=text("nextval('humanhealth_dbxrefprop_pub_humanhealth_dbxrefprop_pub_id_seq'::regclass)"))
+    humanhealth_dbxrefprop_id = Column(ForeignKey('humanhealth_dbxrefprop.humanhealth_dbxrefprop_id',
+                                                  ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                       nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     humanhealth_dbxrefprop = relationship('HumanhealthDbxrefprop')
@@ -2031,8 +2085,10 @@ class HumanhealthFeatureprop(Base):
         UniqueConstraint('humanhealth_feature_id', 'type_id', 'rank'),
     )
 
-    humanhealth_featureprop_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_featureprop_humanhealth_featureprop_id_seq'::regclass)"))
-    humanhealth_feature_id = Column(ForeignKey('humanhealth_feature.humanhealth_feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealth_featureprop_id = Column(Integer, primary_key=True,
+                                        server_default=text("nextval('humanhealth_featureprop_humanhealth_featureprop_id_seq'::regclass)"))
+    humanhealth_feature_id = Column(ForeignKey('humanhealth_feature.humanhealth_feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                    nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -2068,8 +2124,10 @@ class HumanhealthPhenotypeprop(Base):
         UniqueConstraint('humanhealth_phenotype_id', 'type_id', 'rank'),
     )
 
-    humanhealth_phenotypeprop_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_phenotypeprop_humanhealth_phenotypeprop_id_seq'::regclass)"))
-    humanhealth_phenotype_id = Column(ForeignKey('humanhealth_phenotype.humanhealth_phenotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealth_phenotypeprop_id = Column(Integer, primary_key=True,
+                                          server_default=text("nextval('humanhealth_phenotypeprop_humanhealth_phenotypeprop_id_seq'::regclass)"))
+    humanhealth_phenotype_id = Column(ForeignKey('humanhealth_phenotype.humanhealth_phenotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                      nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -2107,7 +2165,8 @@ class HumanhealthPubprop(Base):
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
-    humanhealth_pub_id = Column(ForeignKey('humanhealth_pub.humanhealth_pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealth_pub_id = Column(ForeignKey('humanhealth_pub.humanhealth_pub_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                                nullable=False, index=True)
 
     humanhealth_pub = relationship('HumanhealthPub')
     type = relationship('Cvterm')
@@ -2124,7 +2183,8 @@ class HumanhealthRelationship(Base):
         UniqueConstraint('subject_id', 'object_id', 'type_id', 'rank'),
     )
 
-    humanhealth_relationship_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_relationship_humanhealth_relationship_id_seq'::regclass)"))
+    humanhealth_relationship_id = Column(Integer, primary_key=True,
+                                         server_default=text("nextval('humanhealth_relationship_humanhealth_relationship_id_seq'::regclass)"))
     subject_id = Column(ForeignKey('humanhealth.humanhealth_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     object_id = Column(ForeignKey('humanhealth.humanhealth_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
@@ -2147,8 +2207,11 @@ class HumanhealthRelationshipPub(Base):
         UniqueConstraint('humanhealth_relationship_id', 'pub_id'),
     )
 
-    humanhealth_relationship_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealth_relationship_pub_humanhealth_relationship_pub_i_seq'::regclass)"))
-    humanhealth_relationship_id = Column(ForeignKey('humanhealth_relationship.humanhealth_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealth_relationship_pub_id = Column(Integer, primary_key=True,
+                                             server_default=text("nextval('humanhealth_relationship_pub_humanhealth_relationship_pub_i_seq'::regclass)"))
+    humanhealth_relationship_id = Column(ForeignKey('humanhealth_relationship.humanhealth_relationship_id', ondelete='CASCADE',
+                                                    deferrable=True, initially='DEFERRED'),
+                                         nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     humanhealth_relationship = relationship('HumanhealthRelationship')
@@ -2203,6 +2266,7 @@ class Humanhealthprop(Base):
         return "Humanhealthprop id={}: value:'{}' rank:'{}'\n\tHH:({})\n\ttype:({})".\
             format(self.humanhealthprop_id, self.value, self.rank, self.humanhealth, self.type)
 
+
 class HumanhealthpropPub(Base):
     __tablename__ = 'humanhealthprop_pub'
     __table_args__ = (
@@ -2210,7 +2274,8 @@ class HumanhealthpropPub(Base):
     )
 
     humanhealthprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('humanhealthprop_pub_humanhealthprop_pub_id_seq'::regclass)"))
-    humanhealthprop_id = Column(ForeignKey('humanhealthprop.humanhealthprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    humanhealthprop_id = Column(ForeignKey('humanhealthprop.humanhealthprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     humanhealthprop = relationship('Humanhealthprop')
@@ -2260,7 +2325,7 @@ class InteractionCellLine(Base):
     def __str__(self):
         """Over write the default output."""
         return "InteractionCellLine id={}:\n\tInteraction:({})\n\tCell line:({})\n\tPub:({})".\
-            format(self.interaction_cell_line_id, self.interaction, cell_line, self.pub)
+            format(self.interaction_cell_line_id, self.interaction, self.cell_line, self.pub)
 
 
 class InteractionCvterm(Base):
@@ -2283,7 +2348,8 @@ class InteractionCvtermprop(Base):
         UniqueConstraint('interaction_cvterm_id', 'type_id', 'rank'),
     )
 
-    interaction_cvtermprop_id = Column(Integer, primary_key=True, server_default=text("nextval('interaction_cvtermprop_interaction_cvtermprop_id_seq'::regclass)"))
+    interaction_cvtermprop_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('interaction_cvtermprop_interaction_cvtermprop_id_seq'::regclass)"))
     interaction_cvterm_id = Column(ForeignKey('interaction_cvterm.interaction_cvterm_id', ondelete='CASCADE'), nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
@@ -2299,7 +2365,8 @@ class InteractionExpression(Base):
         UniqueConstraint('expression_id', 'interaction_id', 'pub_id'),
     )
 
-    interaction_expression_id = Column(Integer, primary_key=True, server_default=text("nextval('interaction_expression_interaction_expression_id_seq'::regclass)"))
+    interaction_expression_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('interaction_expression_interaction_expression_id_seq'::regclass)"))
     expression_id = Column(ForeignKey('expression.expression_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     interaction_id = Column(ForeignKey('interaction.interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
@@ -2315,7 +2382,8 @@ class InteractionExpressionprop(Base):
         UniqueConstraint('interaction_expression_id', 'type_id', 'rank'),
     )
 
-    interaction_expressionprop_id = Column(Integer, primary_key=True, server_default=text("nextval('interaction_expressionprop_interaction_expressionprop_id_seq'::regclass)"))
+    interaction_expressionprop_id = Column(Integer, primary_key=True,
+                                           server_default=text("nextval('interaction_expressionprop_interaction_expressionprop_id_seq'::regclass)"))
     interaction_expression_id = Column(ForeignKey('interaction_expression.interaction_expression_id', ondelete='CASCADE'), nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
@@ -2339,10 +2407,13 @@ class InteractionGroupFeatureInteraction(Base):
     __table_args__ = (
         UniqueConstraint('interaction_group_id', 'feature_interaction_id', 'rank'),
     )
-
-    interaction_group_feature_interaction_id = Column(Integer, primary_key=True, server_default=text("nextval('interaction_group_feature_int_interaction_group_feature_int_seq'::regclass)"))
-    interaction_group_id = Column(ForeignKey('interaction_group.interaction_group_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    feature_interaction_id = Column(ForeignKey('feature_interaction.feature_interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    next_val = text("nextval('interaction_group_feature_int_interaction_group_feature_int_seq'::regclass)")
+    interaction_group_feature_interaction_id = Column(Integer, primary_key=True,
+                                                      server_default=next_val)
+    interaction_group_id = Column(ForeignKey('interaction_group.interaction_group_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                  nullable=False, index=True)
+    feature_interaction_id = Column(ForeignKey('feature_interaction.feature_interaction_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                    nullable=False, index=True)
     rank = Column(Integer, nullable=False, server_default=text("0"))
     ftype = Column(String(255))
 
@@ -2387,7 +2458,8 @@ class InteractionpropPub(Base):
     )
 
     interactionprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('interactionprop_pub_interactionprop_pub_id_seq'::regclass)"))
-    interactionprop_id = Column(ForeignKey('interactionprop.interactionprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    interactionprop_id = Column(ForeignKey('interactionprop.interactionprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     interactionprop = relationship('Interactionprop')
@@ -2441,7 +2513,8 @@ class LibraryCvtermprop(Base):
     )
 
     library_cvtermprop_id = Column(Integer, primary_key=True, server_default=text("nextval('library_cvtermprop_library_cvtermprop_id_seq'::regclass)"))
-    library_cvterm_id = Column(ForeignKey('library_cvterm.library_cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    library_cvterm_id = Column(ForeignKey('library_cvterm.library_cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                               nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -2472,7 +2545,8 @@ class LibraryDbxrefprop(Base):
     )
 
     library_dbxrefprop_id = Column(Integer, primary_key=True, server_default=text("nextval('library_dbxrefprop_library_dbxrefprop_id_seq'::regclass)"))
-    library_dbxref_id = Column(ForeignKey('library_dbxref.library_dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    library_dbxref_id = Column(ForeignKey('library_dbxref.library_dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                               nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -2503,7 +2577,8 @@ class LibraryExpressionprop(Base):
         UniqueConstraint('library_expression_id', 'type_id', 'rank'),
     )
 
-    library_expressionprop_id = Column(Integer, primary_key=True, server_default=text("nextval('library_expressionprop_library_expressionprop_id_seq'::regclass)"))
+    library_expressionprop_id = Column(Integer, primary_key=True,
+                                       server_default=text("nextval('library_expressionprop_library_expressionprop_id_seq'::regclass)"))
     library_expression_id = Column(ForeignKey('library_expression.library_expression_id', ondelete='CASCADE'), nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
@@ -2531,6 +2606,7 @@ class LibraryFeature(Base):
         return "LibraryFeature id={}:\n\tLibrary:({})\n\tFeature:({})".\
             format(self.library_feature_id, self.library, self.feature)
 
+
 class LibraryFeatureprop(Base):
     __tablename__ = 'library_featureprop'
     __table_args__ = (
@@ -2551,6 +2627,7 @@ class LibraryFeatureprop(Base):
         return "LibraryFeatureprop id={}: value={} rank={}\n\ttype=({})\n\tLibraryFeature:({})".\
             format(self.library_featureprop_id, self.value, self.rank, self.type, self.library_feature)
 
+
 class LibraryGrpmember(Base):
     __tablename__ = 'library_grpmember'
     __table_args__ = (
@@ -2558,8 +2635,10 @@ class LibraryGrpmember(Base):
     )
 
     library_grpmember_id = Column(Integer, primary_key=True, server_default=text("nextval('library_grpmember_library_grpmember_id_seq'::regclass)"))
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    library_id = Column(ForeignKey('library.library_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                          nullable=False, index=True)
+    library_id = Column(ForeignKey('library.library_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                        nullable=False, index=True)
 
     grpmember = relationship('Grpmember')
     library = relationship('Library')
@@ -2587,8 +2666,10 @@ class LibraryHumanhealthprop(Base):
         UniqueConstraint('library_humanhealth_id', 'type_id', 'rank'),
     )
 
-    library_humanhealthprop_id = Column(Integer, primary_key=True, server_default=text("nextval('library_humanhealthprop_library_humanhealthprop_id_seq'::regclass)"))
-    library_humanhealth_id = Column(ForeignKey('library_humanhealth.library_humanhealth_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    library_humanhealthprop_id = Column(Integer, primary_key=True,
+                                        server_default=text("nextval('library_humanhealthprop_library_humanhealthprop_id_seq'::regclass)"))
+    library_humanhealth_id = Column(ForeignKey('library_humanhealth.library_humanhealth_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                    nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -2649,8 +2730,10 @@ class LibraryRelationshipPub(Base):
         UniqueConstraint('library_relationship_id', 'pub_id'),
     )
 
-    library_relationship_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('library_relationship_pub_library_relationship_pub_id_seq'::regclass)"))
-    library_relationship_id = Column(ForeignKey('library_relationship.library_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    library_relationship_pub_id = Column(Integer, primary_key=True,
+                                         server_default=text("nextval('library_relationship_pub_library_relationship_pub_id_seq'::regclass)"))
+    library_relationship_id = Column(ForeignKey('library_relationship.library_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                     nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     library_relationship = relationship('LibraryRelationship')
@@ -2680,7 +2763,8 @@ class LibraryStrainprop(Base):
     )
 
     library_strainprop_id = Column(Integer, primary_key=True, server_default=text("nextval('library_strainprop_library_strainprop_id_seq'::regclass)"))
-    library_strain_id = Column(ForeignKey('library_strain.library_strain_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    library_strain_id = Column(ForeignKey('library_strain.library_strain_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                               nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -2830,8 +2914,10 @@ class OrganismGrpmember(Base):
     )
 
     organism_grpmember_id = Column(Integer, primary_key=True, server_default=text("nextval('organism_grpmember_organism_grpmember_id_seq'::regclass)"))
-    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    organism_id = Column(ForeignKey('organism.organism_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    grpmember_id = Column(ForeignKey('grpmember.grpmember_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                          nullable=False, index=True)
+    organism_id = Column(ForeignKey('organism.organism_id', ondelete='CASCADE', onupdate='CASCADE', deferrable=True, initially='DEFERRED'),
+                         nullable=False, index=True)
 
     grpmember = relationship('Grpmember')
     organism = relationship('Organism')
@@ -2935,6 +3021,7 @@ class Phenotype(Base):
         return "Phenotype id={}: uniquename:'{}' value:({})\n\tassay:({})\n\tattr:({})\n\tcvalue:({})\n\tobs:({})".\
             format(self.phenotype_id, self.uniquename, self.value, self.assay, self.attr, self.cvalue, self.observable)
 
+
 class PhenotypeComparison(Base):
     __tablename__ = 'phenotype_comparison'
     __table_args__ = (
@@ -2967,7 +3054,8 @@ class PhenotypeComparisonCvterm(Base):
         UniqueConstraint('phenotype_comparison_id', 'cvterm_id'),
     )
 
-    phenotype_comparison_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('phenotype_comparison_cvterm_phenotype_comparison_cvterm_id_seq'::regclass)"))
+    phenotype_comparison_cvterm_id = Column(Integer, primary_key=True,
+                                            server_default=text("nextval('phenotype_comparison_cvterm_phenotype_comparison_cvterm_id_seq'::regclass)"))
     phenotype_comparison_id = Column(ForeignKey('phenotype_comparison.phenotype_comparison_id', ondelete='CASCADE'), nullable=False, index=True)
     cvterm_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE'), nullable=False, index=True)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -3140,9 +3228,10 @@ class Strain(Base):
     organism = relationship('Organism')
 
     def __str__(self):
-       """Dump data."""
-       return "Strain id={}: name={}, uniquename={}, is_obsolete={}\n\tDbxref:({})\n\tOrg:({})".\
+        """Dump data."""
+        return "Strain id={}: name={}, uniquename={}, is_obsolete={}\n\tDbxref:({})\n\tOrg:({})".\
             format(self.strain_id, self.name, self.uniquename, self.is_obsolete, self.dbxref, self.organism)
+
 
 class StrainCvterm(Base):
     __tablename__ = 'strain_cvterm'
@@ -3226,6 +3315,7 @@ class StrainFeature(Base):
         return "StrainFeature id={}: \nStrain:({})\n\tFeature:({})\n\tpub:{}".\
             format(self.strain_feature_id, self.strain, self.feature, self.pub)
 
+
 class StrainFeatureprop(Base):
     __tablename__ = 'strain_featureprop'
     __table_args__ = (
@@ -3233,7 +3323,8 @@ class StrainFeatureprop(Base):
     )
 
     strain_featureprop_id = Column(Integer, primary_key=True, server_default=text("nextval('strain_featureprop_strain_featureprop_id_seq'::regclass)"))
-    strain_feature_id = Column(ForeignKey('strain_feature.strain_feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    strain_feature_id = Column(ForeignKey('strain_feature.strain_feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                               nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -3245,6 +3336,7 @@ class StrainFeatureprop(Base):
         """Over write the default output."""
         return "StrainFeatureprop id={}: value:'{}' rank:'{}'\nStrainFeature:({})\n\ttype:({})".\
             format(self.strain_featureprop_id, self.value, self.rank, self.strain_feature, self.type)
+
 
 class StrainPhenotype(Base):
     __tablename__ = 'strain_phenotype'
@@ -3274,7 +3366,8 @@ class StrainPhenotypeprop(Base):
     )
 
     strain_phenotypeprop_id = Column(Integer, primary_key=True, server_default=text("nextval('strain_phenotypeprop_strain_phenotypeprop_id_seq'::regclass)"))
-    strain_phenotype_id = Column(ForeignKey('strain_phenotype.strain_phenotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    strain_phenotype_id = Column(ForeignKey('strain_phenotype.strain_phenotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                 nullable=False, index=True)
     type_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
@@ -3336,8 +3429,10 @@ class StrainRelationshipPub(Base):
         UniqueConstraint('strain_relationship_id', 'pub_id'),
     )
 
-    strain_relationship_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('strain_relationship_pub_strain_relationship_pub_id_seq'::regclass)"))
-    strain_relationship_id = Column(ForeignKey('strain_relationship.strain_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    strain_relationship_pub_id = Column(Integer, primary_key=True,
+                                        server_default=text("nextval('strain_relationship_pub_strain_relationship_pub_id_seq'::regclass)"))
+    strain_relationship_id = Column(ForeignKey('strain_relationship.strain_relationship_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                    nullable=False, index=True)
     pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     pub = relationship('Pub')
