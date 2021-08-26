@@ -9,7 +9,23 @@ Produced originally from production_gen_init.py
 NOTE: If you run this again do not overwrite, instead do a diff.
       many __str__ methods have been added to this file and this will be removed if overwritten.
 
+    method primary_id(): has been added to most classes which returns the primary id of that class.
+        This will allow simple calls of xxx.id() and it does not matter what the promary key is.
+
+    method first_id(): first_id  has been added to most classes which returns the first id.
+        first id here is roughly defined as the first primary field id in a join table.
+        i.e. for CellLineprop first id would be cell_line_id i.e the prop primary key
+                 GrpRelationshipPub it would be grp_relationship_id
+
+    method second_id(): has been added to those that need it and return the second id.
+        second id here is roughly defined as the second primary field id in a join table.
+        i.e. for CellLineprop second id would be type_id i.e the prop primary key
+                 GrpRelationshipPub it would be grp_relationship_id
+
+So roughly speaking for join two tables )okay there may be a cvterm etc in there too but...)
+we have (first)(second) i.e. (CellLine)(prop)
 """
+
 from sqlalchemy import (
     Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer,
     SmallInteger, String, Table, Text, UniqueConstraint, text
@@ -70,6 +86,10 @@ class Analysis(Base):
         """Over write the default output."""
         return "Analysis id={}:  program:'{}' sourcename:'{}'".format(self.analysis_id, self.program, self.sourcename)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.analysis_id
+
 
 class Analysisfeature(Base):
     __tablename__ = 'analysisfeature'
@@ -91,6 +111,18 @@ class Analysisfeature(Base):
     def __str__(self):
         """Over write the default output."""
         return "AnalysisFeat id={}:\n\tAnalysis:({})\n\tFeature:({})".format(self.analysisfeature_id, self.analysis, self.feature)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.analysisfeature_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.analysis_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.feature_id
 
 
 class Analysisgrp(Base):
@@ -115,6 +147,18 @@ class Analysisgrp(Base):
         """Over write the default output."""
         return "Analysisgrp id={}:\n\tAnalysis:({})\n\tGrp:({})".format(self.analysisgrp_id, self.analysis, self.grp)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.analysisgrp_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.analysis_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.grp_id
+
 
 class Analysisgrpmember(Base):
     __tablename__ = 'analysisgrpmember'
@@ -135,6 +179,18 @@ class Analysisgrpmember(Base):
     analysis = relationship('Analysis')
     grpmember = relationship('Grpmember')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.analysisgrpmember_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.analysis_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.grpmember_id
+
 
 class Analysisprop(Base):
     __tablename__ = 'analysisprop'
@@ -149,6 +205,18 @@ class Analysisprop(Base):
 
     analysis = relationship('Analysis')
     type = relationship('Cvterm')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.analysisprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.analysis_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 t_audit_chado = Table(
@@ -185,6 +253,10 @@ class CellLine(Base):
         """Over write the default output."""
         return "CellLine id={}: uniquename:'{}' name:'{}' organism:({})".format(self.cell_line_id, self.uniquename, self.name, self.organism)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_id
+
 
 class CellLineCvterm(Base):
     __tablename__ = 'cell_line_cvterm'
@@ -205,6 +277,18 @@ class CellLineCvterm(Base):
     def __str__(self):
         """Over write the default output."""
         return "CellLineCvterm id={}:\n\tcellline:({})\n\tcvterm:({})\n\tpub:({})".format(self.cell_line_cvterm_id, self.cell_line, self.cvterm, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
 
 
 class CellLineCvtermprop(Base):
@@ -227,6 +311,18 @@ class CellLineCvtermprop(Base):
         return "CellLineCvtermprop id={}: value:'{}' type:({}) clc:({})".\
             format(self.cell_line_cvtermprop_id, self.value, self.type, self.cell_line_cvterm)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class CellLineDbxref(Base):
     __tablename__ = 'cell_line_dbxref'
@@ -246,6 +342,18 @@ class CellLineDbxref(Base):
         """Over write the default output."""
         return "CellLineDbxref id={}: CellLine:({}) dbxef:({}) current:{}".\
             format(self.cell_line_dbxref_id, self.cell_line, self.dbxref, self.is_current)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class CellLineFeature(Base):
@@ -268,6 +376,18 @@ class CellLineFeature(Base):
         return "CellLineFeature id={}:\n\tcell line:({})\n\tfeature:({})\n\tpub:({})".\
             format(self.cell_line_feature_id, self.cell_line, self.feature, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_feature_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.feature_id
+
 
 class CellLineLibrary(Base):
     __tablename__ = 'cell_line_library'
@@ -288,6 +408,18 @@ class CellLineLibrary(Base):
         """Over write the default output."""
         return "CellLineLibrary id={}:\n\tcell line:({})\n\tlibrary:({})\n\tpub:({})".\
             format(self.cell_line_library_id, self.cell_line, self.library, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_library_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.library_id
 
 
 class CellLineLibraryprop(Base):
@@ -311,6 +443,18 @@ class CellLineLibraryprop(Base):
         return "CellLineLibraryprop id={}: value:{} rank:{}\n\tLibrary:({})\n\tType:({})".\
             format(self.cell_line_libraryprop_id, self.value, self.rank, self.cell_line_library, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_libraryprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class CellLinePub(Base):
     __tablename__ = 'cell_line_pub'
@@ -329,6 +473,18 @@ class CellLinePub(Base):
         """Over write the default output."""
         return "CellLinePub id={}:\n\tcell line:({})\n\tpub:({})".\
             format(self.cell_line_pub_id, self.cell_line, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class CellLineRelationship(Base):
@@ -352,6 +508,10 @@ class CellLineRelationship(Base):
         return "CellLineRelationship id={}:\n\tObject:({})\n\tSubject:({})\n\tType({})".\
             format(self.cell_line_relationship_id, self.object, self.subject, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_relationship_id
+
 
 class CellLineStrain(Base):
     __tablename__ = 'cell_line_strain'
@@ -372,6 +532,18 @@ class CellLineStrain(Base):
         """Over write the default output."""
         return "CellLineStrain id={}:\n\tcell line:({})\n\tstrain:({})\n\tpub:({})".\
             format(self.cell_line_strain_id, self.cell_line, self.strain, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_strain_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.strain_id
 
 
 class CellLineStrainprop(Base):
@@ -394,6 +566,18 @@ class CellLineStrainprop(Base):
         """Over write the default output."""
         return "CellLineStrainprop id={}: value:'{}' rank:'{}'\n\tcell line strain:({})\n\tType:({})".\
             format(self.cell_line_strainprop_id, self.value, self.rank, self.cell_line_strain, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_strainprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class CellLineSynonym(Base):
@@ -418,6 +602,18 @@ class CellLineSynonym(Base):
         return "CellLineSynonym id={}: is_current:{} is_internal:{}\n\tcell line:({})\n\tsynonym:({})\n\tpub:({})".\
             format(self.cell_line_synonym_id, self.is_current, self.is_internal, self.cell_line, self.synonym, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_line_synonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
+
 
 class CellLineprop(Base):
     __tablename__ = 'cell_lineprop'
@@ -439,6 +635,18 @@ class CellLineprop(Base):
         return "CellLineprop id={}: value:'{}' rank:'{}'\n\tcell line:({})\n\ttype::({})".\
             format(self.cell_lineprop_id, self.value, self.rank, self.cell_line, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_lineprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_line_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class CellLinepropPub(Base):
     __tablename__ = 'cell_lineprop_pub'
@@ -458,6 +666,18 @@ class CellLinepropPub(Base):
         return "CellLineproppub id={}:\n\tcell line prop:({})\n\tpub:{})".\
             format(self.cell_lineprop_pub_id, self.cell_lineprop, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cell_lineprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cell_lineprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
 
 class Contact(Base):
     __tablename__ = 'contact'
@@ -465,6 +685,10 @@ class Contact(Base):
     contact_id = Column(Integer, primary_key=True, server_default=text("nextval('contact_contact_id_seq'::regclass)"))
     description = Column(String(255))
     name = Column(String(30), nullable=False, unique=True)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.contact_id
 
 
 class Cv(Base):
@@ -477,6 +701,10 @@ class Cv(Base):
     def __str__(self):
         """Over write the default output."""
         return "Cv id={}: name:'{}'".format(self.cv_id, self.name)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cv_id
 
 
 class Cvterm(Base):
@@ -500,6 +728,10 @@ class Cvterm(Base):
         """Over write the default output."""
         return "Cvterm id={}: name:'{}' cv:({})".format(self.cvterm_id, self.name, self.cv)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cvterm_id
+
 
 class CvtermDbxref(Base):
     __tablename__ = 'cvterm_dbxref'
@@ -519,6 +751,18 @@ class CvtermDbxref(Base):
         """Over write the default output."""
         return "CvtermDbxref id={}: is_for_definition:{}\n\tcvterm:({})\n\tdbxref:({})".\
             format(self.cvterm_dbxref_id, self.is_for_definition, self.cvterm, self.dbxref)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cvterm_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class CvtermRelationship(Base):
@@ -540,6 +784,14 @@ class CvtermRelationship(Base):
         """Over write the default output."""
         return "CvtermRelationship id={}:\n\tobject:({})\n\tsubject:({})\n\ttype:({})".\
             format(self.cvterm_relationship_id, self.object, self.subject, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cvterm_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 t_cvterm_type = Table(
@@ -583,6 +835,18 @@ class Cvtermprop(Base):
     cvterm = relationship('Cvterm', primaryjoin='Cvtermprop.cvterm_id == Cvterm.cvterm_id')
     type = relationship('Cvterm', primaryjoin='Cvtermprop.type_id == Cvterm.cvterm_id')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class Cvtermsynonym(Base):
     __tablename__ = 'cvtermsynonym'
@@ -597,6 +861,18 @@ class Cvtermsynonym(Base):
 
     cvterm = relationship('Cvterm', primaryjoin='Cvtermsynonym.cvterm_id == Cvterm.cvterm_id')
     type = relationship('Cvterm', primaryjoin='Cvtermsynonym.type_id == Cvterm.cvterm_id')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.cvtermsynonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
 
 
 class Db(Base):
@@ -614,6 +890,10 @@ class Db(Base):
     def __str__(self):
         """Over write the default output."""
         return "Db id={}: name:'{}'".format(self.db_id, self.name)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.db_id
 
 
 class Dbxref(Base):
@@ -635,6 +915,10 @@ class Dbxref(Base):
         """Over write the default output."""
         return "Dbxref id={}: acc:'{}' Db:({})".format(self.dbxref_id, self.accession, self.db)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.dbxref_id
+
 
 class Dbxrefprop(Base):
     __tablename__ = 'dbxrefprop'
@@ -655,6 +939,18 @@ class Dbxrefprop(Base):
         """Over write the default output."""
         return "Dbxrefprop id={}: value:'{}' rank:'{}'\n\tdbxref:({})\n\ttype:({})".\
             format(self.dbxrefprop_id, self.value, self.rank, self.dbxref, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.dbxrefprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.dbxref_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class Eimage(Base):
@@ -678,6 +974,10 @@ class Environment(Base):
         return "environment_id id={}: uniquename:'{}' desc:'{}'".\
             format(self.environment_id, self.uniquename, self.description)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.environment_id
+
 
 class EnvironmentCvterm(Base):
     __tablename__ = 'environment_cvterm'
@@ -692,6 +992,18 @@ class EnvironmentCvterm(Base):
     cvterm = relationship('Cvterm')
     environment = relationship('Environment')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.environment_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.enviroment_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class Expression(Base):
     __tablename__ = 'expression'
@@ -704,6 +1016,10 @@ class Expression(Base):
     def __str__(self):
         """Over write the default output."""
         return "Expression id={}: uniquename:{} description:{}".format(self.expression_id, self.uniquename, self.description)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.expression_id
 
 
 class ExpressionCvterm(Base):
@@ -727,6 +1043,18 @@ class ExpressionCvterm(Base):
         return "ExpressionCvterm id={}: rank:'{}'\n\tcvterm:({})\n\ttype:({})\n\texpression:({})".\
             format(self.expression_cvterm_id, self.rank, self.cvterm, self.cvterm_type, self.expression)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.expression_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.expression_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class ExpressionCvtermprop(Base):
     __tablename__ = 'expression_cvtermprop'
@@ -747,6 +1075,18 @@ class ExpressionCvtermprop(Base):
         """Over write the default output."""
         return "ExpressionCvtermprop id={}: value:'{}' rank:'{}'\n\texp_cvt:({})\n\ttype:({})".\
             format(self.expression_cvtermprop_id, self.value, self.rank, self.expression_cvterm, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.expression_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.expression_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class ExpressionImage(Base):
@@ -781,6 +1121,18 @@ class ExpressionPub(Base):
         return "ExpressionPub id={}:\n\texpression:({})\n\tpub:({})".\
             format(self.expression_pub_id, self.expression, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.expression_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.expression_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
 
 class Expressionprop(Base):
     __tablename__ = 'expressionprop'
@@ -801,6 +1153,18 @@ class Expressionprop(Base):
         """Over write the default output."""
         return "Expressionprop id={}: value:'{}' rank:'{}'\n\texpression:({})\n\ttype:({})".\
             format(self.expressionprop_id, self.value, self.rank, self.expression, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.expression_prop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.expression_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 t_f_loc = Table(
@@ -862,6 +1226,10 @@ class Feature(Base):
         return "Feature id={}: uniquename:'{}' name:'{}' obsolete:{} type:({})".\
             format(self.feature_id, self.uniquename, self.name, self.is_obsolete, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_id
+
 
 class FeatureCvterm(Base):
     __tablename__ = 'feature_cvterm'
@@ -884,6 +1252,18 @@ class FeatureCvterm(Base):
         return "FeatureCvterm id={}: is_not={}\n\tcvterm:({})\n\tfeature:({})\n\tpub:({})".\
             format(self.feature_cvterm_id, self.is_not, self.cvterm, self.feature, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class FeatureCvtermDbxref(Base):
     __tablename__ = 'feature_cvterm_dbxref'
@@ -903,6 +1283,18 @@ class FeatureCvtermDbxref(Base):
         """Over write the default output."""
         return "FeatureCvtermDbxref id={}:\n\tdbxref:({})\n\tfeat_cvterm:({})".\
             format(self.feature_cvterm_dbxref_id, self.dbxref, self.feature_cvterm)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_cvterm_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class FeatureCvtermprop(Base):
@@ -925,6 +1317,18 @@ class FeatureCvtermprop(Base):
         return "FeatureCvtermprop id={}: value='{}' rank='{}'\n\tfeat_cvterm:({})\n\ttype:({})".\
             format(self.feature_cvtermprop_id, self.value, self.rank, self.feature_cvterm, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class FeatureDbxref(Base):
     __tablename__ = 'feature_dbxref'
@@ -944,6 +1348,18 @@ class FeatureDbxref(Base):
         """Over write the default output."""
         return "FeatureDbxref id={}: is_current:{}\n\tdbxref:({})\n\tfeature:({})".\
             format(self.feature_dbxref_id, self.is_current, self.dbxref, self.feature)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class FeatureExpression(Base):
@@ -965,6 +1381,18 @@ class FeatureExpression(Base):
         """Over write the default output."""
         return "FeatureExpression id={}:\n\texpression:({})\n\tfeature:({})\n\tpub:({})".\
             format(self.feature_expression_id, self.expression, self.feature, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_expression_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.expression_id
 
 
 class FeatureExpressionprop(Base):
@@ -988,6 +1416,18 @@ class FeatureExpressionprop(Base):
         """Over write the default output."""
         return "FeatureExpressionprop id={}: value:'{}' rank:'{}'\n\tfeat exp:({})\n\ttype:({})".\
             format(self.feature_expressionprop_id, self.value, self.rank, self.feature_expression, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_expressionprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_expression_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class FeatureGenotype(Base):
@@ -1014,6 +1454,18 @@ class FeatureGenotype(Base):
         return "FeatureGenotype id={}: rank:'{}' cgroup:'{}'\n\tchrom:({})\n\tfeat:({})\n\tgenotype:({})\n\tcvterm:({})".\
             format(self.feature_genotype_id, self.rank, self.cgroup, self.chromosome, self.feature, self.genotype, self.cvterm)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_genotype_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.genotype_id
+
 
 class FeatureGrpmember(Base):
     __tablename__ = 'feature_grpmember'
@@ -1035,6 +1487,18 @@ class FeatureGrpmember(Base):
         return "FeatureGrpmember id={}:\n\tfeature({})\n\tgrpmember:({})".\
             format(self.feature_grpmember_id, self.feature, self.grpmember)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_grpmember_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.grpmember_id
+
 
 class FeatureGrpmemberPub(Base):
     __tablename__ = 'feature_grpmember_pub'
@@ -1054,6 +1518,18 @@ class FeatureGrpmemberPub(Base):
         """Over write the default output."""
         return "FeatureGrpmemberPub id={}:\n\tfeature_grpmember:({})\n\tpub({})".\
             format(self.feature_grpmember_pub_id, self.feature_grpmember, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_grpmember_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_grpmember_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class FeatureHumanhealthDbxref(Base):
@@ -1078,6 +1554,18 @@ class FeatureHumanhealthDbxref(Base):
         return "FeatureHumanhealthDbxref id={}:\n\tfeature:({})\n\thh_dbxref:({})\n\tpub:({})".\
             format(self.feature_humanhealth_dbxref_id, self.feature, self.humanhealth_dbxref, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_humanhealth_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.humanhealth_dbxref_id
+
 
 class FeatureInteraction(Base):
     __tablename__ = 'feature_interaction'
@@ -1100,6 +1588,18 @@ class FeatureInteraction(Base):
         return "FeatureInteraction id={}: rank:'{}'\n\tfeature:({})\n\tinteraction:({})\n\trole:({})".\
             format(self.feature_interaction_id, self.rank, self.feature, self.interaction, self.role)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_interaction_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.interaction_id
+
 
 class FeatureInteractionPub(Base):
     __tablename__ = 'feature_interaction_pub'
@@ -1120,6 +1620,18 @@ class FeatureInteractionPub(Base):
         """Over write the default output."""
         return "FeatureInteractionPub id={}:\n\tFI:({})\n\tPub:({})".\
             format(self.feature_interaction_pub_id, self.feature_interaction, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_interaction_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_interaction_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class FeatureInteractionprop(Base):
@@ -1144,6 +1656,18 @@ class FeatureInteractionprop(Base):
         return "FeatureInteractionprop id={}: value:'{}' rank:'{}'\n\tFI:({})\n\ttype:({})".\
             format(self.feature_interactionprop_id, self.value, self.rank, self.feature_interaction, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_interactionprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_interaction_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class FeaturePhenotype(Base):
     __tablename__ = 'feature_phenotype'
@@ -1163,6 +1687,18 @@ class FeaturePhenotype(Base):
         return "FeaturePhenotype id={}:\n\tFeat:({})\n\tPhenotype:({})".\
             format(self.feature_phenotype_id, self.feature, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_phenotype_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.phenotype_id
+
 
 class FeaturePub(Base):
     __tablename__ = 'feature_pub'
@@ -1181,6 +1717,18 @@ class FeaturePub(Base):
         """Over write the default output."""
         return "FeaturePub id={}:\n\tFeat:({})\n\tPub:({})".\
             format(self.feature_pub_id, self.feature, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class FeaturePubprop(Base):
@@ -1202,6 +1750,18 @@ class FeaturePubprop(Base):
         """Over write the default output."""
         return "FeaturePubprop id={}: value:'{}' rank:'{}'\nFeatPub:({})\n\ttype:({})".\
             format(self.feature_pubprop_id, self.value, self.rank, self.feature_pub, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_pubprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_pub_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class FeatureRelationship(Base):
@@ -1226,6 +1786,10 @@ class FeatureRelationship(Base):
         return "FeatureRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
             format(self.feature_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_relationship_id
+
 
 class FeatureRelationshipPub(Base):
     __tablename__ = 'feature_relationship_pub'
@@ -1246,6 +1810,18 @@ class FeatureRelationshipPub(Base):
         """Over write the default output."""
         return "FeatureRelationshipPub id={}:\n\tFR:({})\n\tPub:({})".\
             format(self.feature_relationship_pub_id, self.feature_relationship, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_relationship_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class FeatureRelationshipprop(Base):
@@ -1270,6 +1846,18 @@ class FeatureRelationshipprop(Base):
         return "FeatureRelationshipprop id={}: value:'{}' rank: '{}' \n\tFR:({})\n\ttype:({})".\
             format(self.feature_relationshipprop_id, self.value, self.rank, self.feature_relationship, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_relationshipprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class FeatureRelationshippropPub(Base):
     __tablename__ = 'feature_relationshipprop_pub'
@@ -1290,6 +1878,18 @@ class FeatureRelationshippropPub(Base):
         """Over write the default output."""
         return "FeatureRelationshipproPub id={}:\n\tFRP:({})\n\tpub:({})".\
             format(self.feature_relationshipprop_pub_id, self.feature_relationshipprop, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_relationshipprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_relationshipprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class FeatureSynonym(Base):
@@ -1313,6 +1913,18 @@ class FeatureSynonym(Base):
         """Over write the default output."""
         return "FeatureSynonym id={}: is_current:'{}' is_internal:'{}'\n\tFeat:({})\n\tSyn:({})\n\tPub:({})".\
             format(self.feature_synonym_id, self.is_current, self.is_internal, self.feature, self.synonym, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.feature_synonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
 
 
 class Featureloc(Base):
@@ -1347,6 +1959,18 @@ class Featureloc(Base):
             format(self.strand, self.phase, self.residue_info, self.locgroup, self.rank)
         mess += "\n\tFeat:({})\n\tsrcfeat:({})".format(self.feature, self.srcfeature)
         return mess
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featureloc_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.srcfeature_id
 
 
 t_featureloc_allcoords = Table(
@@ -1388,6 +2012,18 @@ class FeaturelocPub(Base):
         return "FeaturelocPub id={}:\n\tFL:({})\n\tPub:({})".\
             format(self.featureloc_pub_id, self.featureloc, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featureloc_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.featureloc_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
 
 class Featuremap(Base):
     __tablename__ = 'featuremap'
@@ -1404,6 +2040,10 @@ class Featuremap(Base):
         return "Featuremap id={}: name:'{}' description:'{}'\n\ttype:({})".\
             format(self.featuremap_id, self.name, self.description, self.unittype)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featuremap_id
+
 
 class FeaturemapPub(Base):
     __tablename__ = 'featuremap_pub'
@@ -1419,6 +2059,18 @@ class FeaturemapPub(Base):
         """Over write the default output."""
         return "FeaturemapPub id={}:\n\tFm:({})\n\tPub:({})".\
             format(self.featuremap_pub_id, self.featuremap, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featuremap_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.featuremap_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.featuremap_id
 
 
 class Featurepo(Base):
@@ -1438,6 +2090,10 @@ class Featurepo(Base):
     def __str__(self):
         """Over write the default output."""
         return "Not used in flybase"
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featurepos_id
 
 
 class Featureprop(Base):
@@ -1460,6 +2116,18 @@ class Featureprop(Base):
         return "Featureprop id={}: value:'{}' rank:'{}'\n\tfeat:({})\n\ttype:({})".\
             format(self.featureprop_id, self.value, self.rank, self.feature, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featureprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class FeaturepropPub(Base):
     __tablename__ = 'featureprop_pub'
@@ -1478,6 +2146,18 @@ class FeaturepropPub(Base):
         """Over write the default output."""
         return "FeaturepropPub id={}:\n\tfeatprop:({})\n\tpub:({})".\
             format(self.featureprop_pub_id, self.featureprop, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.featureprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.featureprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Featurerange(Base):
@@ -1539,6 +2219,10 @@ class Genotype(Base):
         return "Genotype id ={}: uniquename:'{}' name:'{}' description:'{}'".\
             format(self.genotype_id, self.uniquename, self.name, self.description)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotype_id
+
 
 t_gffatts_slim = Table(
     'gffatts_slim', metadata,
@@ -1576,7 +2260,7 @@ class Grp(Base):
         return "Grp id={}: uniquename:'{}' name:'{}' is_analysis:'{}' is_obsolete:'{}'\n\ttype:({})".\
             format(self.grp_id, self.uniquename, self.name, self.is_analysis, self.is_obsolete, self.type)
 
-    def id(self):
+    def primary_id(self):
         """Get grp id."""
         return self.grp_id
 
@@ -1603,6 +2287,18 @@ class GrpCvterm(Base):
         return "GrpCvterm id={}: is_not:'{}'\n\tgrp:({})\n\tcvterm:({})\n\tpub:({})".\
             format(self.grp_cvterm_id, self.is_not, self.grp, self.cvterm, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class GrpDbxref(Base):
     __tablename__ = 'grp_dbxref'
@@ -1624,6 +2320,18 @@ class GrpDbxref(Base):
         return "GrpDbxref id={}: is_current:'{}'\n\tgrp:({})\n\tdbxref:({})".\
             format(self.grp_dbxref_id, self.is_current, self.grp, self.dbxref)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
+
 
 class GrpPub(Base):
     __tablename__ = 'grp_pub'
@@ -1642,6 +2350,18 @@ class GrpPub(Base):
         """Over write the default output."""
         return "GrpPub id={}:\n\tgrp:({})\n\tpub:({})".\
             format(self.grp_pub_id, self.grp, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class GrpPubprop(Base):
@@ -1664,6 +2384,18 @@ class GrpPubprop(Base):
         """Over write the default output."""
         return "GrpPubprop id={}: value:'{}' rank:'{}'\n\tgrp_pub:({})\n\ttype:({})".\
             format(self.grp_pubprop_id, self.value, self.rank, self.grp_pub, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_pubprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_pub_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class GrpRelationship(Base):
@@ -1688,9 +2420,17 @@ class GrpRelationship(Base):
         return "GrpRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
             format(self.grp_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
 
-    def id(self):
-        """Get grp relationship id."""
+    def primary_id(self):
+        """Fetch primary_id."""
         return self.grp_relationship_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class GrpRelationshipPub(Base):
@@ -1713,11 +2453,16 @@ class GrpRelationshipPub(Base):
         return "GrpRelationshipPub id={}:\n\tGR:({})\n\tPub:({})".\
             format(self.grp_relationship_pub_id, self.grp_relationship, self.pub)
 
-    def gen_id(self):
-        """Get grp_relationship_id.
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_relationship_pub_id
 
-        defined as gen_id so all similar can have this and make code general
-        """
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
         return self.grp_relationship_id
 
 
@@ -1743,6 +2488,18 @@ class GrpRelationshipprop(Base):
         return "GrpRelationshipprop id={}: value:'{}' rank:'{}' \n\tGR:({})\n\ttype:({})".\
             format(self.grp_relationshipprop_id, self.value, self.rank, self.grp_relationship, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_relationshipprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class GrpSynonym(Base):
     __tablename__ = 'grp_synonym'
@@ -1767,12 +2524,17 @@ class GrpSynonym(Base):
         return "GrpSynonym id={}: is_current:'{}' is_internal:'{}'\n\tGrp:({})\n\tSyn:({})\n\tPub:({})".\
             format(self.grp_synonym_id, self.is_current, self.is_internal, self.grp, self.synonym, self.pub)
 
-    def gen_id(self):
-        """Get grp_id.
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grp_synonym_id
 
-        defined as gen_id so all similar can have this and make code general
-        """
+    def first_id(self):
+        """Fetch first id"""
         return self.grp_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
 
 
 class Grpmember(Base):
@@ -1793,6 +2555,10 @@ class Grpmember(Base):
         """Over write the default output."""
         return "Grpmember id={}: rank:'{}'\n\tgrp:({})\n\ttype:({})".\
             format(self.grpmember_id, self.rank, self.grp, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grpmember_id
 
 
 class GrpmemberCvterm(Base):
@@ -1818,6 +2584,18 @@ class GrpmemberCvterm(Base):
         return "GrpmemberCvterm id={}: is_not:'{}'\n\tGrpmem:({})\n\ttype:({})\n\tpub:({})".\
             format(self.grpmember_cvterm_id, self.is_not, self.grpmember, self.cvterm, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grpmember_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grpmember_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class GrpmemberPub(Base):
     __tablename__ = 'grpmember_pub'
@@ -1837,6 +2615,18 @@ class GrpmemberPub(Base):
         """Over write the default output."""
         return "GrpmemberPub id={}:\n\tGrpmem:({})\n\tPub:({})".\
             format(self.grpmember_pub_id, self.grpmember, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grpmember_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grpmember_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Grpmemberprop(Base):
@@ -1860,6 +2650,18 @@ class Grpmemberprop(Base):
         return "Grpmemberprop id={}: value:'{}' rank:'{}' GrpMem:({})\n\ttype:({})".\
             format(self.grpmemberprop_id, self.value, self.rank, self.grpmember, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grpmemberprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grpmember_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class GrpmemberpropPub(Base):
     __tablename__ = 'grpmemberprop_pub'
@@ -1874,6 +2676,18 @@ class GrpmemberpropPub(Base):
 
     grpmemberprop = relationship('Grpmemberprop')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grpmemberprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grpmemberprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Grpprop(Base):
@@ -1896,9 +2710,17 @@ class Grpprop(Base):
         return "Grpprop id={}: value:'{}' rank:'{}'\n\tGrp:({})\n\ttype:({})".\
             format(self.grpprop_id, self.value, self.rank, self.grp, self.type)
 
-    def id(self):
-        """Get grp id."""
+    def primary_id(self):
+        """Fetch primary_id."""
         return self.grpprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.grp_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class GrppropPub(Base):
@@ -1920,12 +2742,17 @@ class GrppropPub(Base):
         return "GrppropPub id={}:\n\tgrpprop:({})\n\tPub:({})".\
             format(self.grpprop_pub_id, self.grpprop, self.pub)
 
-    def gen_id(self):
-        """Get grpprop_id.
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.grpprop_pub_id
 
-        defined as gen_id so all similar can have this and make code general
-        """
+    def first_id(self):
+        """Fetch first id"""
         return self.grpprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Humanhealth(Base):
@@ -1949,6 +2776,10 @@ class Humanhealth(Base):
         return "Humanhealth id={}: uniquename:'{}' name:'{}' is_obsolete:'{}'\n\rorg:({})\n\tdbxref:({})".\
             format(self.humanhealth_id, self.uniquename, self.name, self.is_obsolete, self.organism, self.dbxref)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealth_id
+
 
 class HumanhealthCvterm(Base):
     __tablename__ = 'humanhealth_cvterm'
@@ -1969,6 +2800,18 @@ class HumanhealthCvterm(Base):
         """Over write the default output."""
         return "HumanhealthCvterm id={}:\n\tHH:({})\n\tcvterm:({})\n\tPub:({})".\
             format(self.humanhealth_cvterm_id, self.humanhealth, self.cvterm, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealth_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
 
 
 class HumanhealthCvtermprop(Base):
@@ -1992,6 +2835,18 @@ class HumanhealthCvtermprop(Base):
         return "HumanhealthCvtermprop id={}: value:'{}' rank:'{}'\n\tHHcvterm:({})\n\ttype:({})".\
             format(self.humanhealth_cvtermprop_id, self.value, self.rank, self.humanhealth_cvterm, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class HumanhealthDbxref(Base):
     __tablename__ = 'humanhealth_dbxref'
@@ -2011,6 +2866,18 @@ class HumanhealthDbxref(Base):
         """Over write the default output."""
         return "HumanhealthDbxref id={}: is_current:'{}'\n\thh:({})\n\tdbxref:({})".\
             format(self.humanhealth_dbxref_id, self.is_current, self.humanhealth, self.dbxref)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class HumanhealthDbxrefprop(Base):
@@ -2035,6 +2902,18 @@ class HumanhealthDbxrefprop(Base):
         return "HumanhealthDbxrefprop id={}: value:'{}' rank:'{}'\n\tHHDnxref:({})\n\ttype:({})".\
             format(self.humanhealth_dbxrefprop_id, self.value, self.rank, self.humanhealth_dbxref, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_dbxrefprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_dbxref_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class HumanhealthDbxrefpropPub(Base):
     __tablename__ = 'humanhealth_dbxrefprop_pub'
@@ -2057,6 +2936,18 @@ class HumanhealthDbxrefpropPub(Base):
         return "HumanhealthDbxrefpropPub id={}:\n\tHHDp:({})\n\tPub:({})".\
             format(self.humanhealth_dbxrefprop_pub_id, self.humanhealth_dbxrefprop, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_dbxrefprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_dbxref_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
 
 class HumanhealthFeature(Base):
     __tablename__ = 'humanhealth_feature'
@@ -2077,6 +2968,18 @@ class HumanhealthFeature(Base):
         """Over write the default output."""
         return "HumanhealthFeature id={}:\n\tHH:({})\n\tFeat:({})\n\tpub:({})".\
             format(self.humanhealth_feature_id, self.humanhealth, self.feature, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_feature_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.feature_id
 
 
 class HumanhealthFeatureprop(Base):
@@ -2101,6 +3004,18 @@ class HumanhealthFeatureprop(Base):
         return "HumanhealthFeatureprop id={}: value:'{} rank:'{}'\n\tHHF:({})\n\ttype:({})".\
             format(self.humanhealth_featureprop_id, self.value, self.rank, self.humanhealth_feature, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_featureprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class HumanhealthPhenotype(Base):
     __tablename__ = 'humanhealth_phenotype'
@@ -2116,6 +3031,18 @@ class HumanhealthPhenotype(Base):
     humanhealth = relationship('Humanhealth')
     phenotype = relationship('Phenotype')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_phenotype_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.phenotype_id
 
 
 class HumanhealthPhenotypeprop(Base):
@@ -2135,6 +3062,18 @@ class HumanhealthPhenotypeprop(Base):
     humanhealth_phenotype = relationship('HumanhealthPhenotype')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_phenotypeprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_phenotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class HumanhealthPub(Base):
     __tablename__ = 'humanhealth_pub'
@@ -2153,6 +3092,18 @@ class HumanhealthPub(Base):
         """Over write the default output."""
         return "HumanhealthPub id={}:\n\tHH:({})\n\tPub:({})".\
             format(self.humanhealth_pub_id, self.humanhealth, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class HumanhealthPubprop(Base):
@@ -2175,6 +3126,18 @@ class HumanhealthPubprop(Base):
         """Over write the default output."""
         return "HumanhealthPubprop id={}: value:'{}' rank:'{}'\n\tHHpub:({})\n\ttype:({})".\
             format(self.humanhealth_pubprop_id, self.value, self.rank, self.humanhealth_pub, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealth_pubprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_pub_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class HumanhealthRelationship(Base):
@@ -2200,6 +3163,10 @@ class HumanhealthRelationship(Base):
         return "HumanhealthRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
             format(self.humanhealth_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.health_relationship_id
+
 
 class HumanhealthRelationshipPub(Base):
     __tablename__ = 'humanhealth_relationship_pub'
@@ -2221,6 +3188,18 @@ class HumanhealthRelationshipPub(Base):
         """Over write the default output."""
         return "HumanhealthRelationshipPub id={}:\n\tHHR:({})\n\tPun:({})".\
             format(self.humanhealth_relationship_pub_id, self.humanhealth_relationship, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealth_relationship_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class HumanhealthSynonym(Base):
@@ -2245,6 +3224,18 @@ class HumanhealthSynonym(Base):
         return "HumanhealthSynonym id={}: is_current:'{}' is_internal:'{}'\n\tHH:({})\n\tSyn:({})\n\tPub:({})".\
             format(self.humanhealth_synonym_id, self.is_current, self.is_internal, self.humanhealth, self.synonym, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealth_synonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
+
 
 class Humanhealthprop(Base):
     __tablename__ = 'humanhealthprop'
@@ -2266,6 +3257,18 @@ class Humanhealthprop(Base):
         return "Humanhealthprop id={}: value:'{}' rank:'{}'\n\tHH:({})\n\ttype:({})".\
             format(self.humanhealthprop_id, self.value, self.rank, self.humanhealth, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealthprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealth_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class HumanhealthpropPub(Base):
     __tablename__ = 'humanhealthprop_pub'
@@ -2285,6 +3288,18 @@ class HumanhealthpropPub(Base):
         """Over write the default output."""
         return "HumanhealthpropPub id={}:\n\tHHprop:({}) Pub:({})".\
             format(self.humanhealthprop_pub_id, self.humanhealthprop, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.humanhealthprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.humanhealthprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Interaction(Base):
@@ -2306,6 +3321,10 @@ class Interaction(Base):
         return "Interaction id={}: uniquename:'{}' is_obsolte:'{}', description:'{}'\n\ttype:({})".\
             format(self.interaction_id, self.uniquename, self.is_obsolete, self.description, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.interaction_id
+
 
 class InteractionCellLine(Base):
     __tablename__ = 'interaction_cell_line'
@@ -2326,6 +3345,18 @@ class InteractionCellLine(Base):
         """Over write the default output."""
         return "InteractionCellLine id={}:\n\tInteraction:({})\n\tCell line:({})\n\tPub:({})".\
             format(self.interaction_cell_line_id, self.interaction, self.cell_line, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.interaction_cel_line_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.interaction_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cell_line_id
 
 
 class InteractionCvterm(Base):
@@ -2489,6 +3520,10 @@ class Library(Base):
         return "Library id={}: uniquename:{} name:{} obsolete:{}\n\torg:({})\n\ttype:({})".\
             format(self.library_id, self.uniquename, self.name, self.is_obsolete, self.organism, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_id
+
 
 class LibraryCvterm(Base):
     __tablename__ = 'library_cvterm'
@@ -2504,6 +3539,18 @@ class LibraryCvterm(Base):
     cvterm = relationship('Cvterm')
     library = relationship('Library')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
 
 
 class LibraryCvtermprop(Base):
@@ -2522,6 +3569,18 @@ class LibraryCvtermprop(Base):
     library_cvterm = relationship('LibraryCvterm')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class LibraryDbxref(Base):
     __tablename__ = 'library_dbxref'
@@ -2536,6 +3595,18 @@ class LibraryDbxref(Base):
 
     dbxref = relationship('Dbxref')
     library = relationship('Library')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class LibraryDbxrefprop(Base):
@@ -2554,6 +3625,18 @@ class LibraryDbxrefprop(Base):
     library_dbxref = relationship('LibraryDbxref')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_dbxrefprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_dbxref_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class LibraryExpression(Base):
     __tablename__ = 'library_expression'
@@ -2569,6 +3652,18 @@ class LibraryExpression(Base):
     expression = relationship('Expression')
     library = relationship('Library')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_expression_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.expression_id
 
 
 class LibraryExpressionprop(Base):
@@ -2586,6 +3681,18 @@ class LibraryExpressionprop(Base):
 
     library_expression = relationship('LibraryExpression')
     type = relationship('Cvterm')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_expressionprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_expression_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.library_expression_id
 
 
 class LibraryFeature(Base):
@@ -2605,6 +3712,18 @@ class LibraryFeature(Base):
         """Over write the default output."""
         return "LibraryFeature id={}:\n\tLibrary:({})\n\tFeature:({})".\
             format(self.library_feature_id, self.library, self.feature)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_feature_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.feature_id
 
 
 class LibraryFeatureprop(Base):
@@ -2627,6 +3746,18 @@ class LibraryFeatureprop(Base):
         return "LibraryFeatureprop id={}: value={} rank={}\n\ttype=({})\n\tLibraryFeature:({})".\
             format(self.library_featureprop_id, self.value, self.rank, self.type, self.library_feature)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_featureprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class LibraryGrpmember(Base):
     __tablename__ = 'library_grpmember'
@@ -2642,6 +3773,18 @@ class LibraryGrpmember(Base):
 
     grpmember = relationship('Grpmember')
     library = relationship('Library')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_grpmember_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.grpmember_id
 
 
 class LibraryHumanhealth(Base):
@@ -2693,6 +3836,18 @@ class LibraryInteraction(Base):
     library = relationship('Library')
     pub = relationship('Pub')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_interaction_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.interaction_id
+
 
 class LibraryPub(Base):
     __tablename__ = 'library_pub'
@@ -2706,6 +3861,18 @@ class LibraryPub(Base):
 
     library = relationship('Library')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class LibraryRelationship(Base):
@@ -2723,6 +3890,10 @@ class LibraryRelationship(Base):
     subject = relationship('Library', primaryjoin='LibraryRelationship.subject_id == Library.library_id')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_relationship_id
+
 
 class LibraryRelationshipPub(Base):
     __tablename__ = 'library_relationship_pub'
@@ -2738,6 +3909,18 @@ class LibraryRelationshipPub(Base):
 
     library_relationship = relationship('LibraryRelationship')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_relationship_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class LibraryStrain(Base):
@@ -2755,6 +3938,18 @@ class LibraryStrain(Base):
     pub = relationship('Pub')
     strain = relationship('Strain')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_strain_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.strain_id
+
 
 class LibraryStrainprop(Base):
     __tablename__ = 'library_strainprop'
@@ -2771,6 +3966,18 @@ class LibraryStrainprop(Base):
 
     library_strain = relationship('LibraryStrain')
     type = relationship('Cvterm')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_strainprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class LibrarySynonym(Base):
@@ -2790,6 +3997,18 @@ class LibrarySynonym(Base):
     pub = relationship('Pub')
     synonym = relationship('Synonym')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_synonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
+
 
 class Libraryprop(Base):
     __tablename__ = 'libraryprop'
@@ -2806,6 +4025,18 @@ class Libraryprop(Base):
     library = relationship('Library')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.library_prop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.library_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class LibrarypropPub(Base):
     __tablename__ = 'libraryprop_pub'
@@ -2819,6 +4050,18 @@ class LibrarypropPub(Base):
 
     libraryprop = relationship('Libraryprop')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.libraryprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.libraryprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Lock(Base):
@@ -2858,6 +4101,10 @@ class Organism(Base):
         return "Organism id={}: abbr:'{}' genus:'{}' species:'{}'".\
             format(self.organism_id, self.abbreviation, self.genus, self.species)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_id
+
 
 class OrganismCvterm(Base):
     __tablename__ = 'organism_cvterm'
@@ -2875,6 +4122,18 @@ class OrganismCvterm(Base):
     organism = relationship('Organism')
     pub = relationship('Pub')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class OrganismCvtermprop(Base):
     __tablename__ = 'organism_cvtermprop'
@@ -2891,6 +4150,18 @@ class OrganismCvtermprop(Base):
     organism_cvterm = relationship('OrganismCvterm')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class OrganismDbxref(Base):
     __tablename__ = 'organism_dbxref'
@@ -2905,6 +4176,18 @@ class OrganismDbxref(Base):
 
     dbxref = relationship('Dbxref')
     organism = relationship('Organism')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class OrganismGrpmember(Base):
@@ -2922,6 +4205,18 @@ class OrganismGrpmember(Base):
     grpmember = relationship('Grpmember')
     organism = relationship('Organism')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_grpmember_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.grpmember_id
+
 
 class OrganismLibrary(Base):
     __tablename__ = 'organism_library'
@@ -2936,6 +4231,18 @@ class OrganismLibrary(Base):
     library = relationship('Library')
     organism = relationship('Organism')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_library_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.library_id
+
 
 class OrganismPub(Base):
     __tablename__ = 'organism_pub'
@@ -2949,6 +4256,18 @@ class OrganismPub(Base):
 
     organism = relationship('Organism')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organism_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Organismprop(Base):
@@ -2966,6 +4285,18 @@ class Organismprop(Base):
     organism = relationship('Organism')
     type = relationship('Cvterm')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organismprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organism_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class OrganismpropPub(Base):
     __tablename__ = 'organismprop_pub'
@@ -2979,6 +4310,18 @@ class OrganismpropPub(Base):
 
     organismprop = relationship('Organismprop')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.organismprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.organismprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class Phendesc(Base):
@@ -3020,6 +4363,10 @@ class Phenotype(Base):
         """Over write the default output."""
         return "Phenotype id={}: uniquename:'{}' value:({})\n\tassay:({})\n\tattr:({})\n\tcvalue:({})\n\tobs:({})".\
             format(self.phenotype_id, self.uniquename, self.value, self.assay, self.attr, self.cvalue, self.observable)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.phentype_id
 
 
 class PhenotypeComparison(Base):
@@ -3078,6 +4425,18 @@ class PhenotypeCvterm(Base):
     cvterm = relationship('Cvterm')
     phenotype = relationship('Phenotype')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.phenotype_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.phenotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
 
 class Phenstatement(Base):
     __tablename__ = 'phenstatement'
@@ -3102,6 +4461,10 @@ class Phenstatement(Base):
         """Over write the default output."""
         return "Phenstatement id = {}\n\tgenotype:'{}'\n\tphenotype: {}\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}".\
             format(self.phenstatement_id, self.genotype, self.phenotype, self.environment, self.type, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.phenstatement_id
 
 
 t_prediction_evidence = Table(
@@ -3146,6 +4509,10 @@ class Pub(Base):
         return "Pub id={}: uniquename:{} title:'{}' miniref:'{}' type:({}) obsolete:'{}'".\
             format(self.pub_id, self.uniquename, self.title, self.miniref, self.type, self.is_obsolete)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.pub_id
+
 
 class PubDbxref(Base):
     __tablename__ = 'pub_dbxref'
@@ -3160,6 +4527,18 @@ class PubDbxref(Base):
 
     dbxref = relationship('Dbxref')
     pub = relationship('Pub')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.pub_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.pub_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class PubRelationship(Base):
@@ -3176,6 +4555,10 @@ class PubRelationship(Base):
     object = relationship('Pub', primaryjoin='PubRelationship.object_id == Pub.pub_id')
     subject = relationship('Pub', primaryjoin='PubRelationship.subject_id == Pub.pub_id')
     type = relationship('Cvterm')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.pub_relationship_id
 
 
 class Pubauthor(Base):
@@ -3194,6 +4577,18 @@ class Pubauthor(Base):
 
     pub = relationship('Pub')
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.pubauthor_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.pub_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
 
 class Pubprop(Base):
     __tablename__ = 'pubprop'
@@ -3209,6 +4604,18 @@ class Pubprop(Base):
 
     pub = relationship('Pub')
     type = relationship('Cvterm')
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.pubprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.pub_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
 
 
 class Strain(Base):
@@ -3232,6 +4639,10 @@ class Strain(Base):
         return "Strain id={}: name={}, uniquename={}, is_obsolete={}\n\tDbxref:({})\n\tOrg:({})".\
             format(self.strain_id, self.name, self.uniquename, self.is_obsolete, self.dbxref, self.organism)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_id
+
 
 class StrainCvterm(Base):
     __tablename__ = 'strain_cvterm'
@@ -3252,6 +4663,18 @@ class StrainCvterm(Base):
         """Over write the default output."""
         return "StrainCvterm id={}:\n\tcvterm:({})\n\tstrain:({})\n\tpub:({})".\
             format(self.strain_cvterm_id, self.cvterm, self.strain, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
 
 
 class StrainCvtermprop(Base):
@@ -3274,6 +4697,18 @@ class StrainCvtermprop(Base):
         return "StrainCvtermprop id={}: value='{}' rank='{}'\n\tstrain_cvterm:({})\n\ttype:({})".\
             format(self.strain_cvtermprop_id, self.value, self.rank, self.strain_cvterm, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class StrainDbxref(Base):
     __tablename__ = 'strain_dbxref'
@@ -3293,6 +4728,18 @@ class StrainDbxref(Base):
         """Over write the default output."""
         return "StrainDbxref id={}: is_current:{}\n\tdbxref:({})\n\tstrain:({})".\
             format(self.strain_dbxref_id, self.is_current, self.dbxref, self.strain)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
 
 
 class StrainFeature(Base):
@@ -3314,6 +4761,18 @@ class StrainFeature(Base):
         """Over write the default output."""
         return "StrainFeature id={}: \nStrain:({})\n\tFeature:({})\n\tpub:{}".\
             format(self.strain_feature_id, self.strain, self.feature, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_feature_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.feature_id
 
 
 class StrainFeatureprop(Base):
@@ -3337,6 +4796,18 @@ class StrainFeatureprop(Base):
         return "StrainFeatureprop id={}: value:'{}' rank:'{}'\nStrainFeature:({})\n\ttype:({})".\
             format(self.strain_featureprop_id, self.value, self.rank, self.strain_feature, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_featureprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_feature_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class StrainPhenotype(Base):
     __tablename__ = 'strain_phenotype'
@@ -3357,6 +4828,18 @@ class StrainPhenotype(Base):
         """Over write the default output."""
         return "StrainPhenotype id={}:\n\tStrain:({})\n\tPhenotype:({})".\
             format(self.strain_phenotype_id, self.strain, self.phenotype)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_phenotype_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.phenotype_id
 
 
 class StrainPhenotypeprop(Base):
@@ -3380,6 +4863,18 @@ class StrainPhenotypeprop(Base):
         return "StrainPhenotypeprop id={}: value:'{}' rank:'{}'\nStrainPhenotype:({})\n\ttype:({})".\
             format(self.strain_phenotypeprop_id, self.value, self.rank, self.strain_phenotype, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_phenotypeprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_phenotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class StrainPub(Base):
     __tablename__ = 'strain_pub'
@@ -3398,6 +4893,18 @@ class StrainPub(Base):
         """Over write the default output."""
         return "StrainPub id={}:\n\tStrain:({})\n\tPub:({})".\
             format(self.strain_pub_id, self.strain, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class StrainRelationship(Base):
@@ -3422,6 +4929,10 @@ class StrainRelationship(Base):
         return "StrainRelationship id={}: value:'{}' rank:'{}'\n\tObj:({})\n\tSub:({})\n\ttype:({})".\
             format(self.strain_relationship_id, self.value, self.rank, self.object, self.subject, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_relationship_id
+
 
 class StrainRelationshipPub(Base):
     __tablename__ = 'strain_relationship_pub'
@@ -3442,6 +4953,18 @@ class StrainRelationshipPub(Base):
         """Over write the default output."""
         return "StrainRelationshipPub id={}:\n\tSR:({})\n\tPub:({})".\
             format(self.strain_relationship_pub_id, self.strain_relationship, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_relationship_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_relationship_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 class StrainSynonym(Base):
@@ -3466,6 +4989,18 @@ class StrainSynonym(Base):
         return "StrainSynonym id={}: is_current:'{}' is_internal:'{}'\n\tStrain:({})\n\tSyn:({})\n\tPub:({})".\
             format(self.strain_synonym_id, self.is_current, self.is_internal, self.strain, self.synonym, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strain_synonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
+
 
 class Strainprop(Base):
     __tablename__ = 'strainprop'
@@ -3487,6 +5022,18 @@ class Strainprop(Base):
         return "Strainprop id={}: value:'{}' rank:'{}'\n\tstrain:({})\n\ttype:({})".\
             format(self.strainprop_id, self.value, self.rank, self.strain, self.type)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strainprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strain_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
 
 class StrainpropPub(Base):
     __tablename__ = 'strainprop_pub'
@@ -3506,6 +5053,18 @@ class StrainpropPub(Base):
         return "StrainpropPub id={}:\n\tstrainprop:({})\n\tpub:({})".\
             format(self.strainprop_pub_id, self.strainprop, self.pub)
 
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.strainprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.strainprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
 
 class Synonym(Base):
     __tablename__ = 'synonym'
@@ -3524,6 +5083,10 @@ class Synonym(Base):
         """Over write the default output."""
         return "Synonym id={}: name:'{}' synonym_sgml:'{}'\n\ttype:({})".\
             format(self.synonym_id, self.name, self.synonym_sgml, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.synonym_id
 
 
 class Tableinfo(Base):
