@@ -35,6 +35,7 @@ if __name__ == '__main__':
     params_to_send = {
         'config': args.config,
         'name': args.name,
+        'limit': args.limit,
         'lookup_by': args.by}
     tt = table_types[args.tablename](params_to_send)
     tt.dump_data()
