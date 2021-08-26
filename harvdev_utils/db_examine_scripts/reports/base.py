@@ -84,6 +84,7 @@ class BaseObject(object):
 
     def dump_data(self):
         """Dump the data for this object."""
+        log.info('####          {}            ####'.format(self.chado_object.__tablename__))
         log.info(self.chado_object)
         for item in self.table_info:
             log.debug("item {}".format(item))
