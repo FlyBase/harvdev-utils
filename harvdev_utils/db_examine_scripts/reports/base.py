@@ -28,6 +28,9 @@ class BaseObject(object):
         #      (CellLineprop, [{"related_class": CellLinepropPub, "related_id_name": 'cell_line_prop_id'}])
         #      ]
         self.table_info = []
+        # relationship tables are wierd in that they have subject and object and need to be processed seperately.
+        self.relationship = None
+
         self.session = self.create_postgres_session(params.get('config'))
         self.chado_object = None
         self.primary_key_name = None  # set up in child .ie. for CellLine it is cell_line_id
@@ -85,24 +88,42 @@ class BaseObject(object):
         for item in self.table_info:
             log.debug("item {}".format(item))
             try:
+                log.info('')
+                header = '###################### {} #############################'.format(item[CLASS_OBJECT].__tablename__)
+                log.info(header)
                 lookup_id_statement = getattr(item[CLASS_OBJECT], self.primary_key_name)
                 # session.query(CellLineprop).filter(CellLineprop.cell_line_id == CellLine.cell_line_id)
-                hits = self.session.query(item[CLASS_OBJECT]).filter(lookup_id_statement == self.chado_object.id())
+                hits = self.session.query(item[CLASS_OBJECT]).filter(lookup_id_statement == self.chado_object.primary_id())
                 for obj in hits:
                     count = 0
                     try:
                         for related_dict in item[RELATED_CLASS]:
                             related_id_statement = getattr(related_dict["related_class"], related_dict["related_id_name"])
                             # session.query(CellLinepropPub).filter(CellLinepropPub.cell_lineprop_id == sp.cell_lineprop_id)
-                            relateds = self.session.query(related_dict["related_class"]).filter(related_id_statement == obj.id())
+                            relateds = self.session.query(related_dict["related_class"]).filter(related_id_statement == obj.primary_id())
                             for related in relateds:
                                 count += 1
                                 log.info(related)
+                                log.info('')
                     except Exception as e:
                         log.error("Exception: {}".format(e))
                         traceback.print_tb(e.__traceback__)
                     if not count:  # it had no related tables or entries
                         log.info(obj)
+                        log.info('')
             except Exception as e:
                 log.error("Exception: {}".format(e))
                 traceback.print_tb(e.__traceback__)
+
+        # relationships
+        if self.relationship:
+            item = self.relationship
+            for obj_type in ['subject_id', 'object_id']:
+                log.info('')
+                header = '###################### {} {} #############################'.format(item[CLASS_OBJECT].__tablename__, obj_type)
+                log.info(header)
+                lookup_id_statement = getattr(item[CLASS_OBJECT], obj_type)
+                hits = self.session.query(item[CLASS_OBJECT]).filter(lookup_id_statement == self.chado_object.primary_id())
+                for obj in hits:
+                    log.info(obj)
+                    log.info('')
