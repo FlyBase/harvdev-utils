@@ -93,20 +93,23 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
 
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
     check_obs = _check_obsolete(obsolete)
-    filter_spec = (Synonym.type_id == synonym_type.cvterm_id,
-                   Synonym.synonym_sgml == synonym_sgml,
-                   sql_object_type.is_obsolete == obsolete)
+    filter_spec = (Synonym.synonym_sgml == synonym_sgml,)
+
+    if type_name:
+        filter_spec += (Synonym.type_id == synonym_type.cvterm_id,)
 
     if organism_id:
         filter_spec += (sql_object_type.organism_id == organism_id,)
 
     if check_obs:
         filter_spec += (sql_object_type.is_obsolete == obsolete,)
+
     if type_name:
         feature_type = general_type_lookup(session, type_name)
         filter_spec += (sql_object_type.type_id == feature_type.cvterm_id,)
 
     if check_unique:
+        print("BOB: {}".format(*filter_spec))
         object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
             filter(*filter_spec).one()
     else:
@@ -119,11 +122,14 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
 def _check_obsolete(obsolete):
     """Check if obsolete.
 
-    check if obsolete is one of the 3 allowed values and
+    check if obsolete is one of the 3 allowed values or None and
     return wether obsolete should be checked.
+
     """
     check_obs = True
     if obsolete == 'e':
+        check_obs = False
+    elif not obsolete:
         check_obs = False
     elif obsolete != 't' and obsolete != 'f':
         raise CodingError("If specifed obsolete must be 't', 'f' or 'e'")
