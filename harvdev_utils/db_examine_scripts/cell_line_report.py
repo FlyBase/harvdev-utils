@@ -156,7 +156,7 @@ def report_CellLine(session, symbol, debug, limit, lookup_by):
             scps = session.query(CellLineCvtermprop).filter(CellLineCvtermprop.cell_line_cvterm_id == sc.cell_line_cvterm_id)
             for scp in scps:
                 mess = "CellLineCvtermprop id={} CellLineCvterm id={}: rank={} value='{}' type=({})".\
-                    format(scp.CellLine_cvtermprop_id, sc.CellLine_cvterm_id, scp.rank, scp.value, scp.type)
+                    format(scp.cell_line_cvtermprop_id, sc.cell_line_cvterm_id, scp.rank, scp.value, scp.type)
                 log.info(mess)
             log.info(sc)
 
