@@ -257,6 +257,10 @@ class CellLine(Base):
         """Fetch primary_id."""
         return self.cell_line_id
 
+    def first_id(self):
+        """Fetch first/promary id"""
+        return self.cell_line_id
+
 
 class CellLineCvterm(Base):
     __tablename__ = 'cell_line_cvterm'
@@ -289,6 +293,9 @@ class CellLineCvterm(Base):
     def second_id(self):
         """Fetch second id"""
         return self.cvterm_id
+
+    def primary_key_name(self):
+        return 'cell_line_cvterm_id'
 
 
 class CellLineCvtermprop(Base):
