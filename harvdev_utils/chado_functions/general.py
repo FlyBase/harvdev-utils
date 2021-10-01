@@ -109,7 +109,6 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
         filter_spec += (sql_object_type.type_id == feature_type.cvterm_id,)
 
     if check_unique:
-        print("BOB: {}".format(*filter_spec))
         object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
             filter(*filter_spec).one()
     else:
