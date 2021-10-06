@@ -3,10 +3,12 @@
 from ..production import Db, Dbxref
 from sqlalchemy.orm.exc import NoResultFound
 from .chado_errors import CodingError, DataError
-db_dict = {}
+from sqlalchemy.orm.session import Session
+
+db_dict: dict = {}
 
 
-def get_db(session, db_name):
+def get_db(session: Session, db_name: str):
     """Lookup db chado object given name."""
     global db_dict
     try:
@@ -19,11 +21,10 @@ def get_db(session, db_name):
             db_dict[db_name] = db
     except NoResultFound:
         raise CodingError("HarvdevError: Could not find db {}.".format(db_name))
-        return None
     return db_dict[db_name]
 
 
-def get_dbxref(session, db_name, accession):
+def get_dbxref(session: Session, db_name: str, accession: str):
     """Lookup dbxref using db name and accession."""
     try:
         db = get_db(session, db_name)

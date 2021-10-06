@@ -39,6 +39,7 @@ import json
 import requests
 from retry import retry
 from os import getenv
+from typing import Union
 
 # url imports for omim
 from urllib.parse import urlencode
@@ -56,16 +57,16 @@ db_alias = {'omim_phenotype': 'omim'}
 
 
 class ExternalLookup:
-    def __init__(self, dbname, external_id=None, name=None, get_synonyms=False):
+    def __init__(self, dbname: str, external_id: Union[int, str] = 0, name: str = "", get_synonyms: bool = False):
         log.debug('Initializing Lookup object.')
         self.external_id = external_id
         self.dbname = dbname.lower()
         self.name = name
         self.description = None
         self.inchikey = None
-        self.error = None
+        self.error = ""
         self.get_synonyms = get_synonyms
-        self.synonyms = []
+        self.synonyms: list = []
         ############################################
         # Set up how to get each type id external db
         ############################################
@@ -79,7 +80,7 @@ class ExternalLookup:
         self.name_dict = {'pubchem': self._lookup_pubchem_name}
 
     @classmethod
-    def lookup_by_id(cls, dbname, external_id=None, synonyms=False):
+    def lookup_by_id(cls, dbname: str, external_id: Union[int, str] = 0, synonyms: bool = False):
         #
         # Will throw error if fails to connect after all tries
         #
@@ -372,7 +373,7 @@ if __name__ == '__main__':  # noqa: C901
 
     for chem_id in ['CHEBI:32140', 32140, 'CHEBI:99999999', 99999999]:
         print("\n\nProcessing chebi {}".format(chem_id))
-        hgnc = ExternalLookup.lookup_by_id('CHEBI', chem_id, synonyms=True)
+        hgnc = ExternalLookup.lookup_by_id('CHEBI', chem_id, synonyms=True)  # type ignore
         if hgnc.error:
             print("\t Error: {}".format(hgnc.error))
         else:

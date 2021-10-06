@@ -11,9 +11,11 @@ import re
 from harvdev_utils.char_conversions import (
     sgml_to_plain_text, sub_sup_to_sgml, sgml_to_unicode
 )
+from sqlalchemy.orm.session import Session
+from typing import Tuple
 
 
-def synonym_name_details(session, synonym_name):
+def synonym_name_details(session: Session, synonym_name: str) -> Tuple:
     r"""Get synonym details.
 
         Process the synonym_name given and check for organism specific stuff

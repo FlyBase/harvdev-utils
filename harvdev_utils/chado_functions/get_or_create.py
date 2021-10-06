@@ -9,12 +9,13 @@ from sqlalchemy import (
     inspect,
     func)
 from sqlalchemy.orm.exc import NoResultFound
-import logging
+from sqlalchemy.orm.session import Session
 
+import logging
 log = logging.getLogger(__name__)
 
 
-def get_or_create(session, model, **kwargs):
+def get_or_create(session: Session, model, **kwargs):
     """
     :param session: The current session in use by SQL Alchemy
     :param model: The table to be queried.

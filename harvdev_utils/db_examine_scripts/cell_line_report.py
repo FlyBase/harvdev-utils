@@ -43,6 +43,7 @@ from harvdev_utils.production import (CellLine, CellLineCvterm, CellLineCvtermpr
                                       CellLineLibrary, CellLineLibraryprop,
                                       CellLineStrain, CellLineStrainprop,
                                       CellLineRelationship, CellLineSynonym)
+from sqlalchemy.orm.session import Session
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--CellLine', help=' (CellLine symbol to make report for)', required=True)
@@ -68,7 +69,7 @@ else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 
 
-def get_CellLine(session, symbol, lookup_by):
+def get_CellLine(session: Session, symbol: str, lookup_by: str) -> CellLine:
     """Lookup CellLine."""
     log.info("Looking up CellLine '{}' using method '{}'".format(symbol, lookup_by))
     try:
@@ -84,13 +85,13 @@ def get_CellLine(session, symbol, lookup_by):
         exit(-1)
 
 
-def report_CellLine(session, symbol, debug, limit, lookup_by):
+def report_CellLine(session: Session, symbol: str, debug: bool, limit: int, lookup_by: str):  # noqa
     """Write report."""
     ###########################
     # starting point for report
     ###########################
     CellLine = get_CellLine(session, symbol, lookup_by)
-
+    print("BOB: {} {}".format(type(CellLine), CellLine.__class__.__bases__))
     log.info("###################### CellLine ############################")
     log.info(CellLine)
     log.info("###########################################################")
@@ -223,3 +224,4 @@ def create_postgres_session():
 if __name__ == '__main__':
     session = create_postgres_session()
     report_CellLine(session, args.CellLine, args.debug, args.limit, args.by)
+    # report_CellLine(1, 2, 3, 4) # check mypy type checking is working
