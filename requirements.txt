@@ -27,6 +27,8 @@ Markdown>=2.4.1
 MarkupSafe>=1.1.0
 mccabe>=0.6.1
 more-itertools>=5.0.0
+mypy-protobuf
+mypy
 packaging>=18.0
 pathtools>=0.1.2
 pkginfo>=1.4.2
@@ -54,7 +56,8 @@ snowballstemmer>=1.2.1
 Sphinx>=1.8.1
 sphinx-rtd-theme>=0.4.2
 sphinxcontrib-websupport>=1.1.0
-sqlalchemy
+sqlalchemy>=1.4
+sqlalchemy[mypy]
 svn
 toml>=0.10.0
 tox>=3.5.2

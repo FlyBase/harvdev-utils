@@ -9,15 +9,17 @@
 from harvdev_utils.production import Organism
 from harvdev_utils.chado_functions import CodingError
 from sqlalchemy.orm.exc import NoResultFound
-# This may be looked up a lot so lets keep this hanging around.
+from sqlalchemy.orm.session import Session
+from typing import Optional
 
+# This may be looked up a lot so lets keep this hanging around.
 # store as the abbreviation i.e ['Dmel']
 #                           and ['Drosphila']['melanogastor']
 # to enable more flexibility. No much memory used, so should be fine.
-organism_dict = {}
+organism_dict: dict = {}
 
 
-def get_default_organism_id(session):
+def get_default_organism_id(session: Session) -> int:
     """Get the default organism_id for Dmel.
 
     Args:
@@ -33,7 +35,7 @@ def get_default_organism_id(session):
     return organism_dict['Dmel'].organism_id
 
 
-def get_default_organism(session):
+def get_default_organism(session: Session) -> Organism:
     """Get the default sqlalchemy organism object for Dmel (default).
 
     Args:
@@ -50,7 +52,7 @@ def get_default_organism(session):
     return organism_dict['Dmel']
 
 
-def get_organism(session, short=None, genus=None, species=None):
+def get_organism(session: Session, short: Optional[str] = "", genus: Optional[str] = "", species: Optional[str] = ""):
     """Get the organism based on short (abbreviation) or genus and species.
 
     Args:
@@ -77,7 +79,6 @@ def get_organism(session, short=None, genus=None, species=None):
     if not short and not (genus and species):
         raise CodingError("HarvdevError: get organism called with no short or (genus and species) specified")
 
-    organism = None
     try:
         if short:
             if short in organism_dict:

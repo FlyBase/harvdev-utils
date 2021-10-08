@@ -1,10 +1,16 @@
 from harvdev_utils.production import Synonym
 from harvdev_utils.char_conversions import sub_sup_to_sgml, sgml_to_unicode
 from harvdev_utils.chado_functions import (
-    get_cvterm,  DataError, CodingError,
-    # get_default_organism_id,
-    # synonym_name_details
+    get_cvterm,  DataError, CodingError
 )
+from harvdev_utils.production.production import Cvterm
+from sqlalchemy.orm.session import Session
+from typing import Optional, Union
+from harvdev_utils.production import (
+    Grp, GrpSynonym,
+    CellLine,  CellLineSynonym
+)
+from typing import Any
 #
 # general cache
 # general_cache[type][symbol] = general_object
@@ -13,13 +19,16 @@ from harvdev_utils.chado_functions import (
 #       not want to risk overwritting/using wrong one.
 #       Symbol should be unique for a type.
 #
-general_cache = {}
+general_cache: dict = {}
 
 # feature type cache.
-general_type_cache = {}
+general_type_cache: dict = {}
+
+GeneralObjects = Union[Grp, CellLine]
+SynObjects = Union[GrpSynonym, CellLineSynonym]
 
 
-def general_type_lookup(session, type_name):
+def general_type_lookup(session: Session, type_name: str) -> Cvterm:
     """Lookup type cvterm."""
     if type_name in general_type_cache:
         return general_type_cache[type_name]
@@ -37,12 +46,14 @@ def general_type_lookup(session, type_name):
     return feature_type
 
 
-def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, synonym_name, organism_id=None, cv_name='synonym type',
-                          cvterm_name='symbol', check_unique=True, obsolete='f', convert=True):
+def general_symbol_lookup(session: Session, sql_object_type: GeneralObjects,
+                          syn_object_type, type_name: str, synonym_name: str,
+                          organism_id: int = None, cv_name: str = 'synonym type',
+                          cvterm_name: str = 'symbol', check_unique: bool = True, obsolete: str = 'f', convert: bool = True):
     """Lookup "other" feature that has a specific type and synonym name.
 
     Args:
-        session (sqlalchemy.orm.session.Session object): db connection  to use.
+        session: db connection  to use.
 
         sql_object_type (sqlalchemy object type): i.e. Grp, CellLine, Strain
 
@@ -93,20 +104,22 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
 
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
     check_obs = _check_obsolete(obsolete)
-    filter_spec = (Synonym.synonym_sgml == synonym_sgml,)
+    filter_spec: Any = (Synonym.synonym_sgml == synonym_sgml,)
 
     if type_name:
         filter_spec += (Synonym.type_id == synonym_type.cvterm_id,)
 
+    # Note: type error messages suppressed here as the args should deal with
+    #       inconsistences.
     if organism_id:
-        filter_spec += (sql_object_type.organism_id == organism_id,)
+        filter_spec += (sql_object_type.organism_id == organism_id,)  # type: ignore
 
     if check_obs:
-        filter_spec += (sql_object_type.is_obsolete == obsolete,)
+        filter_spec += (sql_object_type.is_obsolete == obsolete,)  # type: ignore
 
     if type_name:
         feature_type = general_type_lookup(session, type_name)
-        filter_spec += (sql_object_type.type_id == feature_type.cvterm_id,)
+        filter_spec += (sql_object_type.type_id == feature_type.cvterm_id,)  # type: ignore
 
     if check_unique:
         object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
@@ -118,7 +131,7 @@ def general_symbol_lookup(session, sql_object_type, syn_object_type, type_name, 
     return object
 
 
-def _check_obsolete(obsolete):
+def _check_obsolete(obsolete: Optional[str]) -> bool:
     """Check if obsolete.
 
     check if obsolete is one of the 3 allowed values or None and

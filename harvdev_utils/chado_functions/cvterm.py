@@ -8,15 +8,17 @@ from .chado_errors import CodingError
 from harvdev_utils.production import (
     Cv, Cvterm, Cvtermprop, Db, Dbxref
 )
+from sqlalchemy.orm.session import Session
+from typing import Union, Any
 
 # Caches
-cv_cvterm = {}
-cvterm_id_to_props = {}         # i.e. 123 => ['clone_qualifier', 'envoronment_qualifier']
-db_propname_to_cvterm_ids = {}  # i.e  FBcv:environment => Set cvterm_ids i.e. [123, 124]
-retained = {}                   # Special name to all cvterm_id's for that as a Set
+cv_cvterm: dict = {}
+cvterm_id_to_props: dict = {}         # i.e. 123 => ['clone_qualifier', 'envoronment_qualifier']
+db_propname_to_cvterm_ids: dict = {}  # i.e  FBcv:environment => Set cvterm_ids i.e. [123, 124]
+retained: dict = {}                   # Special name to all cvterm_id's for that as a Set
 
 
-def get_cvterm(session, cv_name, cvterm_name):
+def get_cvterm(session: Session, cv_name: str, cvterm_name: str) -> Cvterm:
     """Lookup cvterm."""
     global cv_cvterm
     try:
@@ -40,7 +42,7 @@ def get_cvterm(session, cv_name, cvterm_name):
 ########################
 
 
-def check_cvterm_has_prop(session, cvterm, prop_value):
+def check_cvterm_has_prop(session: Session, cvterm: Cvterm, prop_value: str) -> bool:
     """Check cvterm has a specific prop value.
 
     cvterm: (Cvterm Object) - Cvterm object.
@@ -64,7 +66,7 @@ def check_cvterm_has_prop(session, cvterm, prop_value):
     return prop_value in cvterm_id_to_props[cvterm_id]
 
 
-def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
+def check_cvterm_is_allowed(session: Session, cvterm: Cvterm, list_of_props: list, retain_name: Union[str, None] = None):  # noqa
     """Check if cvterm is allowed.
 
     cvterm: (Cvterm Object) - Cvterm object.
@@ -101,7 +103,7 @@ def check_cvterm_is_allowed(session, cvterm, list_of_props, retain_name=None):
         except ValueError:
             raise CodingError("HarvdevError: lookup failed as '{}' is not of the format xxxx:yyyyyyyy".format(db_and_propname))
 
-        filter_spec = (Db.name == db_name,)
+        filter_spec: Any = (Db.name == db_name,)
         if prop_name != 'default':
             filter_spec += (Cvtermprop.value == prop_name,)
 

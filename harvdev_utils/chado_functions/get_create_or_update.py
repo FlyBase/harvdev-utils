@@ -5,14 +5,13 @@
 .. moduleauthor:: Christopher Tabone ctabone@morgan.harvard.edu
 """
 
-from sqlalchemy import (
-    inspect,
-    func)
+from sqlalchemy import (inspect)
 from sqlalchemy.orm.exc import NoResultFound
 import logging
 import sys
 
 log = logging.getLogger(__name__)
+
 
 def get_create_or_update(session, model, **kwargs):
     """
