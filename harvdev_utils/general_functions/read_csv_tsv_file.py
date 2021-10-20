@@ -81,6 +81,7 @@ def find_headers(csv_input, delimiter):
         Will raise a warning if multiple header candidates are found.
     """
     log.info('TIME: {}. Looking for header line.'.format(timenow()))
+    row_size = 0
     comment_rows = []
     # Scan the csv input.
     for row in csv_input:
@@ -94,7 +95,7 @@ def find_headers(csv_input, delimiter):
                 log.debug('Stopping header scan at this line having {} elements:\n\t{}'.format(row_size, row))
                 break
         except IndexError:
-            log.debug('Ignoring an empty line: {}'.format(row))
+            log.debug('Ignoring an empty line at start of file: {}'.format(row))
     # Keep only those comments rows in csv reader input with length matching that of the 1st non-comment line.
     header_list = []
     for comment in comment_rows:
