@@ -82,23 +82,38 @@ def find_headers(filename, csv_input, delimiter):
         Will raise a warning if multiple header candidates are found.
     """
     log.warning('{}: Looking for header line.'.format(filename))
-    row_size = 0
+    row_size = None
     comment_rows = []
-    # Scan the csv input.
+    # data_found = False
+    header_list = []
+    headers = None
+    # Scan the csv input. The assumption is that all comment/header rows start with "#" char.
     for row in csv_input:
         try:
             if row[0].startswith('#'):
                 log.warning('{}: Found this comment line with {} element(s):\n\t{}'.format(filename, len(row), row))
                 if len(row) > 1:
                     comment_rows.append(row)
+                    row_size = len(row)    # Initial setting of row size by last comment line.
             else:
-                row_size = len(row)
+                # data_found = True
+                row_size = len(row)    # First non-comment line, if present, sets row size.
                 log.warning('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
                 break
         except IndexError:
             log.warning('{}: Ignoring an empty line at start of file: {}'.format(filename, row))
+
+    # Empty file.
+    if row_size is None:
+        log.warning('{}: This file appears to be empty.')
+        return headers
+
+    # # No data lines found (i.e., lines that don't start with "#" char).
+    # if data_found is False:
+    #     log.warning('{}: This file appears to have no non-header lines; all lines start with "#".')
+    #     return headers
+
     # Keep only those comments rows in csv reader input with length matching that of the 1st non-comment line.
-    header_list = []
     for comment in comment_rows:
         if len(comment) == row_size:
             header_list.append(comment)
