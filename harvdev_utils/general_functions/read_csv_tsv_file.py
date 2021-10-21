@@ -81,7 +81,7 @@ def find_headers(filename, csv_input, delimiter):
         Will raise a warning if no header is found. This is true of some input files that we handle: e.g., RNAcentral.
         Will raise a warning if multiple header candidates are found.
     """
-    log.warning('{}: Looking for header line.'.format(filename))
+    log.debug('{}: Looking for header line.'.format(filename))
     row_size = None
     comment_rows = []
     # data_found = False
@@ -91,17 +91,17 @@ def find_headers(filename, csv_input, delimiter):
     for row in csv_input:
         try:
             if row[0].startswith('#'):
-                log.warning('{}: Found this comment line with {} element(s):\n\t{}'.format(filename, len(row), row))
+                log.debug('{}: Found this comment line with {} element(s):\n\t{}'.format(filename, len(row), row))
                 if len(row) > 1:
                     comment_rows.append(row)
                     row_size = len(row)    # Initial setting of row size by last comment line.
             else:
                 # data_found = True
                 row_size = len(row)    # First non-comment line, if present, sets row size.
-                log.warning('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
+                log.debug('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
                 break
         except IndexError:
-            log.warning('{}: Ignoring an empty line at start of file: {}'.format(filename, row))
+            log.debug('{}: Ignoring an empty line: {}'.format(filename, row))
 
     # Empty file.
     if row_size is None:
