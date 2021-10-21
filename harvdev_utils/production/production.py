@@ -30,8 +30,9 @@ from sqlalchemy import (
     Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer,
     SmallInteger, String, Table, Text, UniqueConstraint, text
 )
-from sqlalchemy.orm import relationship, registry
-
+from sqlalchemy.orm import (
+    relationship, registry
+)
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm import Mapped
 
