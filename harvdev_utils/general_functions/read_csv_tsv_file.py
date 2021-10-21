@@ -144,15 +144,15 @@ def extract_data_from_tsv(input_filename, **kwargs):
     file_input = open(input_filename, 'r')
     try:
         delimiter_detected = kwargs['delimiter']
-        log.info('Will use delimiter specified : "{}"'.format(delimiter_detected))
+        log.info('{}: Will use delimiter specified : "{}"'.format(input_filename, delimiter_detected))
     except KeyError:
-        log.info('No delimiter specified. Will try CSV Sniffer.')
+        log.info('{}: No delimiter specified. Will try CSV Sniffer.'.format(input_filename))
         try:
             csv_sniffer = csv.Sniffer().sniff(file_input.read(1024))
             delimiter_detected = csv_sniffer.delimiter
-            log.info('CSV Sniffer detected this type of delimiter: "{}".'.format(delimiter_detected))
+            log.info('{}: CSV Sniffer detected this type of delimiter: "{}".'.format(input_filename, delimiter_detected))
         except ValueError:
-            log.error('No delimiter specified and CSV Sniffer could not detect delimiter either.')
+            log.error('{}: No delimiter specified and CSV Sniffer could not detect delimiter either.'.format(input_filename))
             raise ValueError
 
     # Reset the file object iterator, open the file, scan for headers.
@@ -163,11 +163,11 @@ def extract_data_from_tsv(input_filename, **kwargs):
     # Reset the file object iterator, then process into a dict.
     # Use of csv.DictReader was avoided because it does not handle zero or multiple leading comments very well.
     file_input.seek(0)
-    log.info('TIME: {}. Processing rows of input file.'.format(timenow()))
+    log.info('TIME: {}. {}: Processing rows of input file.'.format(input_filename, timenow()))
     data_input = []
     row_cnt = 1
     for row in csv_input:
-        log.debug('TSV: Processing row {}:\n\t{}'.format(row_cnt, row))
+        log.debug('{}: Processing row {}:\n\t{}'.format(input_filename, row_cnt, row))
         if len(row) > 0:
             if not row[0].startswith('#'):
                 if len(row) == len(headers):
@@ -176,7 +176,7 @@ def extract_data_from_tsv(input_filename, **kwargs):
                         row_data[headers[i]] = row[i]
                     data_input.append(row_data)
                 else:
-                    log.warning('Line {} has {} part(s) instead of {} part(s).'.format(row_cnt, len(row), len(headers)))
+                    log.warning('{}: Line {} has {} part(s) instead of {} part(s).'.format(input_filename, row_cnt, len(row), len(headers)))
         row_cnt += 1
 
     return data_input
