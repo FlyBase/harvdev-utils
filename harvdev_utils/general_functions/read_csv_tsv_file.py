@@ -61,7 +61,7 @@ def check_tsv_filename(filename):
     return
 
 
-def find_headers(csv_input, delimiter):
+def find_headers(filename, csv_input, delimiter):
     """Scan for a column header at the top of a file, even where there many comments.
 
     This function scans all lines beginning with "#" at the start of a file.
@@ -70,8 +70,9 @@ def find_headers(csv_input, delimiter):
     The last "#" line having delimiter in the candidate list is taken to be the header.
 
     Args:
-        arg1 (_csv.reader): A cvs reader object derived from the input file object.
-        arg2 (str): The csv/tsv delimiter.
+        arg1 (filename): (str) The filename.
+        arg2 (csv_input): (_csv.reader): A cvs reader object derived from the input file object.
+        arg3 (delimiter): (str) The csv/tsv delimiter.
 
     Returns:
         list: A list of headers; list will be generic "col0", "col1", ... values if no header row is found.
@@ -87,15 +88,15 @@ def find_headers(csv_input, delimiter):
     for row in csv_input:
         try:
             if row[0].startswith('#'):
-                log.debug('Found this comment line with {} element(s):\n\t{}'.format(len(row), row))
+                log.debug('{}: Found this comment line with {} element(s):\n\t{}'.format(filename, len(row), row))
                 if len(row) > 1:
                     comment_rows.append(row)
             else:
                 row_size = len(row)
-                log.debug('Stopping header scan at this line having {} elements:\n\t{}'.format(row_size, row))
+                log.debug('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
                 break
         except IndexError:
-            log.debug('Ignoring an empty line at start of file: {}'.format(row))
+            log.debug('{}: Ignoring an empty line at start of file: {}'.format(filename, row))
     # Keep only those comments rows in csv reader input with length matching that of the 1st non-comment line.
     header_list = []
     for comment in comment_rows:
@@ -104,18 +105,18 @@ def find_headers(csv_input, delimiter):
     # Now assess possible header rows in "header_list".
     # If no candidate header rows found.
     if len(header_list) == 0:
-        log.warning('Could not find a potential header row. Returning generic "headers" list.')
+        log.warning('{}: Could not find a potential header row. Returning generic "headers" list.'.format(filename))
         headers = ['col{}'.format(i) for i in range(0, row_size)]
     # If multiple header candidates found, pick the last one.
     elif len(header_list) > 1:
         headers = header_list[-1]
         headers[0] = headers[0].replace('#', '')    # Get rid of that first "#" char in the first column.
-        log.warning('Found multiple possible header rows. Going with:\n\t{}'.format(headers))
+        log.warning('{}: Found multiple possible header rows. Going with:\n\t{}'.format(filename, headers))
     # If only one header candidate found.
     else:
         headers = header_list[0]
         headers[0] = headers[0].replace('#', '')    # Get rid of that first "#" char in the first column.
-        log.info('Found only one potential header row:\n\t{}'.format(headers))
+        log.info('{}: Found only one potential header row:\n\t{}'.format(filename, headers))
 
     return headers
 
@@ -157,7 +158,7 @@ def extract_data_from_tsv(input_filename, **kwargs):
     # Reset the file object iterator, open the file, scan for headers.
     file_input.seek(0)
     csv_input = csv.reader(file_input, delimiter=delimiter_detected)
-    headers = find_headers(csv_input, delimiter_detected)
+    headers = find_headers(input_filename, csv_input, delimiter_detected)
 
     # Reset the file object iterator, then process into a dict.
     # Use of csv.DictReader was avoided because it does not handle zero or multiple leading comments very well.
