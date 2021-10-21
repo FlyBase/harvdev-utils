@@ -81,22 +81,22 @@ def find_headers(filename, csv_input, delimiter):
         Will raise a warning if no header is found. This is true of some input files that we handle: e.g., RNAcentral.
         Will raise a warning if multiple header candidates are found.
     """
-    log.info('TIME: {}. Looking for header line.'.format(timenow()))
+    log.warning('{}: Looking for header line.'.format(filename))
     row_size = 0
     comment_rows = []
     # Scan the csv input.
     for row in csv_input:
         try:
             if row[0].startswith('#'):
-                log.debug('{}: Found this comment line with {} element(s):\n\t{}'.format(filename, len(row), row))
+                log.warning('{}: Found this comment line with {} element(s):\n\t{}'.format(filename, len(row), row))
                 if len(row) > 1:
                     comment_rows.append(row)
             else:
                 row_size = len(row)
-                log.debug('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
+                log.warning('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
                 break
         except IndexError:
-            log.debug('{}: Ignoring an empty line at start of file: {}'.format(filename, row))
+            log.warning('{}: Ignoring an empty line at start of file: {}'.format(filename, row))
     # Keep only those comments rows in csv reader input with length matching that of the 1st non-comment line.
     header_list = []
     for comment in comment_rows:
@@ -116,7 +116,7 @@ def find_headers(filename, csv_input, delimiter):
     else:
         headers = header_list[0]
         headers[0] = headers[0].replace('#', '')    # Get rid of that first "#" char in the first column.
-        log.info('{}: Found only one potential header row:\n\t{}'.format(filename, headers))
+        log.warning('{}: Found only one potential header row:\n\t{}'.format(filename, headers))
 
     return headers
 
