@@ -105,7 +105,7 @@ def find_headers(filename, csv_input, delimiter):
 
     # Empty file.
     if row_size is None:
-        log.warning('{}: This file appears to be empty.')
+        log.warning('{}: This file appears to be empty.'.format(filename))
         return headers
 
     # # No data lines found (i.e., lines that don't start with "#" char).
@@ -120,18 +120,18 @@ def find_headers(filename, csv_input, delimiter):
     # Now assess possible header rows in "header_list".
     # If no candidate header rows found.
     if len(header_list) == 0:
-        log.warning('{}: Could not find a potential header row. Returning generic "headers" list.'.format(filename))
+        log.debug('{}: Could not find a potential header row. Returning generic "headers" list.'.format(filename))
         headers = ['col{}'.format(i) for i in range(0, row_size)]
     # If multiple header candidates found, pick the last one.
     elif len(header_list) > 1:
         headers = header_list[-1]
         headers[0] = headers[0].replace('#', '')    # Get rid of that first "#" char in the first column.
-        log.warning('{}: Found multiple possible header rows. Going with:\n\t{}'.format(filename, headers))
+        log.debug('{}: Found multiple possible header rows. Going with:\n\t{}'.format(filename, headers))
     # If only one header candidate found.
     else:
         headers = header_list[0]
         headers[0] = headers[0].replace('#', '')    # Get rid of that first "#" char in the first column.
-        log.warning('{}: Found only one potential header row:\n\t{}'.format(filename, headers))
+        log.debug('{}: Found only one potential header row:\n\t{}'.format(filename, headers))
 
     return headers
 
