@@ -416,7 +416,7 @@ class Reference(Pub):
         self.agr_pages = self.pages
         self.agr_mod_reference_types = [{'source': 'FB', 'referenceType': self.pub_type}]
         self.agr_xrefs = [{'id': '{}'.format(xref)} for xref in self.xrefs]
-        self.agr_xrefs.extend({'id': 'FB:' + self.uniquename, 'pages': ['reference']})
+        self.agr_xrefs.append({'id': 'FB:' + self.uniquename, 'pages': ['reference']})
         # Determine exportability.
         if self.processing_errors == []:
             self.is_for_agr_export = True
