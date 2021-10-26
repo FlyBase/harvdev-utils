@@ -163,6 +163,7 @@ class Reference(Pub):
         # Additional attributes to be retrieved from FlyBase chado.
         self.language = None                     # A string corresponding to "languages" pubprop.
         self.pubmed_id = None                    # A string of type '^PMID:[0-9]{1,}$' corresponding to the PubMed ID.
+        self.xrefs = []                          # A list of "db:accession" strings for 2o FB, DOI, PMC, etc.
         self.pub_type = None                     # The cvterm.name corresponding to pub.type_id.
         self.pubauthor_ids = []                  # The pubauthor entries (IDs) for the pub.
         self.pubmed_abstract = []                # pubprop of type "pubmed_abstract".
@@ -414,7 +415,8 @@ class Reference(Pub):
         self.agr_issue_name = self.issue
         self.agr_pages = self.pages
         self.agr_mod_reference_types = [{'source': 'FB', 'referenceType': self.pub_type}]
-        self.agr_xrefs = [{'id': 'FB:' + self.uniquename, 'pages': ['reference']}]
+        self.agr_xrefs = [{'id': '{}'.format(xref)} for xref in self.xrefs]
+        self.agr_xrefs.extend({'id': 'FB:' + self.uniquename, 'pages': ['reference']})
         # Determine exportability.
         if self.processing_errors == []:
             self.is_for_agr_export = True
