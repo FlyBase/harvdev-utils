@@ -411,7 +411,7 @@ class Reference(Pub):
                 agr_db_name = fb_agr_db_names[xref[DB]]
             except KeyError:
                 agr_db_name = xref[DB]
-            agr_xref = '{}:{}'.format(agr_db_name, xref[ACC])
+            agr_xref = {'id': '{}:{}'.format(agr_db_name, xref[ACC])}
             self.agr_xrefs.append(agr_xref)
         return
 
