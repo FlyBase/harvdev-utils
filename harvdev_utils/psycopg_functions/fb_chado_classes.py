@@ -163,7 +163,7 @@ class Reference(Pub):
         # Additional attributes to be retrieved from FlyBase chado.
         self.language = None                     # A string corresponding to "languages" pubprop.
         self.pubmed_id = None                    # A string of type '^PMID:[0-9]{1,}$' corresponding to the PubMed ID.
-        self.xrefs = []                          # A list of "db:accession" strings for 2o FB, DOI, PMC, etc.
+        self.xrefs = []                          # A list of "(db, accession)" tuples for 2o DOI, PMC, ISBN, etc.
         self.pub_type = None                     # The cvterm.name corresponding to pub.type_id.
         self.pubauthor_ids = []                  # The pubauthor entries (IDs) for the pub.
         self.pubmed_abstract = []                # pubprop of type "pubmed_abstract".
@@ -202,7 +202,7 @@ class Reference(Pub):
         self.agr_volume = None                 # Same as volume.
         self.agr_issue_name = None             # Using pub.issue for this.
         self.agr_pages = None                  # Need to handle lots of different syntax. Is there decided-upon AGR syntax? (e.g., convert FB "--" to "-")?
-        self.agr_xrefs = None                  # xref back to FB Reference report.
+        self.agr_xrefs = None                  # See get_agr_xrefs method.
         self.agr_authors = []                  # List of pubauthor entries for the pub.
         # Optional AGR attributes for ONLY referenceExchange.json.
         self.agr_mod_id = None                 # Will be the MOD ID.
@@ -396,6 +396,25 @@ class Reference(Pub):
 
         return
 
+    def get_agr_xrefs(self):
+        """Create AGR xrefs, converting FB db.name as needed."""
+        # First, drop in 1o FBrf ID
+        self.agr_xrefs = [{'id': 'FB:' + self.uniquename, 'pages': ['reference']}]
+        # Next, add other xrefs, converting db names as needed.
+        fb_agr_db_names = {
+            'isbn': 'ISBN'
+        }
+        DB = 0
+        ACC = 1
+        for xref in self.xrefs:
+            try:
+                agr_db_name = fb_agr_db_names[xref[DB]]
+            except KeyError:
+                agr_db_name = xref[DB]
+            agr_xref = {'id': '{}:{}'.format(agr_db_name, xref[ACC])}
+            self.agr_xrefs.append(agr_xref)
+        return
+
     def process_for_agr_export(self):
         """Run set of simple methods for conversion of FB info into AGR format."""
         self.get_timelastmodified()
@@ -407,6 +426,7 @@ class Reference(Pub):
         self.get_agr_abstract()
         self.get_agr_tags()
         self.get_agr_publisher()
+        self.get_agr_xrefs()
         # No special conversion required for these attributes, yet.
         self.agr_language = self.language
         self.agr_mod_id = 'FB:' + self.uniquename
@@ -415,8 +435,6 @@ class Reference(Pub):
         self.agr_issue_name = self.issue
         self.agr_pages = self.pages
         self.agr_mod_reference_types = [{'source': 'FB', 'referenceType': self.pub_type}]
-        self.agr_xrefs = [{'id': '{}'.format(xref)} for xref in self.xrefs]
-        self.agr_xrefs.append({'id': 'FB:' + self.uniquename, 'pages': ['reference']})
         # Determine exportability.
         if self.processing_errors == []:
             self.is_for_agr_export = True
