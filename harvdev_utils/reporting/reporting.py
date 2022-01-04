@@ -1,12 +1,37 @@
 # coding: utf-8
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer, SmallInteger, String, Table, Text, UniqueConstraint, text
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import (
+    Boolean, CheckConstraint, Column, Date, DateTime, Float, ForeignKey, Index, Integer,
+    SmallInteger, String, Table, Text, UniqueConstraint, text
+)
+from sqlalchemy.orm import (
+    relationship, registry
+)
+from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.orm import Mapped
+
+mapper_registry = registry()
 
 
-Base = declarative_base()
+class Base(metaclass=DeclarativeMeta):
+    __abstract__ = True
+
+    # these are supplied by the sqlalchemy2-stubs, so may be omitted
+    # when they are installed
+    registry = mapper_registry
+    metadata = mapper_registry.metadata
+
+    def __repr__(self):
+        name = self.__class__.__name__
+        attrs = (
+            "%s=%r" % (attr, getattr(self, attr))
+            for attr in self._sa_class_manager.keys()
+            if not (attr[-2:] == "id" or isinstance(getattr(self, attr), list))
+        )
+        return name + "(%s)" % ", ".join(attrs)
+
+
+# Base = declarative_base()
 metadata = Base.metadata
-
 
 t_af_type = Table(
     'af_type', metadata,
