@@ -68,6 +68,9 @@ from .reporting import Featureprop
 from .reporting import FeaturepropPub
 from .reporting import Featurerange
 from .reporting import Genotype
+from .reporting import GenotypeDbxref
+from .reporting import GenotypeSynonym
+from .reporting import Genotypeprop
 from .reporting import Grp
 from .reporting import GrpCvterm
 from .reporting import GrpDbxref

@@ -68,6 +68,9 @@ from .production import Featureprop
 from .production import FeaturepropPub
 from .production import Featurerange
 from .production import Genotype
+from .production import GenotypeDbxref
+from .production import GenotypeSynonym
+from .production import Genotypeprop
 from .production import Grp
 from .production import GrpCvterm
 from .production import GrpDbxref
