@@ -22,15 +22,16 @@ def get_or_create(session: Session, model, **kwargs):
     :param kwargs: Values for the table used for lookup (e.g. name='awesome gene')
     :return: Both an SQL Alchemy object and True (if new object created) or False (if object retrieved)
     """
-
-    # If rank exists in a table, we always insert our entry and increment the rank.
     log.debug('Submitted table: {}'.format(model.__tablename__))
     log.debug('Submitted kwargs: {}'.format(kwargs))
     # We need to get our engine back from our session to create an inspector.
     engine = session.get_bind()
     insp = inspect(engine)  # Used for inspecting the schema when needed.
 
-    if 'rank' in model.__table__.columns:
+    # If rank exists in a table, we usually insert our entry and increment the rank.
+    # But some exceptions exist: e.g., feature_genotype rank increments must be handled differently.
+    rank_exceptions = ['feature_genotype']
+    if 'rank' in model.__table__.columns and model.__tablename__ not in rank_exceptions:
         log.debug('Found rank column in {}'.format(model.__tablename__))
         # Get our unique constraints. We need to query with *only* these in order to get the correct rank value.
         unique_constraints = insp.get_unique_constraints(model.__tablename__)
