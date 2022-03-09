@@ -158,7 +158,11 @@ class ExternalLookup:
         if not chebi:
             self.error = "No results found when querying ChEBI for {}".format(self.external_id)
             return self
-
+        # log.debug("######### {} ############".format(lookup_id))
+        # log.debug(chebi)
+        # log.debug("#####################")
+        if 'definition' in chebi and chebi.definition:
+            self.description = chebi.definition
         # Synonyms
         # We get duplicates so filter these.
         if self.get_synonyms:
