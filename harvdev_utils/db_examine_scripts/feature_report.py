@@ -260,7 +260,6 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
                 log.info(fc)
     log.info("############ FeatureDbxref #############")
     fds = session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == feature.feature_id)
-    print(fds)
     count = 0
     for fd in fds:
         count += 1
