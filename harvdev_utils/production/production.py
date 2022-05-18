@@ -4395,6 +4395,11 @@ class Phendesc(Base):
     pub: 'Pub' = relationship('Pub')
     type: 'Cvterm' = relationship('Cvterm')
 
+    def __str__(self):
+        """Over write the default output."""
+        return "Phendesc id = {}\n\tgenotype:'{}'\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}".\
+            format(self.phendesc_id, self.genotype, self.environment, self.type, self.pub)
+
 
 class Phenotype(Base):
     __tablename__ = 'phenotype'
