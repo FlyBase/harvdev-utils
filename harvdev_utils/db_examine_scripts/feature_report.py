@@ -23,7 +23,7 @@ from harvdev_utils.production import (FeatureCvterm, FeatureCvtermDbxref,
                                       Featureprop, FeaturepropPub, FeaturePub,
                                       FeatureRelationship, FeatureRelationshipPub,
                                       FeatureRelationshipprop, FeatureRelationshippropPub,
-                                      FeatureSynonym, HumanhealthFeature, 
+                                      FeatureSynonym, HumanhealthFeature, Phendesc,
                                       LibraryFeature, LibraryFeatureprop,
                                       Phenstatement)
 
@@ -267,7 +267,7 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             log.info(fd)
 
     log.info("############ FeatureExpression #############")
-    fds = session.query(FeatureExpression).filter(FeatureExpression.feature_id == feature.feature_id)
+    fds = session.query(FeatureExpression).filter(FeatureExpression.feature_id == feature.feature_id).all()
     count = 0
     for fd in fds:
         count += 1
@@ -275,16 +275,23 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
             log.info(fd)
 
     log.info("############ FeatureGenotype #############")
-    fgs = session.query(FeatureGenotype).filter(FeatureGenotype.feature_id == feature.feature_id)
+    fgs = session.query(FeatureGenotype).filter(FeatureGenotype.feature_id == feature.feature_id).all()
     count = 0
     for fg in fgs:
         count += 1
         if not limit or count <= limit:
-            pss = session.query(Phenstatement).filter(Phenstatement.genotype_id == fg.genotype_id)
+            found = False
+            pss = session.query(Phenstatement).filter(Phenstatement.genotype_id == fg.genotype_id).all()
             if pss:
                 for ps in pss:
+                    found = True
                     log.info(ps)
-            else:
+            pss = session.query(Phendesc).filter(Phendesc.genotype_id == fg.genotype_id).all()
+            if pss:
+                for ps in pss:
+                    found = True
+                    log.info(ps)
+            if not found:
                 log.info(fg)
 
     log.info("############ FeaturePhenotype #############")
