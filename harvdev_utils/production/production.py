@@ -2238,8 +2238,9 @@ class Genotype(Base):
 
     genotype_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_genotype_id_seq'::regclass)"))
     uniquename = Column(Text, nullable=False, unique=True)
-    description = Column(String(255))
+    description = Column(Text)
     name = Column(Text, index=True)
+    is_obsolete = Column(Boolean, server_default=text("false"))
 
     def __str__(self):
         """Over write the default output."""
@@ -2249,6 +2250,243 @@ class Genotype(Base):
     def primary_id(self):
         """Fetch primary_id."""
         return self.genotype_id
+
+
+class GenotypeCvterm(Base):
+    __tablename__ = 'genotype_cvterm'
+    __table_args__ = (
+        UniqueConstraint('genotype_id', 'cvterm_id', 'pub_id', 'rank'),
+    )
+
+    genotype_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_cvterm_genotype_cvterm_id_seq'::regclass)"))
+    genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    cvterm_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, comment='Provenance for the annotation.\nEach annotation should have a single primary publication (which may be of the\nappropriate type for computational analyses) where more details can be found.')
+    is_not = Column(Boolean, nullable=False, server_default=text("false"), comment='If this is set to true, then this\nannotation is interpreted as a NEGATIVE annotation - i.e. the genotype does\nNOT have the specified function, process, component, part, etc. See GO docs for\nmore details.')
+    rank: int = Column(Integer, nullable=False, server_default=text("0"))
+
+    cvterm: 'Cvterm' = relationship('Cvterm')
+    genotype: 'Genotype' = relationship('Genotype')
+    pub: 'Pub' = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GenotypeCvterm id={}: is_not={}\n\tcvterm:({})\n\tgenotype:({})\n\tpub:({})".\
+            format(self.genotype_cvterm_id, self.is_not, self.cvterm, self.genotype, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotype_cvterm_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.cvterm_id
+
+
+class GenotypeCvtermprop(Base):
+    __tablename__ = 'genotype_cvtermprop'
+    __table_args__ = (
+        UniqueConstraint('genotype_cvterm_id', 'type_id', 'rank'),
+    )
+
+    genotype_cvtermprop_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_cvtermprop_genotype_cvtermprop_id_seq'::regclass)"))
+    genotype_cvterm_id: int = Column(ForeignKey('genotype_cvterm.genotype_cvterm_id', ondelete='CASCADE'), nullable=False, index=True)
+    type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, comment='The name of the\nproperty/slot is a cvterm. The meaning of the property is defined in\nthat cvterm. cvterms may come from the OBO evidence code cv.')
+    value = Column(Text, comment='The value of the\nproperty, represented as text. Numeric values are converted to their\ntext representation. This is less efficient than using native database\ntypes, but is easier to query.')
+    rank = Column(Integer, nullable=False, server_default=text("0"), comment='Property-Value\nordering. Any genotype_cvterm can have multiple values for any particular\nproperty type - these are ordered in a list using rank, counting from\nzero. For properties that are single-valued rather than multi-valued,\nthe default 0 value should be used.')
+
+    genotype_cvterm: 'GenotypeCvterm' = relationship('GenotypeCvterm')
+    type: 'Cvterm' = relationship('Cvterm')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GenotypeCvtermprop id={}: value='{}' rank='{}'\n\tgeno_cvterm:({})\n\ttype:({})".\
+            format(self.genotype_cvtermprop_id, self.value, self.rank, self.genotype_cvterm, self.type)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotype_cvtermprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotype_cvterm_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
+
+class GenotypeDbxref(Base):
+    __tablename__ = 'genotype_dbxref'
+    __table_args__ = (
+        UniqueConstraint('genotype_id', 'dbxref_id'),
+    )
+
+    genotype_dbxref_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_dbxref_genotype_dbxref_id_seq'::regclass)"))
+    genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    dbxref_id: int = Column(ForeignKey('dbxref.dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    is_current = Column(Boolean, nullable=False, server_default=text("true"), comment='True if this secondary dbxref is the most up to date accession in the corresponding db. Retired accessions should set this field to false')
+
+    dbxref: 'Dbxref' = relationship('Dbxref')
+    genotype: 'Genotype' = relationship('Genotype')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GenotypeDbxref id={}: is_current:{}\n\tdbxref:({})\n\tgenotype:({})".\
+            format(self.genotype_dbxref_id, self.is_current, self.dbxref, self.feature)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotype_dbxref_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.dbxref_id
+
+
+class GenotypeSynonym(Base):
+    __tablename__ = 'genotype_synonym'
+    __table_args__ = (
+        UniqueConstraint('synonym_id', 'genotype_id', 'pub_id'),
+    )
+
+    genotype_synonym_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_synonym_genotype_synonym_id_seq'::regclass)"))
+    genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    synonym_id: int = Column(ForeignKey('synonym.synonym_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, comment='The pub_id link is for relating the usage of a given synonym to the publication in which it was used.')
+    is_current = Column(Boolean, nullable=False, server_default=text("true"), comment='The is_current boolean indicates whether the linked synonym is the current -official- symbol for the linked genotype.')
+    is_internal = Column(Boolean, nullable=False, server_default=text("false"), comment='Typically a synonym exists so that somebody querying the db with an obsolete name can find the object they are looking for (under its current name).  If the synonym has been used publicly and deliberately (e.g. in a paper), it may also be listed in reports as a synonym. If the synonym was not used deliberately (e.g. there was a typo which went public), then the is_internal boolean may be set to -true- so that it is known that the synonym is -internal- and should be queryable but should not be listed in reports as a valid synonym.')
+
+    genotype: 'Genotype' = relationship('Genotype')
+    pub: 'Pub' = relationship('Pub')
+    synonym: 'Synonym' = relationship('Synonym')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GenotypeSynonym id={}: is_current:'{}' is_internal:'{}'\n\tGenotype:({})\n\tSyn:({})\n\tPub:({})".\
+            format(self.genotype_synonym_id, self.is_current, self.is_internal, self.genotype, self.synonym, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotype_synonym_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.synonym_id
+
+
+class Genotypeprop(Base):
+    __tablename__ = 'genotypeprop'
+    __table_args__ = (
+        UniqueConstraint('genotype_id', 'type_id', 'rank'),
+    )
+
+    genotypeprop_id = Column(Integer, primary_key=True, server_default=text("nextval('genotypeprop_genotypeprop_id_seq'::regclass)"))
+    genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    value = Column(Text)
+    rank = Column(Integer, nullable=False, server_default=text("0"))
+    cvalue_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='SET NULL'), index=True, comment='The value of the property if that value should be the name of a controlled vocabulary term.  It is preferred that a property either use the value or cvalue_id column but not both.  For example, if the property type is "color" then the cvalue_id could be a term named "green".')
+
+    cvalue: 'Cvterm' = relationship('Cvterm', primaryjoin='Genotypeprop.cvalue_id == Cvterm.cvterm_id')
+    genotype: 'Genotype' = relationship('Genotype')
+    type: 'Cvterm' = relationship('Cvterm', primaryjoin='Genotypeprop.type_id == Cvterm.cvterm_id')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "Genotypeprop id={}: value:'{}' rank:'{}'\n\tgenotype:({})\n\ttype:({})\n\tcvalue:({})".\
+            format(self.genotype_id, self.value, self.rank, self.genotype, self.type, self.cvalue)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotypeprop_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.type_id
+
+    def third_id(self):
+        """Fetch third id"""
+        return self.cvalue_id
+
+
+class GenotypepropPub(Base):
+    __tablename__ = 'genotypeprop_pub'
+    __table_args__ = (
+        UniqueConstraint('genotypeprop_id', 'pub_id'),
+    )
+
+    genotypeprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('genotypeprop_pub_genotypeprop_pub_id_seq'::regclass)"))
+    genotypeprop_id: int = Column(ForeignKey('genotypeprop.genotypeprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
+                                 nullable=False, index=True)
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+
+    genotypeprop: 'Genotypeprop' = relationship('Genotypeprop')
+    pub: 'Pub' = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GenotypepropPub id={}:\n\tgenotypeprop:({})\n\tpub:({})".\
+            format(self.genotypeprop_pub_id, self.genotypeprop, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotypeprop_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotypeprop_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
+
+
+class GenotypePub(Base):
+    __tablename__ = 'genotype_pub'
+    __table_args__ = (
+        UniqueConstraint('genotype_id', 'pub_id'),
+    )
+
+    genotype_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_pub_genotype_pub_id_seq'::regclass)"))
+    genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+
+    genotype: 'Genotype' = relationship('Genotype')
+    pub: 'Pub' = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        return "GenotypePub id={}:\n\tGeno:({})\n\tPub:({})".\
+            format(self.genotype_pub_id, self.genotype, self.pub)
+
+    def primary_id(self):
+        """Fetch primary_id."""
+        return self.genotype_pub_id
+
+    def first_id(self):
+        """Fetch first id"""
+        return self.genotype_id
+
+    def second_id(self):
+        """Fetch second id"""
+        return self.pub_id
 
 
 t_gffatts_slim = Table(
@@ -5131,9 +5369,9 @@ class Synonym(Base):
     )
 
     synonym_id = Column(Integer, primary_key=True, server_default=text("nextval('synonym_synonym_id_seq'::regclass)"))
-    name = Column(String(255), nullable=False, index=True)
+    name = Column(String(1024), nullable=False, index=True)
     type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    synonym_sgml = Column(String(255), nullable=False, index=True)
+    synonym_sgml = Column(String(1024), nullable=False, index=True)
 
     type: 'Cvterm' = relationship('Cvterm')
 
