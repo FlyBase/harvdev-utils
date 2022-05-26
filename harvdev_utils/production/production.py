@@ -4635,8 +4635,8 @@ class Phendesc(Base):
 
     def __str__(self):
         """Over write the default output."""
-        return "Phendesc id = {}\n\tgenotype:'{}'\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}".\
-            format(self.phendesc_id, self.genotype, self.environment, self.type, self.pub)
+        return "Phendesc id = {}\n\tgenotype:'{}'\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}\n\tdesc:{}...{}".\
+            format(self.phendesc_id, self.genotype, self.environment, self.type, self.pub, self.description[:10], self.description[:-10])
 
 
 class Phenotype(Base):
