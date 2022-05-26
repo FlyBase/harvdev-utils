@@ -2434,7 +2434,7 @@ class GenotypepropPub(Base):
 
     genotypeprop_pub_id = Column(Integer, primary_key=True, server_default=text("nextval('genotypeprop_pub_genotypeprop_pub_id_seq'::regclass)"))
     genotypeprop_id: int = Column(ForeignKey('genotypeprop.genotypeprop_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'),
-                                 nullable=False, index=True)
+                                  nullable=False, index=True)
     pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
 
     genotypeprop: 'Genotypeprop' = relationship('Genotypeprop')
@@ -4636,7 +4636,7 @@ class Phendesc(Base):
     def __str__(self):
         """Over write the default output."""
         return "Phendesc id = {}\n\tgenotype:'{}'\n\tenvironment:'{}'\n\ttype{}\n\tpub:{}\n\tdesc:{}...{}".\
-            format(self.phendesc_id, self.genotype, self.environment, self.type, self.pub, self.description[:10], self.description[:-10])
+            format(self.phendesc_id, self.genotype, self.environment, self.type, self.pub, self.description[:10], self.description[-10:])
 
 
 class Phenotype(Base):
