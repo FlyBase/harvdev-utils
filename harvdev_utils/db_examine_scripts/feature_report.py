@@ -278,21 +278,17 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
     fgs = session.query(FeatureGenotype).filter(FeatureGenotype.feature_id == feature.feature_id).all()
     count = 0
     for fg in fgs:
+        log.info(fg)
         count += 1
         if not limit or count <= limit:
-            found = False
             pss = session.query(Phenstatement).filter(Phenstatement.genotype_id == fg.genotype_id).all()
             if pss:
                 for ps in pss:
-                    found = True
                     log.info(ps)
             pss = session.query(Phendesc).filter(Phendesc.genotype_id == fg.genotype_id).all()
             if pss:
                 for ps in pss:
-                    found = True
                     log.info(ps)
-            if not found:
-                log.info(fg)
 
     log.info("############ FeaturePhenotype #############")
     fds = session.query(FeaturePhenotype).filter(FeaturePhenotype.feature_id == feature.feature_id)
