@@ -1247,8 +1247,8 @@ class Feature(Base):
     def __str__(self):
         """Over write the default output."""
         # ? add dbxref org?
-        return "Feature id={}: uniquename:'{}' name:'{}' obsolete:{} type:({})".\
-            format(self.feature_id, self.uniquename, self.name, self.is_obsolete, self.type)
+        return "Feature id={}: uniquename:'{}' name:'{}' obsolete:{} type:({}) dbxref:({}) org:{}".\
+            format(self.feature_id, self.uniquename, self.name, self.is_obsolete, self.type, self.dbxref, self.organism)
 
     def primary_id(self):
         """Fetch primary_id."""
@@ -2261,8 +2261,14 @@ class GenotypeCvterm(Base):
     genotype_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_cvterm_genotype_cvterm_id_seq'::regclass)"))
     genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     cvterm_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, comment='Provenance for the annotation.\nEach annotation should have a single primary publication (which may be of the\nappropriate type for computational analyses) where more details can be found.')
-    is_not = Column(Boolean, nullable=False, server_default=text("false"), comment='If this is set to true, then this\nannotation is interpreted as a NEGATIVE annotation - i.e. the genotype does\nNOT have the specified function, process, component, part, etc. See GO docs for\nmore details.')
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True,
+                         comment='Provenance for the annotation.\n'
+                                 'Each annotation should have a single primary publication (which may be of the\n'
+                                 'appropriate type for computational analyses) where more details can be found.')
+    is_not = Column(Boolean, nullable=False, server_default=text("false"),
+                    comment='If this is set to true, then this\n'
+                            'annotation is interpreted as a NEGATIVE annotation - i.e. the genotype does\nNOT have the '
+                            'specified function, process, component, part, etc. See GO docs for\nmore details.')
     rank: int = Column(Integer, nullable=False, server_default=text("0"))
 
     cvterm: 'Cvterm' = relationship('Cvterm')
@@ -2295,9 +2301,20 @@ class GenotypeCvtermprop(Base):
 
     genotype_cvtermprop_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_cvtermprop_genotype_cvtermprop_id_seq'::regclass)"))
     genotype_cvterm_id: int = Column(ForeignKey('genotype_cvterm.genotype_cvterm_id', ondelete='CASCADE'), nullable=False, index=True)
-    type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, comment='The name of the\nproperty/slot is a cvterm. The meaning of the property is defined in\nthat cvterm. cvterms may come from the OBO evidence code cv.')
-    value = Column(Text, comment='The value of the\nproperty, represented as text. Numeric values are converted to their\ntext representation. This is less efficient than using native database\ntypes, but is easier to query.')
-    rank = Column(Integer, nullable=False, server_default=text("0"), comment='Property-Value\nordering. Any genotype_cvterm can have multiple values for any particular\nproperty type - these are ordered in a list using rank, counting from\nzero. For properties that are single-valued rather than multi-valued,\nthe default 0 value should be used.')
+    type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True,
+                          comment='The name of the\n'
+                                  'property/slot is a cvterm. The meaning of the property is defined in\n'
+                                  'that cvterm. cvterms may come from the OBO evidence code cv.')
+    value = Column(Text,
+                   comment='The value of the\nproperty, represented as text. Numeric values are converted to their\n'
+                           'text representation. This is less efficient than using native database\n'
+                           'types, but is easier to query.')
+    rank = Column(Integer, nullable=False, server_default=text("0"),
+                  comment='Property-Value\n'
+                          'ordering. Any genotype_cvterm can have multiple values for any particular\n'
+                          'property type - these are ordered in a list using rank, counting from\n'
+                          'zero. For properties that are single-valued rather than multi-valued,\n'
+                          'the default 0 value should be used.')
 
     genotype_cvterm: 'GenotypeCvterm' = relationship('GenotypeCvterm')
     type: 'Cvterm' = relationship('Cvterm')
@@ -2329,7 +2346,9 @@ class GenotypeDbxref(Base):
     genotype_dbxref_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_dbxref_genotype_dbxref_id_seq'::regclass)"))
     genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     dbxref_id: int = Column(ForeignKey('dbxref.dbxref_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    is_current = Column(Boolean, nullable=False, server_default=text("true"), comment='True if this secondary dbxref is the most up to date accession in the corresponding db. Retired accessions should set this field to false')
+    is_current = Column(Boolean, nullable=False, server_default=text("true"),
+                        comment='True if this secondary dbxref is the most up to date accession in the corresponding db. '
+                                'Retired accessions should set this field to false')
 
     dbxref: 'Dbxref' = relationship('Dbxref')
     genotype: 'Genotype' = relationship('Genotype')
@@ -2361,9 +2380,16 @@ class GenotypeSynonym(Base):
     genotype_synonym_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_synonym_genotype_synonym_id_seq'::regclass)"))
     genotype_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     synonym_id: int = Column(ForeignKey('synonym.synonym_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
-    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True, comment='The pub_id link is for relating the usage of a given synonym to the publication in which it was used.')
-    is_current = Column(Boolean, nullable=False, server_default=text("true"), comment='The is_current boolean indicates whether the linked synonym is the current -official- symbol for the linked genotype.')
-    is_internal = Column(Boolean, nullable=False, server_default=text("false"), comment='Typically a synonym exists so that somebody querying the db with an obsolete name can find the object they are looking for (under its current name).  If the synonym has been used publicly and deliberately (e.g. in a paper), it may also be listed in reports as a synonym. If the synonym was not used deliberately (e.g. there was a typo which went public), then the is_internal boolean may be set to -true- so that it is known that the synonym is -internal- and should be queryable but should not be listed in reports as a valid synonym.')
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True,
+                         comment='The pub_id link is for relating the usage of a given synonym to the publication in which it was used.')
+    is_current = Column(Boolean, nullable=False, server_default=text("true"),
+                        comment='The is_current boolean indicates whether the linked synonym is the current -official- symbol for the linked genotype.')
+    is_internal = Column(Boolean, nullable=False, server_default=text("false"),
+                         comment='Typically a synonym exists so that somebody querying the db with an obsolete name can find the object they are '
+                                 'looking for (under its current name).  If the synonym has been used publicly and deliberately (e.g. in a paper), '
+                                 'it may also be listed in reports as a synonym. If the synonym was not used deliberately '
+                                 '(e.g. there was a typo which went public), then the is_internal boolean may be set to -true- so that it is known'
+                                 ' that the synonym is -internal- and should be queryable but should not be listed in reports as a valid synonym.')
 
     genotype: 'Genotype' = relationship('Genotype')
     pub: 'Pub' = relationship('Pub')
@@ -2398,7 +2424,10 @@ class Genotypeprop(Base):
     type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
     value = Column(Text)
     rank = Column(Integer, nullable=False, server_default=text("0"))
-    cvalue_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='SET NULL'), index=True, comment='The value of the property if that value should be the name of a controlled vocabulary term.  It is preferred that a property either use the value or cvalue_id column but not both.  For example, if the property type is "color" then the cvalue_id could be a term named "green".')
+    cvalue_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='SET NULL'), index=True,
+                       comment='The value of the property if that value should be the name of a controlled vocabulary term.'
+                               ' It is preferred that a property either use the value or cvalue_id column but not both.  '
+                               'For example, if the property type is "color" then the cvalue_id could be a term named "green".')
 
     cvalue: 'Cvterm' = relationship('Cvterm', primaryjoin='Genotypeprop.cvalue_id == Cvterm.cvterm_id')
     genotype: 'Genotype' = relationship('Genotype')
