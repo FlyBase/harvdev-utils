@@ -77,7 +77,6 @@ def report_Genotype(session: Session, symbol: str, debug: bool, limit: int, look
     # starting point for report
     ###########################
     Genotype = get_Genotype(session, symbol, lookup_by)
-    print("BOB: {} {}".format(type(Genotype), Genotype.__class__.__bases__))
     log.info("###################### Genotype ############################")
     log.info(Genotype)
     log.info("###########################################################")
@@ -96,10 +95,10 @@ def report_Genotype(session: Session, symbol: str, debug: bool, limit: int, look
     count = 0
     for sp in sps:
         count += 1
-        spps = session.query(GenotypepropPub).filter(GenotypepropPub.cell_lineprop_id == sp.cell_lineprop_id)
+        spps = session.query(GenotypepropPub).filter(GenotypepropPub.genotypeprop_id == sp.genotype_id)
         for spp in spps:
             if not limit or count <= limit:
-                log.info("GenotypepropPub id={}: Genotypeprop id={} pub:{}".format(spp.cell_lineprop_pub_id, sp.cell_lineprop_id, spp.pub))
+                log.info("GenotypepropPub id={}: Genotypeprop id={} pub:{}".format(spp.genotype_pub_id, sp.genotypeprop_id, spp.pub))
         log.info(sp)
 
     log.info("\n################### Synonyms ##############################")
@@ -124,10 +123,10 @@ def report_Genotype(session: Session, symbol: str, debug: bool, limit: int, look
     for sc in scs:
         count += 1
         if not limit or count <= limit:
-            scps = session.query(GenotypeCvtermprop).filter(GenotypeCvtermprop.cell_line_cvterm_id == sc.cell_line_cvterm_id)
+            scps = session.query(GenotypeCvtermprop).filter(GenotypeCvtermprop.genotype_cvterm_id == sc.genotype_cvterm_id)
             for scp in scps:
                 mess = "GenotypeCvtermprop id={} GenotypeCvterm id={}: rank={} value='{}' type=({})".\
-                    format(scp.cell_line_cvtermprop_id, sc.cell_line_cvterm_id, scp.rank, scp.value, scp.type)
+                    format(scp.genotype_cvtermprop_id, sc.genotype_cvterm_id, scp.rank, scp.value, scp.type)
                 log.info(mess)
             log.info(sc)
 
