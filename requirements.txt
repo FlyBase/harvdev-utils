@@ -27,6 +27,7 @@ Markdown>=2.4.1
 MarkupSafe>=1.1.0
 mccabe>=0.6.1
 more-itertools>=5.0.0
+protobuf<4.0.0
 mypy-protobuf
 mypy
 packaging>=18.0
