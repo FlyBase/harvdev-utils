@@ -99,12 +99,13 @@ def json_dump(json_data_object, output_filename):
     return
 
 
-def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
+def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwargs):
     """Write "tsv_data_object" dict to TSV file.
 
     Args:
-        arg1 (dict): A data dict. It should have metaData and data keys.
-        arg2 (str): The name to use for the output file.
+        arg1 (tsv_data_object): (dict) A data dict. It should have metaData and data keys.
+        arg2 (output_filename): (str) The name to use for the output file.
+        arg3 (print_footer): (bool) Whether to print out footer or not (default is true).
         **kwargs (list): An optional list of headers under the "headers" key: e.g., headers=['a', 'b', 'c']
 
     Returns:
@@ -158,10 +159,11 @@ def tsv_report_dump(tsv_data_object, output_filename, **kwargs):
     for data_item in tsv_data_object['data']:
         csv_writer.writerow(data_item)
 
-    try:
-        output_file.write('## Finished {}.'.format(tsv_data_object['metaData']['title']))
-    except KeyError:
-        output_file.write('## Finished report.')
+    if print_footer:
+        try:
+            output_file.write('## Finished {}\n.'.format(tsv_data_object['metaData']['title']))
+        except KeyError:
+            output_file.write('## Finished report.\n')
 
     log.info('TIME: {}. Done writing data to output file.'.format(timenow()))
 
