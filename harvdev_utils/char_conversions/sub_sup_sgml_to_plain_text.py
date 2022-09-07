@@ -36,7 +36,7 @@ def sub_sup_sgml_to_plain_text(input_string: str) -> str:
     substitution = None
 
     try:
-        substitution = re.sub(r'(<(/|)\w+>)', lambda m: substitution_dict[m.group()], input_string)
+        substitution = re.sub(r'((<)(/|)(up|down)(>))', lambda m: substitution_dict[m.group()], input_string)
     except KeyError as e:
         print('Regex matched the sgml pattern &\\w+; but no key was found in the substitution dictionary.')
         print('Please check for typos in your sgml: {}'.format(e))
