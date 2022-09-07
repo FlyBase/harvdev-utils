@@ -161,7 +161,7 @@ def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwarg
 
     if print_footer:
         try:
-            output_file.write('## Finished {}\n.'.format(tsv_data_object['metaData']['title']))
+            output_file.write('## Finished {}.\n'.format(tsv_data_object['metaData']['title']))
         except KeyError:
             output_file.write('## Finished report.\n')
 
