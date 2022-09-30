@@ -71,19 +71,17 @@ def set_up_db_reading(report_label):
         output_dir = '/src/output/'
         input_dir = '/src/input/'
         log_dir = '/src/logs/'
-        # Optional:
-        try:
-            assembly = os.environ['ASSEMBLY']
-        except KeyError:
-            assembly = 'unspecified'
+        # Optional variables:
         try:
             annotation_release = os.environ['ANNOTATIONRELEASE']
         except KeyError:
             annotation_release = 'unspecified'
         try:
+            assembly = os.environ['ASSEMBLY']
             alliance_schema = os.environ['ALLIANCESCHEMA']
             alliance_release = os.environ['ALLIANCERELEASE']
         except KeyError:
+            assembly = 'unspecified'
             alliance_schema = 'unspecified'
             alliance_release = 'unspecified'
         try:
