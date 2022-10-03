@@ -72,26 +72,12 @@ def set_up_db_reading(report_label):
         input_dir = '/src/input/'
         log_dir = '/src/logs/'
         # Optional variables:
-        try:
-            assembly = os.environ['ASSEMBLY']
-        except KeyError:
-            assembly = 'R6'
-        try:
-            annotation_release = os.environ['ANNOTATIONRELEASE']
-        except KeyError:
-            annotation_release = 'unspecified'
-        try:
-            alliance_schema = os.environ['ALLIANCESCHEMA']
-            alliance_release = os.environ['ALLIANCERELEASE']
-        except KeyError:
-            alliance_schema = 'unspecified'
-            alliance_release = 'unspecified'
-        try:
-            svn_username = os.environ['SVNUSER']
-            svn_password = os.environ['SVNPASSWORD']
-        except KeyError:
-            svn_username = 'unspecified'
-            svn_password = 'unspecified'
+        assembly = os.environ.get('ASSEMBLY', 'R6')
+        annotation_release = os.environ.get('ANNOTATIONRELEASE', 'unspecified')
+        alliance_schema = os.environ.get('ALLIANCESCHEMA', 'unspecified')
+        alliance_release = os.environ.get('ALLIANCERELEASE', 'unspecified')
+        svn_username = os.environ.get('SVNUSER', 'unspecified')
+        svn_password = os.environ.get('SVNPASSWORD', 'unspecified')
 
     # Send values to a dict.
     set_up_dict = {}
