@@ -81,7 +81,7 @@ def set_up_db_reading(report_label):
             alliance_schema = os.environ['ALLIANCESCHEMA']
             alliance_release = os.environ['ALLIANCERELEASE']
         except KeyError:
-            assembly = 'unspecified'
+            assembly = 'R6'
             alliance_schema = 'unspecified'
             alliance_release = 'unspecified'
         try:
