@@ -89,6 +89,7 @@ def set_up_db_reading(report_label):
     set_up_dict['password'] = password
     set_up_dict['database_release'] = database_release
     set_up_dict['epicycle'] = epicycle
+    set_up_dict['production_release'] = f"{database_release}_EP{epicycle}"
     set_up_dict['assembly'] = assembly
     set_up_dict['annotation_release'] = annotation_release
     set_up_dict['alliance_schema'] = alliance_schema
