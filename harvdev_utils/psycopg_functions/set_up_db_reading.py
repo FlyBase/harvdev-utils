@@ -53,6 +53,7 @@ def set_up_db_reading(report_label):
         username = config['default']['User']
         password = config['default']['PGPassword']
         database_release = config['default']['Release']
+        epicycle = config['default']['Epicycle']
         assembly = config['default']['Assembly']
         annotation_release = config['default']['AnnotationRelease']
         alliance_schema = config['default']['AllianceSchema']
@@ -72,6 +73,7 @@ def set_up_db_reading(report_label):
         input_dir = '/src/input/'
         log_dir = '/src/logs/'
         # Optional variables:
+        epicycle = os.environ.get('EPICYCLE', 'unspecified')
         assembly = os.environ.get('ASSEMBLY', 'R6')
         annotation_release = os.environ.get('ANNOTATIONRELEASE', 'unspecified')
         alliance_schema = os.environ.get('ALLIANCESCHEMA', 'unspecified')
@@ -86,6 +88,7 @@ def set_up_db_reading(report_label):
     set_up_dict['username'] = username
     set_up_dict['password'] = password
     set_up_dict['database_release'] = database_release
+    set_up_dict['epicycle'] = epicycle
     set_up_dict['assembly'] = assembly
     set_up_dict['annotation_release'] = annotation_release
     set_up_dict['alliance_schema'] = alliance_schema
