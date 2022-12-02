@@ -153,7 +153,7 @@ def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwarg
 
     # Regardless of presence/absence of metaData, write out headers.
     output_file.write('#')
-    csv_writer = csv.DictWriter(output_file, fieldnames=headers, delimiter='\t', extrasaction='ignore')
+    csv_writer = csv.DictWriter(output_file, fieldnames=headers, delimiter='\t', extrasaction='ignore', lineterminator='\n')
     csv_writer.writeheader()
 
     for data_item in tsv_data_object['data']:
