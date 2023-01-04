@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from harvdev_utils.chado_functions import (feature_name_lookup,
                                            feature_symbol_lookup,
                                            get_feature_by_uniquename)
-from harvdev_utils.production import (FeatureCvterm, FeatureCvtermDbxref,
+from harvdev_utils.production import (Cvterm, FeatureCvterm, FeatureCvtermDbxref,
                                       FeatureCvtermprop, FeatureDbxref,
                                       FeatureExpression, FeatureGenotype,
                                       FeatureGrpmember,
@@ -25,7 +25,7 @@ from harvdev_utils.production import (FeatureCvterm, FeatureCvtermDbxref,
                                       FeatureRelationshipprop, FeatureRelationshippropPub,
                                       FeatureSynonym, HumanhealthFeature, Phendesc,
                                       LibraryFeature, LibraryFeatureprop,
-                                      Phenstatement)
+                                      Phenstatement, Pub)
 
 description = """
 Code to display all feature data and relationships etc for a given feature.
@@ -170,57 +170,65 @@ def report(session, feature_symbol, feature_type, debug, limit, lookup_by, obsol
         if not limit or count <= limit:
             log.info(fs)
 
-    log.info("############# Subject Relationships ##################")
-    frs = session.query(FeatureRelationship).filter(FeatureRelationship.subject_id == feature.feature_id)
-    count = 0
-    for fr in frs:
-        count += 1
-        frps = session.query(FeatureRelationshipprop).\
-            filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id)
-        dumped = False
-        for frp in frps:
-            frpps = session.query(FeatureRelationshippropPub).\
-                filter(FeatureRelationshippropPub.feature_relationshipprop_id == frp.feature_relationshipprop_id)
-            for frpp in frpps:
-                log.info(frpp)
-                dumped = True
-            if not dumped:
-                dumped = True
-                log.info(frp)
-        frpubs = session.query(FeatureRelationshipPub).\
-            filter(FeatureRelationshipPub.feature_relationship_id == fr.feature_relationship_id)
-        for frpub in frpubs:
-            log.info(frpub)
-            dumped = True
-        if not limit or count <= limit:
-            if not dumped:
-                log.info(fr)
-
     log.info("############# Object Relationships ##################")
     frs = session.query(FeatureRelationship).filter(FeatureRelationship.object_id == feature.feature_id)
+
     count = 0
     for fr in frs:
-        count += 1
-        frps = session.query(FeatureRelationshipprop).\
-            filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id)
-        dumped = False
-        for frp in frps:
-            frpps = session.query(FeatureRelationshippropPub).\
-                filter(FeatureRelationshippropPub.feature_relationshipprop_id == frp.feature_relationshipprop_id)
-            for frpp in frpps:
-                log.info(frpp)
-                dumped = True
-            if not dumped:
-                dumped = True
-                log.info(frp)
+        message = f"{fr}"
         frpubs = session.query(FeatureRelationshipPub).\
             filter(FeatureRelationshipPub.feature_relationship_id == fr.feature_relationship_id)
+        pubs = []
         for frpub in frpubs:
-            log.info(frpub)
-            dumped = True
-        if not limit or count <= limit:
-            if not dumped:
-                log.info(fr)
+            # log.debug(f"{frpub}")
+            pub = session.query(Pub).filter(Pub.pub_id == frpub.pub_id).one()
+            pubs.append(f"{pub.uniquename}")
+            # log.info(f"\n\t{pub}\n")
+        message += f"\n\tPubs: {pubs}"
+        frps = session.query(FeatureRelationshipprop).\
+            filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id).all()
+
+        for frp in frps:
+            cvterm = session.query(Cvterm).\
+                filter(Cvterm.cvterm_id == frp.type_id).one()
+            message += f"\n\tFeatureRelationshipProp rank={frp.rank} value={frp.value} cvterm='{cvterm.name}' cv='{cvterm.cv.name}' "
+            pubs = []
+            frpps = session.query(FeatureRelationshippropPub).\
+                filter(FeatureRelationshippropPub.feature_relationshipprop_id == frp.feature_relationshipprop_id).all()
+            for frpp in frpps:
+                pubs.append(f"{frpp.pub.uniquename}")
+            message += f"{pubs}"
+        log.info(message)
+
+    log.info("############# Subject Relationships ##################")
+    frs = session.query(FeatureRelationship).filter(FeatureRelationship.subject_id == feature.feature_id)
+
+    count = 0
+    for fr in frs:
+        message = f"{fr}"
+        frpubs = session.query(FeatureRelationshipPub).\
+            filter(FeatureRelationshipPub.feature_relationship_id == fr.feature_relationship_id)
+        pubs = []
+        for frpub in frpubs:
+            # log.debug(f"{frpub}")
+            pub = session.query(Pub).filter(Pub.pub_id == frpub.pub_id).one()
+            pubs.append(f"{pub.uniquename}")
+            # log.info(f"\n\t{pub}\n")
+        message += f"\n\tPubs: {pubs}"
+        frps = session.query(FeatureRelationshipprop).\
+            filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id).all()
+
+        for frp in frps:
+            cvterm = session.query(Cvterm).\
+                filter(Cvterm.cvterm_id == frp.type_id).one()
+            message += f"\n\tFeatureRelationshipProp rank={frp.rank} value={frp.value} cvterm='{cvterm.name}' cv='{cvterm.cv.name}' "
+            pubs = []
+            frpps = session.query(FeatureRelationshippropPub).\
+                filter(FeatureRelationshippropPub.feature_relationshipprop_id == frp.feature_relationshipprop_id).all()
+            for frpp in frpps:
+                pubs.append(f"{frpp.pub.uniquename}")
+            message += f"{pubs}"
+        log.info(message)
 
     log.info("############# HumanhealthFeature #######")
     fhds = session.query(HumanhealthFeature).filter(HumanhealthFeature.feature_id == feature.feature_id)

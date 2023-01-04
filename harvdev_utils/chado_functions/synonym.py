@@ -15,7 +15,7 @@ from sqlalchemy.orm.session import Session
 from typing import Tuple
 
 
-def synonym_name_details(session: Session, synonym_name: str) -> Tuple:
+def synonym_name_details(session: Session, synonym_name: str, nosup: bool=False) -> Tuple:
     r"""Get synonym details.
 
         Process the synonym_name given and check for organism specific stuff
@@ -34,7 +34,7 @@ def synonym_name_details(session: Session, synonym_name: str) -> Tuple:
 
         plain-text version of name,
 
-        unicode version of text with sup to sgml
+        unicode version of text with sup to sgml unless nosup specified
 
     NOTE:
         So for synonym_name of 'Hsap\0005-&agr;-[001]
@@ -63,6 +63,12 @@ def synonym_name_details(session: Session, synonym_name: str) -> Tuple:
             return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
         name = "{}{}\\{}".format(t_bit or '', abbr, end_name)
-        return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
+        if nosup:
+            return organism, sgml_to_plain_text(name), sgml_to_unicode(name)
+        else:
+            return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
     else:
-        return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+        if nosup:
+            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(synonym_name)
+        else:
+            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
