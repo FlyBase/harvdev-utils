@@ -34,7 +34,7 @@ def synonym_name_details(session: Session, synonym_name: str, nosup: bool=False)
 
         plain-text version of name,
 
-        unicode version of text with sup to sgml
+        unicode version of text with sup to sgml unless nosup specified
 
     NOTE:
         So for synonym_name of 'Hsap\0005-&agr;-[001]
@@ -68,4 +68,7 @@ def synonym_name_details(session: Session, synonym_name: str, nosup: bool=False)
         else:
             return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
     else:
-        return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+        if nosup:
+            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+        else:
+            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(synonym_name)
