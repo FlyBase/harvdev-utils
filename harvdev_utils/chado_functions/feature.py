@@ -313,7 +313,8 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
 
 
 def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, organism_id: Optional[int] = None, cv_name: str = 'synonym type',
-                          cvterm_name: str = 'symbol', check_unique: bool = True, obsolete: str = 'f', convert: bool = True) -> Feature:
+                          cvterm_name: str = 'symbol', check_unique: bool = True, obsolete: str = 'f', convert: bool = True,
+                          ignore_org: bool = False) -> Feature:
     """Lookup feature that has a specific type and synonym name.
 
     Args:
@@ -338,6 +339,8 @@ def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, o
 
         convert (Bool): <optional> set to True
                         wether to convert chars i.e. '[' to '<up' etc
+
+        ignore_org (Bool): <optional> ignore organism.
 
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
@@ -368,9 +371,10 @@ def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, o
     check_obs = _check_obsolete(obsolete)
     filter_spec: Any = (Synonym.type_id == synonym_type.cvterm_id,
                         Synonym.synonym_sgml == synonym_sgml,
-                        Feature.organism_id == organism_id,
                         FeatureSynonym.is_current == 't')
 
+    if not ignore_org:
+        filter_spec += (Feature.organism_id == organism_id,)
     if check_obs:
         filter_spec += (Feature.is_obsolete == obsolete,)
     if not type_name or type_name == 'gene':
