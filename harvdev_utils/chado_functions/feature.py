@@ -230,7 +230,8 @@ def feature_name_lookup(session: Session, name: str, organism_id: Optional[int] 
 
 def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, organism_id: Optional[int] = None,
                            cv_name: str = 'synonym type', cvterm_name: str = 'symbol',
-                           check_unique: bool = False, obsolete: str = 'f'):
+                           check_unique: bool = False, obsolete: str = 'f',
+                           ignore_org: bool = False):
     """Get feature from the synonym.
 
     Lookup to see if the synonym has been used before. Even if not current.
@@ -253,6 +254,8 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
                                   t = true
                                   f = false (default)
                                   e = either not fussed.
+
+        ignore_org (Bool): <optional> ignore organism.
 
     Returns:
         List of feature objects or Feature depending on check_unique.
@@ -281,9 +284,10 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
 
     filter_spec: Any = (Synonym.type_id == synonym_type.cvterm_id,
                         Synonym.synonym_sgml == synonym_sgml,
-                        Feature.organism_id == organism_id,
                         Feature.type_id == feature_type.cvterm_id,)
 
+    if not ignore_org:
+        filter_spec += (Feature.organism_id == organism_id,)
     if check_obs:
         filter_spec += (Feature.is_obsolete == obsolete,)
 
