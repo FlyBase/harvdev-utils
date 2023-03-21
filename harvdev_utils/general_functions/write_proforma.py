@@ -81,9 +81,10 @@ def get_proforma_masters(svn_username, svn_password, get_remote):
         r = svn.remote.RemoteClient(svn_url, username=svn_username, password=svn_password)
         local_svn_path = '/tmp/working/'
         r.checkout(local_svn_path)
-        svn_contents = os.scandir(local_svn_path)
     else:
-        svn_contents = os.scandir('/src/input/')
+        local_svn_path = '/src/input/'
+    svn_contents = os.scandir(local_svn_path)
+    proforma_master_dict = {}
     proforma_master_dict = {}
     for item in svn_contents:
         if item.name.endswith('_master.pro'):
