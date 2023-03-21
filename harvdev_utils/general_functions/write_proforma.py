@@ -52,12 +52,13 @@ def get_p10_date(input_date):
     return proforma_curation_date
 
 
-def get_proforma_masters(svn_username, svn_password):
+def get_proforma_masters(svn_username, svn_password, get_remote):
     """Get all proforma masters from SVN and return a dictionary keyed by proforma type, then by field.
 
     Args:
-        arg1 (str): SVN username.
-        arg2 (str): SVN password.
+        arg1 (svn_username): (str) SVN username.
+        arg2 (svn_password): (str) SVN password.
+        arg3 (get_remote): (bool) If True, gets SVN from URL, else looks in /src/input/.
 
     Returns:
         dict: A nested dict with level one keys corresponding to proforma types (extracted from filenames).
@@ -75,11 +76,15 @@ def get_proforma_masters(svn_username, svn_password):
                     }
     """
     log.info('TIME: {}. Retrieving proforma masters.'.format(timenow()))
-    svn_url = 'https://svn.flybase.org/documents/curation/proformae/'
-    r = svn.remote.RemoteClient(svn_url, username=svn_username, password=svn_password)
-    local_svn_path = '/tmp/working/'
-    r.checkout(local_svn_path)
+    if get_remote is True:
+        svn_url = 'https://svn.flybase.org/documents/curation/proformae/'
+        r = svn.remote.RemoteClient(svn_url, username=svn_username, password=svn_password)
+        local_svn_path = '/tmp/working/'
+        r.checkout(local_svn_path)
+    else:
+        local_svn_path = '/src/input/'
     svn_contents = os.scandir(local_svn_path)
+    proforma_master_dict = {}
     proforma_master_dict = {}
     for item in svn_contents:
         if item.name.endswith('_master.pro'):
@@ -350,7 +355,7 @@ def write_proforma_stanza(data_object, proforma, outfile):
     return
 
 
-def write_proforma_record(data_list, output_filename, svn_username, svn_password):
+def write_proforma_record(data_list, output_filename, svn_username, svn_password, get_remote):
     """Write full proforma record for a list of dicts representing data objects.
 
     A wrapper of several smaller functions in the "write_proforma" module.
@@ -359,10 +364,11 @@ def write_proforma_record(data_list, output_filename, svn_username, svn_password
     Each dict is expected to represent only a single proforma type; otherwise skipped.
 
     Args:
-        arg1 (list): The list of data objects to write to file.
-        arg2 (str): The filename of the output file.
-        arg3 (str): The SVN username.
-        arg4 (str): The SVN password.
+        arg1 (data_list): (list) The list of data objects to write to file.
+        arg2 (output_filename): (str) The filename of the output file.
+        arg3 (svn_username): (str) The SVN username.
+        arg4 (svn_password): (str) The SVN password.
+        arg5 (get_remote): (bool) If true, gets SVN info remotely, else, looks in /src/input/.
 
     Returns:
         None.
@@ -371,7 +377,7 @@ def write_proforma_record(data_list, output_filename, svn_username, svn_password
     log.info('TIME: {}. Writing proforma record to "{}".'.format(timenow(), output_filename))
     outfile = open(output_filename, 'wt')
 
-    master_proforma_dict = get_proforma_masters(svn_username, svn_password)
+    master_proforma_dict = get_proforma_masters(svn_username, svn_password, get_remote)
     field_to_proforma_dict = get_distinct_proforma_field_prefixes(master_proforma_dict)
     write_record_curation_header(svn_username, outfile)
     for datum in data_list:
