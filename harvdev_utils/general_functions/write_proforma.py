@@ -78,7 +78,8 @@ def get_proforma_masters(svn_username, svn_password):
     svn_url = 'https://svn.flybase.org/documents/curation/proformae/'
     r = svn.remote.RemoteClient(svn_url, username=svn_username, password=svn_password)
     local_svn_path = '/tmp/working/'
-    r.checkout(local_svn_path)
+    # r.checkout(local_svn_path)
+    r.export(local_svn_path, force=True)
     svn_contents = os.scandir(local_svn_path)
     proforma_master_dict = {}
     for item in svn_contents:
