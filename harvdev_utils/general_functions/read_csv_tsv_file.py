@@ -186,7 +186,7 @@ def extract_data_from_tsv(input_filename, **kwargs):
         log.debug('{}: Processing row {}:\n\t{}'.format(input_filename, row_cnt, row))
         if len(row) > 0:
             if row[0].startswith('#'):
-                comment_lines.append(row)
+                comment_lines.append(row[0])
             else:
                 if len(row) == len(headers):
                     row_data = {}
