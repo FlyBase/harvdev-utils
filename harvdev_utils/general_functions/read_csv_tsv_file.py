@@ -98,7 +98,7 @@ def find_headers(filename, csv_input, delimiter):
             else:
                 # data_found = True
                 row_size = len(row)    # First non-comment line, if present, sets row size.
-                log.debug('{}: Stopping header scan at this line having {} elements:\n\t{}'.format(filename, row_size, row))
+                log.debug('{}: Stop header scan at line having {} elements:\n\t{}'.format(filename, row_size, row))
                 break
         except IndexError:
             log.debug('{}: Ignoring an empty line: {}'.format(filename, row))
@@ -165,9 +165,9 @@ def extract_data_from_tsv(input_filename, **kwargs):
         try:
             csv_sniffer = csv.Sniffer().sniff(file_input.read(1024))
             delimiter_detected = csv_sniffer.delimiter
-            log.info('{}: CSV Sniffer detected this type of delimiter: "{}".'.format(input_filename, delimiter_detected))
+            log.info('{}: CSV Sniffer detected this delimiter: "{}".'.format(input_filename, delimiter_detected))
         except ValueError:
-            log.error('{}: No delimiter specified and CSV Sniffer could not detect delimiter either.'.format(input_filename))
+            log.error('{}: No delimiter specified, CSV Sniffer could not detect any delimiter.'.format(input_filename))
             raise ValueError
 
     # Reset the file object iterator, open the file, scan for headers.
@@ -180,18 +180,21 @@ def extract_data_from_tsv(input_filename, **kwargs):
     file_input.seek(0)
     log.info('TIME: {}. {}: Processing rows of input file.'.format(input_filename, timenow()))
     data_input = []
+    comment_lines = []
     row_cnt = 1
     for row in csv_input:
         log.debug('{}: Processing row {}:\n\t{}'.format(input_filename, row_cnt, row))
         if len(row) > 0:
-            if not row[0].startswith('#'):
+            if row[0].startswith('#'):
+                comment_lines.append(row[0])
+            else:
                 if len(row) == len(headers):
                     row_data = {}
                     for i in range(0, len(headers)):
                         row_data[headers[i]] = row[i]
                     data_input.append(row_data)
                 else:
-                    log.warning('{}: Line {} has {} part(s) instead of {} part(s).'.format(input_filename, row_cnt, len(row), len(headers)))
+                    log.warning(f'{input_filename}: Line {row_cnt} has {len(row)} part(s) instead of {len(headers)}.')
         row_cnt += 1
 
-    return data_input
+    return data_input, comment_lines
