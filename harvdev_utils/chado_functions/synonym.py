@@ -64,9 +64,9 @@ def synonym_name_details(session: Session, synonym_name: str, nosup: bool=False)
 
         name = "{}{}\\{}".format(t_bit or '', abbr, end_name)
         if nosup:
-            return organism, sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(name)
+            return organism, sgml_to_plain_text(greek_to_sgml(name)), sgml_to_unicode(name)
         else:
-            return organism, sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(sub_sup_to_sgml(name))
+            return organism, sgml_to_plain_text(greek_to_sgml(name)), sgml_to_unicode(sub_sup_to_sgml(name))
     else:
         if nosup:
             return get_default_organism(session), sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(synonym_name)
