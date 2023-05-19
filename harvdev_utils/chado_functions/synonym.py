@@ -9,7 +9,7 @@ from harvdev_utils.chado_functions import CodingError
 from harvdev_utils.chado_functions.organism import get_default_organism, get_organism
 import re
 from harvdev_utils.char_conversions import (
-    sgml_to_plain_text, sub_sup_to_sgml, sgml_to_unicode
+    sgml_to_plain_text, sub_sup_to_sgml, sgml_to_unicode, greek_to_sgml
 )
 from sqlalchemy.orm.session import Session
 from typing import Tuple
@@ -60,15 +60,15 @@ def synonym_name_details(session: Session, synonym_name: str, nosup: bool=False)
         try:
             organism = get_organism(session, short=abbr)
         except CodingError:  # Not a species abbr so continue as normal
-            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+            return get_default_organism(session), sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
         name = "{}{}\\{}".format(t_bit or '', abbr, end_name)
         if nosup:
-            return organism, sgml_to_plain_text(name), sgml_to_unicode(name)
+            return organism, sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(name)
         else:
-            return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
+            return organism, sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(sub_sup_to_sgml(name))
     else:
         if nosup:
-            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(synonym_name)
+            return get_default_organism(session), sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(synonym_name)
         else:
-            return get_default_organism(session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+            return get_default_organism(session), sgml_to_plain_text(greek_to_sgml(synonym_name)), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
