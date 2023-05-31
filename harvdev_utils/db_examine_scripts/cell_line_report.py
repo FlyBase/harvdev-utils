@@ -29,6 +29,7 @@ import argparse
 import configparser
 import logging
 import sys
+from typing import Union
 
 # Minimal prototype test for new proforma parsing software.
 # SQL Alchemy imports
@@ -69,20 +70,22 @@ else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 
 
-def get_CellLine(session: Session, symbol: str, lookup_by: str) -> CellLine:
+def get_CellLine(session: Session, symbol: str, lookup_by: str) -> Union[CellLine, None]:
     """Lookup CellLine."""
+    cell_line = None
     log.info("Looking up CellLine '{}' using method '{}'".format(symbol, lookup_by))
     try:
         if lookup_by == 'name':
-            return session.query(CellLine).filter(CellLine.name == symbol).one()
+            cell_line = session.query(CellLine).filter(CellLine.name == symbol).one()
         elif lookup_by == 'uniquename':
-            return session.query(CellLine).filter(CellLine.uniquename == symbol).one()
+            cell_line = session.query(CellLine).filter(CellLine.uniquename == symbol).one()
     except NoResultFound:
         log.info("Could NOT find '{}' by {}. exiting".format(symbol, lookup_by))
         exit(-1)
     except MultipleResultsFound:
         log.info("Could NOT find UNIQUE entry for '{}' by {}. exiting".format(symbol, lookup_by))
         exit(-1)
+    return cell_line
 
 
 def report_CellLine(session: Session, symbol: str, debug: bool, limit: int, lookup_by: str):  # noqa
@@ -91,7 +94,8 @@ def report_CellLine(session: Session, symbol: str, debug: bool, limit: int, look
     # starting point for report
     ###########################
     CellLine = get_CellLine(session, symbol, lookup_by)
-    print("BOB: {} {}".format(type(CellLine), CellLine.__class__.__bases__))
+    if not CellLine:
+        return
     log.info("###################### CellLine ############################")
     log.info(CellLine)
     log.info("###########################################################")
