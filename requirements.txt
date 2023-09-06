@@ -48,7 +48,7 @@ pytest-runner>=4.2
 pytest-cov
 python-dateutil>=2.7.5
 pytz>=2018.9
-PyYAML>=4.2b1
+PyYAML>=6.0.1
 readme-renderer>=24.0
 retry
 requests>=2.21.0
