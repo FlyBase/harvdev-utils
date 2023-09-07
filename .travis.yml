@@ -5,8 +5,11 @@ language: python
 python:
 - "3.6"
 
-script:
+before_install:
 - pip install --upgrade pip
+- pip install setuptools_rust
+
+script:
 - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 - docker pull flybase/proformatestdb
 - python -m pytest -v
