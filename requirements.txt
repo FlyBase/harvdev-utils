@@ -1,3 +1,4 @@
+setuptools_rust
 alabaster>=0.7.12
 argh>=0.26.2
 arrow>=0.12.1
@@ -53,7 +54,6 @@ readme-renderer>=24.0
 retry
 requests>=2.21.0
 requests-toolbelt>=0.8.0
-setuptools-rust
 six>=1.12.0
 snowballstemmer>=1.2.1
 Sphinx>=1.8.1
