@@ -3,8 +3,11 @@ dist: trusty
 
 language: python
 python:
-- '3.6'
-cache: pip
+- "3.6"
+
+before_install:
+- pip install --upgrade pip
+- pip install setuptools_rust
 
 script:
 - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
