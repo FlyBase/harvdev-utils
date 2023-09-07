@@ -3,10 +3,11 @@ dist: trusty
 
 language: python
 python:
-- '3.6'
+- '3.10'
 cache: pip
 
 script:
+- pip3 install --upgrade pip
 - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 - docker pull flybase/proformatestdb
 - python -m pytest -v
