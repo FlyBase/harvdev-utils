@@ -14,7 +14,7 @@ chardet>=3.0.4
 Click>=7.0
 cookiecutter>=1.6.0
 coverage>=4.5.1
-cryptography==40.0.2
+cryptography==41.0.3
 docutils>=0.14
 filelock>=3.0.10
 flake8>=3.5.0
