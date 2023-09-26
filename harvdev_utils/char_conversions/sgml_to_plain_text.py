@@ -74,7 +74,8 @@ def sgml_to_plain_text(input_string):
         '&psgr;': 'psi',
         '&PSgr;': 'Psi',
         '&ohgr;': 'omega',
-        '&OHgr;': 'Omega'
+        '&OHgr;': 'Omega',
+        '&cap;': 'INTERSECTION'
     }
 
     substitution = None
