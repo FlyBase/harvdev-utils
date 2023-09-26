@@ -76,7 +76,8 @@ def sgml_to_unicode(input_string):
         '&ohgr;': '\u03C9',
         '&OHgr;': '\u03A9',
         '&lt;': '<',
-        '&gt;': '>'
+        '&gt;': '>',
+        '&cap;': '\u2229'
     }
 
     substitution = None
