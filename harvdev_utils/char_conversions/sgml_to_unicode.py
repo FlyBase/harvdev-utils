@@ -51,6 +51,7 @@ def sgml_to_unicode(input_string):
         '&Lgr;': '\u039B',
         '&mgr;': '\u03BC',
         '&Mgr;': '\u039C',
+        '&micro;': '\u00B5',
         '&ngr;': '\u03BD',
         '&Ngr;': '\u039D',
         '&xgr;': '\u03BE',

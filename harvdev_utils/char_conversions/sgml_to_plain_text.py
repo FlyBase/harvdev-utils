@@ -51,6 +51,7 @@ def sgml_to_plain_text(input_string):
         '&Lgr;': 'Lambda',
         '&mgr;': 'mu',
         '&Mgr;': 'Mu',
+        '&micro;': 'micro',
         '&ngr;': 'nu',
         '&Ngr;': 'Nu',
         '&xgr;': 'xi',
