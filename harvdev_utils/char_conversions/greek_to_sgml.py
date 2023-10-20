@@ -50,6 +50,7 @@ def greek_to_sgml(input_string):
         '\u039B': '&Lgr;',
         '\u03BC': '&mgr;',
         '\u039C': '&Mgr;',
+        '\u00B5': '&micro;',
         '\u03BD': '&ngr;',
         '\u039D': '&Ngr;',
         '\u03BE': '&xgr;',
