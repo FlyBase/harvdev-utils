@@ -74,7 +74,9 @@ def unicode_to_plain_text(input_string):
         '\u03C8': 'psi',
         '\u03A8': 'Psi',
         '\u03C9': 'omega',
-        '\u03A9': 'Omega'
+        '\u03A9': 'Omega',
+        '\u2229': 'INTERSECTION',
+        '\u00B5': 'micro'
     }
 
     substitution = None
