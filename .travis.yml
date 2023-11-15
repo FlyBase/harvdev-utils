@@ -3,7 +3,7 @@ dist: trusty
 
 language: python
 python:
-- "3.9"
+- "3.7-dev"
 
 before_install:
 - pip install --upgrade pip
