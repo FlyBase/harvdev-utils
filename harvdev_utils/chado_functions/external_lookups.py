@@ -294,7 +294,7 @@ class ExternalLookup:
                 self.external_id = results[0].to_dict(properties=['cid'])['cid']
                 self.pubchem_get_details_from_id()
             else:
-                self.error = "No results found when querying pubchem for inchikey {}".format(self.name)
+                self.error = "No results found when querying pubchem for inchikey {}".format(self.inchikey)
         except pubchempy.BadRequestError as e:
             self.error = f"No results found when querying pubchem for {self.inchikey} Error:{e}"
         return self
