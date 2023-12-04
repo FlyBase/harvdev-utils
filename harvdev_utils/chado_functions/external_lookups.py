@@ -57,13 +57,14 @@ db_alias = {'omim_phenotype': 'omim'}
 
 
 class ExternalLookup:
-    def __init__(self, dbname: str, external_id: Union[int, str] = 0, name: str = "", get_synonyms: bool = False):
+    def __init__(self, dbname: str, external_id: Union[int, str] = 0, name: str = "",
+                 get_synonyms: bool = False, inchikey: str = None):
         log.debug('Initializing Lookup object.')
         self.external_id = external_id
         self.dbname = dbname.lower()
         self.name = name
         self.description = None
-        self.inchikey = None
+        self.inchikey = inchikey
         self.error = ""
         self.get_synonyms = get_synonyms
         self.synonyms: list = []
@@ -78,6 +79,7 @@ class ExternalLookup:
                         'doid': self._lookup_doid_id}
 
         self.name_dict = {'pubchem': self._lookup_pubchem_name}
+        self.inchikey_dict = {'pubchem': self._lookup_pubchem_inchikey}
 
     @classmethod
     def lookup_by_id(cls, dbname: str, external_id: Union[int, str] = 0, synonyms: bool = False):
@@ -110,6 +112,21 @@ class ExternalLookup:
             new_instance.error = "Dbname {}. Not found in list {}".format(dbname, new_instance.name_dict.keys())
             return new_instance
         return new_instance.name_dict[dbname]()
+
+    @classmethod
+    def lookup_by_inchikey(cls, dbname, inchikey=None, synonyms=False):
+        #
+        # Will throw error if fails to connect after all tries
+        #
+        dbname = dbname.lower()
+        new_instance = cls(dbname, inchikey=inchikey, get_synonyms=synonyms)
+        if not inchikey:
+            new_instance.error = "No Inchikey supplied"
+            return new_instance
+        if dbname not in new_instance.inchikey_dict:
+            new_instance.error = "Dbname {}. Not found in list {}".format(dbname, new_instance.inchikey_dict.keys())
+            return new_instance
+        return new_instance.inchikey_dict[dbname]()
 
     ###############
     # HGNC methods.
@@ -253,7 +270,7 @@ class ExternalLookup:
         try:
             self.pubchem_get_details_from_id()
         except pubchempy.BadRequestError:
-            self.error = "No results found when querying pubchem for {}".format(self.external_id)
+            self.error = "No results found when querying pubchem id for {}".format(self.external_id)
         return self
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
@@ -264,9 +281,22 @@ class ExternalLookup:
                 self.external_id = results[0].to_dict(properties=['cid'])['cid']
                 self.pubchem_get_details_from_id()
             else:
-                self.error = "No results found when querying pubchem for {}".format(self.name)
-        except pubchempy.BadRequestError:
-            self.error = "No results found when querying pubchem for {}".format(self.name)
+                self.error = "No results found when querying pubchem for name {}".format(self.name)
+        except pubchempy.BadRequestError as e:
+            self.error = f"No results found when querying pubchem for {self.name} Error:{e}"
+        return self
+
+    @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
+    def _lookup_pubchem_inchikey(self):
+        try:
+            results = pubchempy.get_compounds(self.inchikey, 'inchikey')
+            if results:
+                self.external_id = results[0].to_dict(properties=['cid'])['cid']
+                self.pubchem_get_details_from_id()
+            else:
+                self.error = "No results found when querying pubchem for inchikey {}".format(self.name)
+        except pubchempy.BadRequestError as e:
+            self.error = f"No results found when querying pubchem for {self.inchikey} Error:{e}"
         return self
 
     ##############
