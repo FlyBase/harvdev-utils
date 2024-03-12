@@ -373,14 +373,19 @@ def write_proforma_record(data_list, output_filename, svn_username, svn_password
         arg5 (get_remote): (bool) If true, gets SVN info remotely, else, looks in /src/input/.
 
     Returns:
-        None.
+        problems_detected: a boolean that, if true, means there were issues getting proforma templates.
 
     """
     log.info('TIME: {}. Writing proforma record to "{}".'.format(timenow(), output_filename))
-    outfile = open(output_filename, 'wt')
 
+    problems_detected = False
+    outfile = open(output_filename, 'wt')
     master_proforma_dict = get_proforma_masters(svn_username, svn_password, get_remote)
+    if len(master_proforma_dict.keys()) == 0:
+        problems_detected = True
     field_to_proforma_dict = get_distinct_proforma_field_prefixes(master_proforma_dict)
+    if len(field_to_proforma_dict.keys()) == 0:
+        problems_detected = True
     write_record_curation_header(svn_username, outfile)
     for datum in data_list:
         proforma_type = detect_proforma_type(datum, field_to_proforma_dict)
@@ -389,4 +394,4 @@ def write_proforma_record(data_list, output_filename, svn_username, svn_password
             write_proforma_stanza(datum, data_type_specific_proforma_dict, outfile)
     write_record_end(outfile)
 
-    return
+    return problems_detected
