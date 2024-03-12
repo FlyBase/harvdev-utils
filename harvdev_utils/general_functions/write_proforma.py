@@ -251,7 +251,9 @@ def write_record_curation_header(svn_username, outfile):
         'bmatthew': 'bev',
         'gramates': 'sian',
         'jagapite': 'jma',
-        'vjenkins': 'vj'
+        'vjenkins': 'vj',
+        'go': 'go',
+        'unspecified': 'go',
     }
     curator_initials = user_hash[svn_username]
     this_day = today()
