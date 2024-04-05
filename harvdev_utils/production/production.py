@@ -103,6 +103,7 @@ class Analysis(Base):
     sourceversion = Column(String(255))
     sourceuri = Column(Text)
     timeexecuted = Column(DateTime, nullable=False, server_default=text("('now'::text)::timestamp(6) with time zone"))
+    is_obsolete = Column(Boolean, nullable=False, default=False)
 
     def __str__(self):
         """Over write the default output."""
@@ -5438,3 +5439,24 @@ class UpdateTrack(Base):
     statement = Column(String(255), nullable=False)
     comment = Column(Text, nullable=False, server_default=text("''::text"))
     annotation_id = Column(String(50))
+
+
+class PubAnalysisFeature(Base):
+    __tablename__ = 'pub_analysis_feature'
+    __table_args__ = (
+        UniqueConstraint('pub_id', 'analysis_id', 'feature_id'),
+    )
+
+    pub_analysis_feature_id: int = Column(Integer, primary_key=True,
+                                          server_default=text("nextval('pubanalysisfeature_pubanalysisfeature_id_seq'::regclass)"))
+
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    feature_id: int = Column(ForeignKey('feature.feature_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    analysis_id: int = Column(ForeignKey('analysis.analysis_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+
+    score: float = Column(Float(53))
+    status: str = Column(String(255))  # place for curator/ftyp input on good/bad
+
+    pub: 'Pub' = relationship('Pub')
+    analysis: 'Analysis' = relationship("Analysis")
+    feature: 'Feature' = relationship('Feature')
