@@ -172,6 +172,7 @@ class Allele(Feature):
         self.expresses = None             # If applicable, will match gene_id. Should be mutually exclusive with "targets".
         self.targets = None               # If applicable, will match gene_id. Should be mutually exclusive with "expresses".
         self.mut_origin = None            # Will be a list.
+        self.transgenic_class = None      # Will be a list.
         self.fbtp_list = None             # Will be a list. Should have 'associated_with' rel type. Ignore rare FBmc and FBms.
         self.fbti_list = None             # Will be a list. Should only be Dmel insertions of 'associated_with. rel type.
         self.fbtp_via_fbti_list = None    # Will be a list. FBtp indirectly related to allele via FBti.
@@ -188,7 +189,7 @@ class Allele(Feature):
         self.in_dmel = None               # Will be a bool. Determined by "exists_in_dmel" method.
         self.drosophilidae = None         # Will be a bool. Allele of vinegar/fruit fly. Determined by "is_drosophilidae" method.
         self.classification = None        # AGR export classification
-        self.crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
+        # self.crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
         self.gene_action = None           # For transgenic allele, determines if transgenic allele expresses or targets its gene.
         self.gene_for_agr_export = None   # Will be a bool. Obtained from related gene.
 
@@ -265,23 +266,22 @@ class Allele(Feature):
 
     def is_transgenic(self):
         """Determine if allele is transgenic if "in vitro" term or FBtp found."""
+        conclusion = None
+        has_transgenic_cvterm = False
+        has_related_constructs = False
+        # Check annotated CV terms.
         if self.mut_origin is None:
-            log.warning('Allele {} has no cvterm info to make this determination.'.format(self.name))
-            conclusion = None
-        elif self.fbtp_list is None:
-            log.warning('Allele {} has no FBtp info to make this determination.'.format(self.name))
-            conclusion = None
-        elif len(self.fbtp_list) > 0:
+            log.warning(f'Allele {self.name} has no cvterm info to determine if it is transgenic.')
+        elif type(self.mut_origin) is list and 'in vitro construct' in self.mut_origin:
+            has_transgenic_cvterm = True
+        # Check related constructs.
+        if self.fbtp_list is None:
+            log.warning(f'Allele {self.name} has no FBtp info to determine if it is transgenic.')
+        elif type(self.fbtp_list) is list and len(self.fbtp_list) > 0:
+            has_related_constructs = True
+        # Combine the two checks.
+        if has_transgenic_cvterm is True or has_related_constructs is True:
             conclusion = True
-        elif type(self.mut_origin) == list:
-            ivt_term_cnt = 0
-            for term in self.mut_origin:
-                if term.startswith('in vitro construct'):
-                    ivt_term_cnt += 1
-            if ivt_term_cnt > 0:
-                conclusion = True
-            else:
-                conclusion = False
         else:
             conclusion = False
         self.transgenic = conclusion
@@ -372,27 +372,19 @@ class Allele(Feature):
         return
 
     def determine_gene_action(self):
-        """Determine if transgenic allele expresses, targets, or is_regulated_by its gene."""
+        """Determine if transgenic allele expresses or targets its parent gene."""
         self.classify_allele()
-        if self.classification == 'transgenic':
-            if type(self.crispr_ko_coll) != list:
-                log.warning('Allele {} needs "crispr_ko_coll" to determine "gene_action".'.format(self.uniquename))
-            elif len(self.crispr_ko_coll) > 0:
-                self.gene_action = 'targets'
-                self.targets = self.gene_id
-            elif type(self.mut_origin) != list:
-                log.warning('Allele {} needs "mut_origin" CV terms to determine "gene_action".'.format(self.uniquename))
-            else:
-                cvterm_counter = 0
-                for term in self.mut_origin:
-                    if term in ['in vitro construct - RNAi']:
-                        cvterm_counter += 1
-                if cvterm_counter > 0:
-                    self.gene_action = 'targets'
-                    self.targets = self.gene_id
-                else:
-                    self.gene_action = 'expresses'
-                    self.expresses = self.gene_id
+        if self.classification != 'transgenic':
+            return
+        if self.transgenic_class is None:
+            log.warning(f'Allele {self.name} ({self.uniquename}) is missing the transgenic class info needed to determine its action on the parent gene.')
+            return
+        if 'sgRNA' in self.transgenic_class or 'RNAi_reagent' in self.transgenic_class:
+            self.gene_action = 'targets'
+            self.targets = self.gene_id
+        else:
+            self.gene_action = 'expresses'
+            self.expresses = self.gene_id
         return
 
     def is_for_agr_export(self):
