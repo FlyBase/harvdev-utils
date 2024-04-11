@@ -171,8 +171,8 @@ class Allele(Feature):
         self.gene_symbol_sgml = None      # Will be one item.
         self.expresses = None             # If applicable, will match gene_id. Should be mutually exclusive with "targets".
         self.targets = None               # If applicable, will match gene_id. Should be mutually exclusive with "expresses".
-        self.mut_origin = None            # Will be a list.
-        self.transgenic_class = None      # Will be a list.
+        self.mut_origin = None            # Will be a list of CV term names having 'origin_of_mutation' feature_cvtermprop.
+        self.transgenic_class = None      # Will be a list of CV term names having 'transgenic_product_class' feature_cvtermprop.
         self.fbtp_list = None             # Will be a list. Should have 'associated_with' rel type. Ignore rare FBmc and FBms.
         self.fbti_list = None             # Will be a list. Should only be Dmel insertions of 'associated_with. rel type.
         self.fbtp_via_fbti_list = None    # Will be a list. FBtp indirectly related to allele via FBti.
@@ -189,7 +189,6 @@ class Allele(Feature):
         self.in_dmel = None               # Will be a bool. Determined by "exists_in_dmel" method.
         self.drosophilidae = None         # Will be a bool. Allele of vinegar/fruit fly. Determined by "is_drosophilidae" method.
         self.classification = None        # AGR export classification
-        # self.crispr_ko_coll = None        # Will be a list. List of Crispr KO FBlc collections to which FBal indirectly belongs.
         self.gene_action = None           # For transgenic allele, determines if transgenic allele expresses or targets its gene.
         self.gene_for_agr_export = None   # Will be a bool. Obtained from related gene.
 
