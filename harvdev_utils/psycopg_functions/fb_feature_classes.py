@@ -378,7 +378,8 @@ class Allele(Feature):
         if self.transgenic_class is None:
             log.warning(f'Allele {self.name} ({self.uniquename}) is missing the transgenic class info needed to determine its action on the parent gene.')
             return
-        if 'sgRNA' in self.transgenic_class or 'RNAi_reagent' in self.transgenic_class:
+        target_type_set = {'antisense', 'RNAi_reagent', 'sgRNA'}
+        if target_type_set.intersection(set(self.transgenic_class)):
             self.gene_action = 'targets'
             self.targets = self.gene_id
         else:
