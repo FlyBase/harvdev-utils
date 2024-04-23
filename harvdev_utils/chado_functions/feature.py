@@ -388,7 +388,7 @@ def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, o
         filter_spec += (Feature.type_id == feature_type.cvterm_id,)
 
     if check_unique:
-        feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
+        feature = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym).\
             filter(*filter_spec).one()
         add_to_cache(feature, synonym_sgml)
     else:
