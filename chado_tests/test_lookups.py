@@ -250,8 +250,8 @@ class TestSomething:
             feature_synonym_lookup(session, 'gene', 'symbol-6', check_unique=True, obsolete='t')
 
         # return feature  obsolete is 't' NO checkunique
-        features = feature_synonym_lookup(session, 'gene', 'symbol-6', obsolete='t')
-        assert not features
+        with pytest.raises(DataError):
+            features = feature_synonym_lookup(session, 'gene', 'symbol-6', obsolete='t')
 
     def test_create_and_lookup(self):
         """Create and then lookup."""
