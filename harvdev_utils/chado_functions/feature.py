@@ -289,8 +289,8 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
 
     if not ignore_org:
         filter_spec += (Feature.organism_id == organism_id,)
-    if check_obs:
-        filter_spec += (Feature.is_obsolete == obsolete,)
+    # if check_obs:
+    #    filter_spec += (Feature.is_obsolete == obsolete,)
 
     features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym).\
         filter(*filter_spec).all()
