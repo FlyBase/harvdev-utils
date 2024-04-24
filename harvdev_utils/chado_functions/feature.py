@@ -296,6 +296,7 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
     features = session.query(Feature).join(FeatureSynonym).join(Synonym). \
         filter(*filter_spec).all()
     if not features:
+        print(f"filter spec is:- {filter_spec}")
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
 
     if not check_unique:
