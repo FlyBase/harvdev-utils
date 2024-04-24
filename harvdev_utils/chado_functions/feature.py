@@ -292,7 +292,8 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
     # if check_obs:
     #    filter_spec += (Feature.is_obsolete == obsolete,)
 
-    features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym).\
+    # features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym). \
+    features = session.query(Feature).join(FeatureSynonym).join(Synonym). \
         filter(*filter_spec).all()
     if not features:
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
