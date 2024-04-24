@@ -289,14 +289,12 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
 
     if not ignore_org:
         filter_spec += (Feature.organism_id == organism_id,)
-    # if check_obs:
-    #    filter_spec += (Feature.is_obsolete == obsolete,)
+    if check_obs:
+        filter_spec += (Feature.is_obsolete == obsolete,)
 
-    # features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym). \
-    features = session.query(Feature).join(FeatureSynonym).join(Synonym). \
+    features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym). \
         filter(*filter_spec).all()
     if not features:
-        print(f"filter spec is:- {filter_spec}")
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
 
     if not check_unique:

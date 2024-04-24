@@ -238,8 +238,8 @@ class TestSomething:
     def test_synonym_lookup_bad(self):
         """Test synonym bad lookups."""
         # gene does not exist
-        features = feature_synonym_lookup(session, 'gene', 'made_up')
-        assert not features
+        with pytest.raises(DataError):
+            features = feature_synonym_lookup(session, 'gene', 'made_up')
 
         # gene does not exist make it unique
         with pytest.raises(DataError):
