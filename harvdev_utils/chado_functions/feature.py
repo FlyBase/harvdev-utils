@@ -284,7 +284,7 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
 
     filter_spec: Any = (Synonym.type_id == synonym_type.cvterm_id,
                         Synonym.synonym_sgml == synonym_sgml,
-                        FeatureSynonym.is_current is True,
+                        FeatureSynonym.is_current == True,
                         Feature.type_id == feature_type.cvterm_id,)
 
     if not ignore_org:
