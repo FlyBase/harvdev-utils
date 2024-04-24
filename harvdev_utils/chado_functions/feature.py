@@ -284,6 +284,7 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
 
     filter_spec: Any = (Synonym.type_id == synonym_type.cvterm_id,
                         Synonym.synonym_sgml == synonym_sgml,
+                        FeatureSynonym.is_current is True,
                         Feature.type_id == feature_type.cvterm_id,)
 
     if not ignore_org:
@@ -292,7 +293,7 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
         filter_spec += (Feature.is_obsolete == obsolete,)
 
     try:
-        features = session.query(Feature).join(FeatureSynonym).join(Synonym).\
+        features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym).\
             filter(*filter_spec).all()
     except NoResultFound:
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
@@ -305,7 +306,7 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
     uniquecheck = None
     for feat in features:
         if uniquecheck and uniquecheck != feat.uniquename:
-            raise DataError("DataError: Could not find UNIQUE current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+            raise DataError("DataError: Could not find UNIQUE current synonym '{}', sgml = '{}' for type '{}'. {} != {}".format(synonym_name, synonym_sgml, cvterm_name, uniquecheck, feat.uniquename))
         else:
             uniquecheck = feat.uniquename
 
