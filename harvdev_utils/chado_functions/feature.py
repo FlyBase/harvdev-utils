@@ -309,7 +309,7 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
     unique_feat = None
     for feat in features:
         if unique_feat and unique_feat.uniquename != feat.uniquename:
-            return None
+            raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         else:
             unique_feat = feat
 
@@ -317,7 +317,8 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
         add_to_cache(unique_feat)
         return unique_feat
 
-    return []
+    raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+
 
 
 def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, organism_id: Optional[int] = None, cv_name: str = 'synonym type',
