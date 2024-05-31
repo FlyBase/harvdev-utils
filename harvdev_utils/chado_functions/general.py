@@ -104,7 +104,8 @@ def general_symbol_lookup(session: Session, sql_object_type: GeneralObjects,
 
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
     check_obs = _check_obsolete(obsolete)
-    filter_spec: Any = (Synonym.synonym_sgml == synonym_sgml,)
+    filter_spec: Any = (Synonym.synonym_sgml == synonym_sgml,
+                        syn_object_type.is_current == 't')
 
     if type_name:
         filter_spec += (Synonym.type_id == synonym_type.cvterm_id,)
@@ -122,7 +123,7 @@ def general_symbol_lookup(session: Session, sql_object_type: GeneralObjects,
         filter_spec += (sql_object_type.type_id == feature_type.cvterm_id,)  # type: ignore
 
     if check_unique:
-        object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\
+        object = session.query(sql_object_type).distinct(sql_object_type.uniquename).join(syn_object_type).join(Synonym).\
             filter(*filter_spec).one()
     else:
         object = session.query(sql_object_type).join(syn_object_type).join(Synonym).\

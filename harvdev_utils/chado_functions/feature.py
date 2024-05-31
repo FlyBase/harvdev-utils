@@ -231,7 +231,7 @@ def feature_name_lookup(session: Session, name: str, organism_id: Optional[int] 
 def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, organism_id: Optional[int] = None,
                            cv_name: str = 'synonym type', cvterm_name: str = 'symbol',
                            check_unique: bool = False, obsolete: str = 'f',
-                           ignore_org: bool = False):
+                           ignore_org: bool = False, is_current = None):
     """Get feature from the synonym.
 
     Lookup to see if the synonym has been used before. Even if not current.
@@ -256,6 +256,8 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
                                   e = either not fussed.
 
         ignore_org (Bool): <optional> ignore organism.
+
+        is_current (str or None): feature synonym  t= True, f =False, None = no test
 
     Returns:
         List of feature objects or Feature depending on check_unique.
@@ -285,35 +287,38 @@ def feature_synonym_lookup(session: Session, type_name: str, synonym_name: str, 
     filter_spec: Any = (Synonym.type_id == synonym_type.cvterm_id,
                         Synonym.synonym_sgml == synonym_sgml,
                         Feature.type_id == feature_type.cvterm_id,)
+    if is_current:
+        if is_current == 'f':
+            filter_spec += (FeatureSynonym.is_current == False,)
+        else:
+            filter_spec += (FeatureSynonym.is_current == True,)
 
     if not ignore_org:
         filter_spec += (Feature.organism_id == organism_id,)
     if check_obs:
         filter_spec += (Feature.is_obsolete == obsolete,)
 
-    try:
-        features = session.query(Feature).join(FeatureSynonym).join(Synonym).\
-            filter(*filter_spec).all()
-    except NoResultFound:
-        raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+    features = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym). \
+        filter(*filter_spec).all()
 
     if not check_unique:
         return features
 
     # fs has pub so there may be many of the same symbols with different pubs
     # check this is the case.
-    uniquecheck = None
+    unique_feat = None
     for feat in features:
-        if uniquecheck and uniquecheck != feat.uniquename:
-            raise DataError("DataError: Could not find UNIQUE current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+        if unique_feat and unique_feat.uniquename != feat.uniquename:
+            raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         else:
-            uniquecheck = feat.uniquename
+            unique_feat = feat
 
-    if uniquecheck:
-        add_to_cache(feat)
-        return feat
+    if unique_feat:
+        add_to_cache(unique_feat)
+        return unique_feat
 
     raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+
 
 
 def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, organism_id: Optional[int] = None, cv_name: str = 'synonym type',
@@ -388,7 +393,7 @@ def feature_symbol_lookup(session: Session, type_name: str, synonym_name: str, o
         filter_spec += (Feature.type_id == feature_type.cvterm_id,)
 
     if check_unique:
-        feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
+        feature = session.query(Feature).distinct(Feature.feature_id).join(FeatureSynonym).join(Synonym).\
             filter(*filter_spec).one()
         add_to_cache(feature, synonym_sgml)
     else:
