@@ -44,7 +44,7 @@ def check_data_object(data_object, override):
     empty_data_list = False
 
     # Check that the "data_object" is a dict.
-    if type(data_object) != dict:
+    if type(data_object) is not dict:
         log.error('The "data_object" is not of the expected type "dict".')
         raise TypeError
 
@@ -62,7 +62,7 @@ def check_data_object(data_object, override):
         raise KeyError
 
     # Check that the "data_object["data"]" value is a list.
-    if type(data_object['data']) != list:
+    if type(data_object['data']) is not list:
         log.error('The "data_object["data"]" object is not of the expected type "list".')
         raise TypeError
 
@@ -76,11 +76,12 @@ def check_data_object(data_object, override):
 
     # Check that the "data_object["data"]" list elements are themselves dicts.
     for datum in data_object['data']:
-        if type(datum) != dict:
+        if type(datum) is not dict:
             log.error('Elements of the data_object["data"] list are not of expected type dict.')
             raise TypeError
 
     return empty_data_list
+
 
 def json_dump(json_data_object, output_filename):
     """Write "tsv_data_object" dict to JSON file.
@@ -113,7 +114,7 @@ def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwarg
     Kwargs:
         headers (list): An optional list of headers.
         override (boolean): If True, no error returned for empty data.
-        
+
     Returns:
         None. It just writes out the dict to a TSV file.
 
