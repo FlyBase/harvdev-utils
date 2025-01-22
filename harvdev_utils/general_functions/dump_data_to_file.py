@@ -68,10 +68,10 @@ def check_data_object(data_object, override):
 
     # Check that the "data_object["data"]" list is not empty.
     if len(data_object['data']) == 0 and override is False:
-        log.error('The "data_object["data"]" object is empty.')
+        log.error('The "data_object["data"]" list is empty.')
         raise ValueError
     elif len(data_object['data']) == 0 and override is True:
-        log.warning('The "data_object["data"]" object is empty.')
+        log.warning('The "data_object["data"]" list is empty.')
         empty_data_list = True
 
     # Check that the "data_object["data"]" list elements are themselves dicts.
