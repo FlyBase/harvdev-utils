@@ -18,14 +18,15 @@ from harvdev_utils.general_functions import timenow
 log = logging.getLogger(__name__)
 
 
-def check_data_object(data_object):
+def check_data_object(data_object, override):
     """Check the structure of the input data dict object before writing to file.
 
     Args:
-        arg1 (dict): A dictionary that includes a "metaData" key, and a "data" key with a list type value.
+        data_object (dict): A dictionary that includes a "metaData" key, and a "data" key with a list type value.
+        override (boolean): If True, does not raise an exception for empty "data" list.
 
     Returns:
-        None. Simply a check.
+        empty_data_list (boolean): True if data file is empty.
 
     Warnings:
         Will raise a warning if the "data_object" dict has no "metaData" key.
@@ -40,8 +41,10 @@ def check_data_object(data_object):
     """
     log.info('TIME: {}. Checking format of input data.'.format(timenow()))
 
+    empty_data_list = False
+
     # Check that the "data_object" is a dict.
-    if type(data_object) != dict:
+    if type(data_object) is not dict:
         log.error('The "data_object" is not of the expected type "dict".')
         raise TypeError
 
@@ -59,20 +62,25 @@ def check_data_object(data_object):
         raise KeyError
 
     # Check that the "data_object["data"]" value is a list.
-    if type(data_object['data']) != list:
+    if type(data_object['data']) is not list:
         log.error('The "data_object["data"]" object is not of the expected type "list".')
         raise TypeError
 
     # Check that the "data_object["data"]" list is not empty.
-    if len(data_object['data']) == 0:
-        log.error('The "data_object["data"]" object is empty.')
+    if len(data_object['data']) == 0 and override is False:
+        log.error('The "data_object["data"]" list is empty.')
         raise ValueError
+    elif len(data_object['data']) == 0 and override is True:
+        log.warning('The "data_object["data"]" list is empty.')
+        empty_data_list = True
 
     # Check that the "data_object["data"]" list elements are themselves dicts.
     for datum in data_object['data']:
-        if type(datum) != dict:
+        if type(datum) is not dict:
             log.error('Elements of the data_object["data"] list are not of expected type dict.')
             raise TypeError
+
+    return empty_data_list
 
 
 def json_dump(json_data_object, output_filename):
@@ -87,15 +95,11 @@ def json_dump(json_data_object, output_filename):
 
     """
     log.info('TIME: {}. Writing data to output JSON file.'.format(timenow()))
-
-    check_data_object(json_data_object)
-
+    check_data_object(json_data_object, False)
     with open(output_filename, 'w') as outfile:
         json.dump(json_data_object, outfile, sort_keys=True, indent=2, separators=(',', ': '))
         outfile.close()
-
     log.info('TIME: {}. Done writing data to output file.'.format(timenow()))
-
     return
 
 
@@ -106,7 +110,10 @@ def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwarg
         arg1 (tsv_data_object): (dict) A data dict. It should have metaData and data keys.
         arg2 (output_filename): (str) The name to use for the output file.
         arg3 (print_footer): (bool) Whether to print out footer or not (default is true).
-        **kwargs (list): An optional list of headers under the "headers" key: e.g., headers=['a', 'b', 'c']
+
+    Kwargs:
+        headers (list): An optional list of headers.
+        override (boolean): If True, no error returned for empty data.
 
     Returns:
         None. It just writes out the dict to a TSV file.
@@ -116,9 +123,11 @@ def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwarg
 
     """
     log.info('TIME: {}. Writing data to output TSV file.'.format(timenow()))
-
-    check_data_object(tsv_data_object)
-
+    try:
+        override = kwargs['override']
+    except KeyError:
+        override = False
+    empty_data_file = check_data_object(tsv_data_object, override)
     # Can supply a list of headers under the keyword 'headers'.
     if 'headers' in kwargs.keys():
         headers = kwargs['headers']
@@ -156,8 +165,11 @@ def tsv_report_dump(tsv_data_object, output_filename, print_footer=True, **kwarg
     csv_writer = csv.DictWriter(output_file, fieldnames=headers, delimiter='\t', extrasaction='ignore', lineterminator='\n')
     csv_writer.writeheader()
 
-    for data_item in tsv_data_object['data']:
-        csv_writer.writerow(data_item)
+    if empty_data_file is True:
+        output_file.write('## NO DATA TO REPORT.\n')
+    else:
+        for data_item in tsv_data_object['data']:
+            csv_writer.writerow(data_item)
 
     if print_footer:
         try:
