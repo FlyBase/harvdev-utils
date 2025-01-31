@@ -63,7 +63,7 @@ class GenotypeAnnotation(object):
 
     def _parse_cgroups(self, session):
         """Parse the input genotype into ComplementationGroups."""
-        log.debug(f'Parse {self} into ComplementationGroups.\n')
+        log.debug(f'BOB: Parse {self} into ComplementationGroups.\n')
         cgroup_symbols = self.input_genotype_name.split(' ')
         # log.debug(f'Found these cgroups: {cgroup_symbols}')
         for cgroup_symbol in cgroup_symbols:
