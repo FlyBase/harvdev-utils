@@ -11,7 +11,8 @@ Notes:
     with the genotype, if there are no issues, it can find an existing
     genotype in chado, or, create one. The genotype input name should consist
     of SGML symbols (but using square brackets for sub/superscript) for
-    alleles, aberrations, balancers (and rarely, constructs and insertions).
+    alleles, aberrations, balancers (and rarely, constructs and insertions):
+    e.g., &agr;Tub67C[3] (Greeks in sgml, superscript using square brackets).
     Features may also include internal "bogus symbol" features typically
     meant to represent an unspecified wildtype allele: e.g., "wg[+]".
     Components at the same locus should be separated by a "/" character, with
@@ -63,7 +64,7 @@ class GenotypeAnnotation(object):
 
     def _parse_cgroups(self, session):
         """Parse the input genotype into ComplementationGroups."""
-        self.log.debug(f'BOB: Parse {self} into ComplementationGroups.\n')
+        self.log.debug(f'Parse {self} into ComplementationGroups.\n')
         cgroup_symbols = self.input_genotype_name.split(' ')
         # self.log.debug(f'Found these cgroups: {cgroup_symbols}')
         for cgroup_symbol in cgroup_symbols:
