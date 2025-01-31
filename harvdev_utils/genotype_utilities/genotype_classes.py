@@ -203,6 +203,8 @@ class GenotypeAnnotation(object):
 
     def _assign_genotype_curie(self, session):
         """Assign a FlyBase curie to the genotype."""
+        if self.errors or self.is_new is False or self.is_new is None:
+            return
         filters = (
             Db.name == 'FlyBase',
         )
@@ -221,6 +223,8 @@ class GenotypeAnnotation(object):
 
     def _create_genotype_component_associations(self, session):
         """Create genotype component entries."""
+        if self.errors or self.is_new is False or self.is_new is None:
+            return
         for cgroup_number, cgroup in self.cgroup_dict.items():
             for feat_rank, feature_dict in cgroup.rank_dict.items():
                 _, created = get_or_create(session, FeatureGenotype, genotype_id=self.genotype_id, feature_id=feature_dict['feature_id'],
@@ -229,7 +233,8 @@ class GenotypeAnnotation(object):
 
     def _assign_genotype_symbol(self, session):
         """Assign the genotype a current symbol."""
-        # Record the official symbol synonym.
+        if self.errors or self.is_new is False or self.is_new is None:
+            return
         filters = (Pub.uniquename == 'unattributed', )
         unattr_pub = session.query(Pub).filter(*filters).one()
         filters = (
@@ -248,10 +253,11 @@ class GenotypeAnnotation(object):
     def get_known_or_create_new_genotype(self, session):
         """Find an existing genotype, or, create a new genotype plus a new ID, component entries, and a current symbol."""
         self._find_known_genotype(session)
-        self._create_new_genotype(session)
-        self._assign_genotype_curie(session)
-        self._create_genotype_component_associations(session)
-        self._assign_genotype_symbol(session)
+        if self.is_new is True:
+            self._create_new_genotype(session)
+            self._assign_genotype_curie(session)
+            self._create_genotype_component_associations(session)
+            self._assign_genotype_symbol(session)
         return
 
     def __str__(self):
