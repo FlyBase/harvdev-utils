@@ -37,19 +37,19 @@ from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml
 
 class GenotypeAnnotation(object):
     """A genotype, its related data, and quality-check attributes."""
-    global log
-
-    def __init__(self, input_genotype_name):
+    def __init__(self, input_genotype_name, log):
         """Create a base GenotypeAnnotation from a genotype name.
 
         Args:
             input_genotype_name (str): A string of component SGML symbols.
+            log (Logger): The logging object to use.
 
         Returns:
             An object of the GenotypeAnnotation class.
 
         """
         self.input_genotype_name = input_genotype_name
+        self.log = log              # From a script using this class.
         self.features = {}          # Feature_id-keyed dict of component info.
         self.cgroup_list = []       # A list of ComplementationGroup objects.
         self.cgroup_dict = {}       # Cgroup-keyed ComplementationGroups.
@@ -63,12 +63,12 @@ class GenotypeAnnotation(object):
 
     def _parse_cgroups(self, session):
         """Parse the input genotype into ComplementationGroups."""
-        log.debug(f'BOB: Parse {self} into ComplementationGroups.\n')
+        self.log.debug(f'BOB: Parse {self} into ComplementationGroups.\n')
         cgroup_symbols = self.input_genotype_name.split(' ')
-        # log.debug(f'Found these cgroups: {cgroup_symbols}')
+        # self.log.debug(f'Found these cgroups: {cgroup_symbols}')
         for cgroup_symbol in cgroup_symbols:
             if cgroup_symbol != '':
-                cgroup = ComplementationGroup(cgroup_symbol)
+                cgroup = ComplementationGroup(cgroup_symbol, self.log)
                 cgroup.process_cgroup(session)
                 self.cgroup_list.append(cgroup)
         for cgroup in self.cgroup_list:
@@ -97,13 +97,13 @@ class GenotypeAnnotation(object):
                     gene_cgroup_counter[cgroup_gene] += 1
                 except KeyError:
                     gene_cgroup_counter[cgroup_gene] = 1
-        # log.debug(f'{self}, have parental genes: {gene_cgroup_counter}')
+        # self.log.debug(f'{self}, have parental genes: {gene_cgroup_counter}')
         for gene, count in gene_cgroup_counter.items():
             if count > 1:
                 msg = f'Classical alleles for {gene[GENE_NAME]} '
                 msg += f'({gene[GENE_CURIE]}) '
                 msg += f'are listed in {count} different cgroups'
-                log.error(msg)
+                self.log.error(msg)
                 self.errors.append(msg)
         return
 
@@ -129,10 +129,10 @@ class GenotypeAnnotation(object):
                     self.cgroup_dict[cgroup_number] = cgroup
                     cgroup_number += 1
             self.uniquename = ' '.join(sorted_cgroup_names)
-            log.debug(f'{self}, have this cgroup ordering.')
+            self.log.debug(f'{self}, have this cgroup ordering.')
             for cgroup_number, cgroup in self.cgroup_dict.items():
-                log.debug(f'cgroup={cgroup_number}, name={cgroup.cgroup_name}')
-            log.debug(f'Calculated this uniquename: {self.uniquename}')
+                self.log.debug(f'cgroup={cgroup_number}, name={cgroup.cgroup_name}')
+            self.log.debug(f'Calculated this uniquename: {self.uniquename}')
         return
 
     def _calculate_genotype_desc(self):
@@ -140,18 +140,18 @@ class GenotypeAnnotation(object):
         if not self.errors:
             cgroup_descs = sorted([i.cgroup_desc for i in self.cgroup_list])
             self.description = '_'.join(cgroup_descs)
-            log.debug(f'Calculated this description: {self.description}')
+            self.log.debug(f'Calculated this description: {self.description}')
         return
 
     def process_genotype_annotation(self, session):
         """Run various GenotypeAnnotation methods in the correct order."""
-        log.debug(f'Processing input genotype {self.input_genotype_name}.')
+        self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
         self._parse_cgroups(session)
         self._check_multi_cgroup_genes()
         self._propagate_cgroup_errors()
         self._calculate_genotype_uniquename()
         self._calculate_genotype_desc()
-        log.debug('Done initial parsing of genotype.\n\n\n')
+        self.log.debug('Done initial parsing of genotype.\n\n\n')
         return
 
     def _find_known_genotype(self, session):
@@ -173,18 +173,18 @@ class GenotypeAnnotation(object):
             filter(*filters).\
             one_or_none()
         if chado_genotype:
-            log.debug(f'{self} matches {chado_genotype.Genotype.uniquename} (genotype_id={chado_genotype.Genotype.genotype_id})')
+            self.log.debug(f'{self} matches {chado_genotype.Genotype.uniquename} (genotype_id={chado_genotype.Genotype.genotype_id})')
             if chado_genotype.Genotype.description == self.description:
                 self.curie = chado_genotype.Dbxref.accession
                 self.genotype_id = chado_genotype.Genotype.genotype_id
                 self.is_new = False
-                log.debug(f'The descriptions for the curated and chado genotype are identical: {self.description}.')
+                self.log.debug(f'The descriptions for the curated and chado genotype are identical: {self.description}.')
             else:
                 self.errors.append(f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}.')
-                log.error(f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}.')
+                self.log.error(f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}.')
         else:
             self.is_new = True
-            log.debug(f'Could not find genotype {self} in chado.')
+            self.log.debug(f'Could not find genotype {self} in chado.')
 
     def _create_new_genotype(self, session):
         """Create a new entry in the chado genotype table."""
@@ -193,10 +193,10 @@ class GenotypeAnnotation(object):
         new_chado_genotype, created = get_or_create(session, Genotype, uniquename=self.uniquename, description=self.description)
         if created is False:
             self.errors.append(f'Thought to be new, but corresponds to genotype_id={new_chado_genotype.genotype_id}')
-            log.error(f'For {self}, initial attempt to find chado genotype missed this existing one: genotype_id={new_chado_genotype.genotype_id}')
+            self.log.error(f'For {self}, initial attempt to find chado genotype missed this existing one: genotype_id={new_chado_genotype.genotype_id}')
             return
         else:
-            log.debug(f'For {self}, made this genotype: {new_chado_genotype}')
+            self.log.debug(f'For {self}, made this genotype: {new_chado_genotype}')
         self.genotype_id = new_chado_genotype.genotype_id
         return
 
@@ -211,9 +211,9 @@ class GenotypeAnnotation(object):
         new_fbgo_id = f'FBgo{str(new_fbgo_int).zfill(7)}'
         new_xref, created = get_or_create(session, Dbxref, db_id=flybase_db.db_id, accession=new_fbgo_id)
         if created is False:
-            log.error(f'{new_xref.accession} should be new, but it already exists? ID minting is malfunctioning.')
+            self.log.error(f'{new_xref.accession} should be new, but it already exists? ID minting is malfunctioning.')
             raise Exception
-        log.debug(f'For {self}, reserved new ID: {new_xref.accession}')
+        self.log.debug(f'For {self}, reserved new ID: {new_xref.accession}')
         _, _ = get_or_create(session, GenotypeDbxref, genotype_id=self.genotype_id, dbxref_id=new_xref.dbxref_id)
         self.curie = new_xref.accession
         return
@@ -260,19 +260,19 @@ class GenotypeAnnotation(object):
 
 class ComplementationGroup(object):
     """A complementation group of features that is part of a genotype."""
-    global log
-
-    def __init__(self, input_cgroup_str):
+    def __init__(self, input_cgroup_str, log):
         """Create a base ComplementationGroup.
 
         Args:
             input_cgroup_str (str): The components of the cgroup: e.g., "wg[1]/Df(2L)x".
+            log (Logger): The logging object to use.
 
         Returns:
             An object of the ComplementationGroup class.
 
         """
         self.input_cgroup_str = input_cgroup_str
+        self.log = log             # From a script using this class.
         self.features = []         # Will be dicts with relevant feature info.
         self.rank_dict = {}        # Will be rank-keyed feature dicts.
         self.cgroup_name = None    # Will be "correct" symbol for the cgroup from its components.
@@ -282,7 +282,7 @@ class ComplementationGroup(object):
     def _get_feature_info(self, session):
         """Query chado for relevant feature info given a symbol."""
         input_feature_symbols = self.input_cgroup_str.split('/')
-        log.debug(f'Found these component symbols: {input_feature_symbols}.')
+        self.log.debug(f'Found these component symbols: {input_feature_symbols}.')
         for input_symbol in input_feature_symbols:
             feature_dict = {
                 'input_symbol': input_symbol,
@@ -329,12 +329,12 @@ class ComplementationGroup(object):
                 feature_dict['uniquename'] = component_result.Feature.uniquename
                 feature_dict['type'] = component_result.feature_type.name
                 feature_dict['org_abbr'] = component_result.Organism.abbreviation
-                log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
+                self.log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
             except NoResultFound:
-                # log.debug(f'Could not find a current public feature for "{input_symbol}".')
+                # self.log.debug(f'Could not find a current public feature for "{input_symbol}".')
                 # Second, if no public feature, look for a bogus symbol feature, if applicable.
                 if input_symbol == '+' or input_symbol.endswith('[+]') or input_symbol.endswith('[-]'):
-                    log.debug(f'Look for an internal "bogus symbol" feature for "{input_symbol}".')
+                    self.log.debug(f'Look for an internal "bogus symbol" feature for "{input_symbol}".')
                     filters = (
                         Feature.is_obsolete.is_(False),
                         Feature.is_analysis.is_(False),
@@ -353,10 +353,10 @@ class ComplementationGroup(object):
                         feature_dict['feature_id'] = component_result.feature_id
                         feature_dict['uniquename'] = component_result.uniquename
                         feature_dict['type'] = 'bogus symbol'
-                        log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
+                        self.log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
                     except NoResultFound:
                         # Third, make a new bogus symbol feature if needed.
-                        # log.warning(f'No existing bogus symbol feature found; create one for "{input_symbol}".')
+                        # self.log.warning(f'No existing bogus symbol feature found; create one for "{input_symbol}".')
                         org_id = 1
                         if input_symbol == '+':
                             org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
@@ -367,17 +367,17 @@ class ComplementationGroup(object):
                         feature_dict['uniquename'] = input_symbol
                         feature_dict['type'] = 'bogus symbol'
                         feature_dict['is_new'] = True
-                        log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
+                        self.log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
                 # Fourth, if no feature found, note this in the errors list.
                 else:
                     self.errors.append(f'"{input_symbol}" NOT in chado')
-                    log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
+                    self.log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
             self.features.append(feature_dict)
         return
 
     def _get_parental_genes(self, session):
         """Get parental genes for alleles."""
-        # log.debug(f'Getting parental gene(s) for this cgroup: "{self.input_cgroup_str}".')
+        # self.log.debug(f'Getting parental gene(s) for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
             input_symbol = feature_dict['input_symbol']
             if feature_dict['uniquename'] and feature_dict['uniquename'].startswith('FBal'):
@@ -398,16 +398,16 @@ class ComplementationGroup(object):
                     feature_dict['parental_gene_feature_id'] = gene_result.feature_id
                     feature_dict['parental_gene_curie'] = gene_result.uniquename
                     feature_dict['parental_gene_name'] = gene_result.name
-                    log.debug(f'For "{input_symbol}", found this parental gene: {gene_result.name} ({gene_result.uniquename}).')
+                    self.log.debug(f'For "{input_symbol}", found this parental gene: {gene_result.name} ({gene_result.uniquename}).')
                 except NoResultFound:
-                    log.warning(f'Found NO parental genes for "{input_symbol}".')
+                    self.log.warning(f'Found NO parental genes for "{input_symbol}".')
                 except MultipleResultsFound:
-                    log.warning(f'Found MANY parental genes for "{input_symbol}".')
+                    self.log.warning(f'Found MANY parental genes for "{input_symbol}".')
         return
 
     def _flag_transgenic_alleles(self, session):
         """Flag transgenic alleles."""
-        # log.debug(f'Flag alleles related to constructs for this cgroup: "{self.input_cgroup_str}".')
+        # self.log.debug(f'Flag alleles related to constructs for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
             if feature_dict['feature_id'] and feature_dict['uniquename'].startswith('FBal'):
                 input_symbol = feature_dict['input_symbol']
@@ -427,12 +427,12 @@ class ComplementationGroup(object):
                 for _ in results:
                     feature_dict['has_constructs'] = True
             if feature_dict['has_constructs'] is True:
-                log.debug(f'Allele "{input_symbol}" has associated constructs.')
+                self.log.debug(f'Allele "{input_symbol}" has associated constructs.')
         return
 
     def _flag_in_vitro_alleles(self, session):
         """Flag in vitro alleles."""
-        # log.debug(f'Flag alleles with "in vitro construct" annotations for this cgroup: "{self.input_cgroup_str}".')
+        # self.log.debug(f'Flag alleles with "in vitro construct" annotations for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
             if feature_dict['feature_id'] and feature_dict['uniquename'].startswith('FBal'):
                 input_symbol = feature_dict['input_symbol']
@@ -449,12 +449,12 @@ class ComplementationGroup(object):
                 for _ in results:
                     feature_dict['in_vitro'] = True
             if feature_dict['in_vitro'] is True:
-                log.debug(f'Allele "{input_symbol}" has "in vitro construct" annotation.')
+                self.log.debug(f'Allele "{input_symbol}" has "in vitro construct" annotation.')
         return
 
     def _flag_binary_drivers(self, session):
         """Flag drivers, like GAL4."""
-        # log.debug(f'Flag drivers, like GAL4, for this cgroup: "{self.input_cgroup_str}".')
+        # self.log.debug(f'Flag drivers, like GAL4, for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
             if feature_dict['uniquename'] and feature_dict['uniquename'].startswith('FBal'):
                 if not feature_dict['parental_gene_feature_id']:
@@ -472,12 +472,12 @@ class ComplementationGroup(object):
                 for _ in results:
                     feature_dict['binary_driver'] = True
             if feature_dict['binary_driver'] is True:
-                log.debug(f'Allele "{input_symbol}" is a binary driver.')
+                self.log.debug(f'Allele "{input_symbol}" is a binary driver.')
         return
 
     def _flag_misexpression_elements(self, session):
         """Flag misexpression alleles."""
-        # log.debug(f'Flag misexpression alleles for this cgroup: "{self.input_cgroup_str}".')
+        # self.log.debug(f'Flag misexpression alleles for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
             if feature_dict['uniquename'] and feature_dict['uniquename'].startswith('FBal'):
                 input_symbol = feature_dict['input_symbol']
@@ -520,12 +520,12 @@ class ComplementationGroup(object):
                 for _ in results:
                     feature_dict['misexpression_element'] = True
                 if feature_dict['misexpression_element'] is True:
-                    log.debug(f'Allele "{input_symbol}" is a misexpression element.')
+                    self.log.debug(f'Allele "{input_symbol}" is a misexpression element.')
         return
 
     def _assess_single_group_alleles(self):
         """Assess genotype components that should be restricted to a single cgroup."""
-        # log.debug(f'Assess genotype components that should be restricted to a single cgroup for this cgroup: "{self.input_cgroup_str}".')
+        # self.log.debug(f'Assess genotype components that should be restricted to a single cgroup for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
             if not feature_dict['uniquename']:
                 continue
@@ -544,18 +544,18 @@ class ComplementationGroup(object):
                 elif feature_dict['misexpression_element'] is True:
                     feature_dict['single_cgroup'] = False
             if feature_dict['single_cgroup'] is False:
-                log.debug(f'"{input_symbol}" is allowed to occupy many complementation groups.')
+                self.log.debug(f'"{input_symbol}" is allowed to occupy many complementation groups.')
         return
 
     def _check_cgroup_feature_count(self):
         """Check that the cgroup has only one or two associated features."""
         if len(self.features) > 2:
             self.errors.append(f'For "{self.input_cgroup_str}", more than the max of two features given for one cgroup')
-            log.error(f'For "{self.input_cgroup_str}", more than the max of two features given for one cgroup.')
+            self.log.error(f'For "{self.input_cgroup_str}", more than the max of two features given for one cgroup.')
         verified_feature_ids = [i['feature_id'] for i in self.features if i['feature_id'] is not None]
         if len(verified_feature_ids) < len(self.features):
             self.errors.append(f'For "{self.input_cgroup_str}", could not verify all features given')
-            log.error('Could not verify all features given.')
+            self.log.error('Could not verify all features given.')
         return
 
     def _check_cgroup_gene_count(self):
@@ -567,7 +567,7 @@ class ComplementationGroup(object):
         cgroup_parental_genes = set(cgroup_parental_genes)
         if len(cgroup_parental_genes) > 1:
             self.errors.append(f'For "{self.input_cgroup_str}", classical alleles of two different genes share a cgroup')
-            log.error('Classical alleles of two different genes share a cgroup.')
+            self.log.error('Classical alleles of two different genes share a cgroup.')
         return
 
     def _check_cgroup_bogus_symbol_count(self):
@@ -578,7 +578,7 @@ class ComplementationGroup(object):
                 bogus_symbols.append(feature_dict['feature_id'])
         if len(bogus_symbols) > 1:
             self.errors.append(f'For "{self.input_cgroup_str}", more than one bogus symbol feature given')
-            log.error('More than one bogus symbol feature given.')
+            self.log.error('More than one bogus symbol feature given.')
         return
 
     def _rank_cgroups(self):
@@ -591,8 +591,8 @@ class ComplementationGroup(object):
             self.rank_dict[0] = self.features[0]
             self.cgroup_name = self.rank_dict[0]['current_symbol']
             self.cgroup_desc = self.rank_dict[0]['uniquename']
-            log.debug(f'cgroup_name="{self.cgroup_name}"')
-            log.debug(f'cgroup_desc="{self.cgroup_desc}"')
+            self.log.debug(f'cgroup_name="{self.cgroup_name}"')
+            self.log.debug(f'cgroup_desc="{self.cgroup_desc}"')
             return
         # Handle two feature cgroups: homozygous.
         if self.features[0]['feature_id'] == self.features[1]['feature_id']:
@@ -615,13 +615,13 @@ class ComplementationGroup(object):
                 self.rank_dict[1] = symbol_sorted_features[sorted_symbols[1]]
         self.cgroup_name = f'{self.rank_dict[0]["current_symbol"]}/{self.rank_dict[1]["current_symbol"]}'
         self.cgroup_desc = '|'.join(sorted([i['uniquename'] for i in self.features]))
-        log.debug(f'cgroup_name="{self.cgroup_name}"')
-        log.debug(f'cgroup_desc="{self.cgroup_desc}"')
+        self.log.debug(f'cgroup_name="{self.cgroup_name}"')
+        self.log.debug(f'cgroup_desc="{self.cgroup_desc}"')
         return
 
     def process_cgroup(self, session):
         """Run various ComplementationGroup methods in the correct order."""
-        log.debug(f'Processing cgroup {self.input_cgroup_str}')
+        self.log.debug(f'Processing cgroup {self.input_cgroup_str}')
         self._get_feature_info(session)
         self._get_parental_genes(session)
         self._flag_transgenic_alleles(session)
@@ -633,5 +633,5 @@ class ComplementationGroup(object):
         self._check_cgroup_gene_count()
         self._check_cgroup_bogus_symbol_count()
         self._rank_cgroups()
-        log.debug('Done initial parsing of cgroup.\n')
+        self.log.debug('Done initial parsing of cgroup.\n')
         return
