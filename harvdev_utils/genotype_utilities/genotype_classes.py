@@ -75,7 +75,7 @@ class GenotypeAnnotation(object):
         for cgroup in self.cgroup_list:
             for feature_dict in cgroup.features:
                 if feature_dict['feature_id'] is not None:
-                    self.features['feature_id'] = feature_dict
+                    self.features[feature_dict['feature_id']] = feature_dict
         return
 
     def _check_multi_cgroup_genes(self):
