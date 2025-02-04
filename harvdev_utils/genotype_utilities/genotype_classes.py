@@ -51,7 +51,7 @@ class GenotypeAnnotation(object):
         """
         self.input_genotype_name = input_genotype_name
         self.log = log              # From a script using this class.
-        self.features = {}          # Feature_id-keyed dict of component info.
+        self.features = {}          # Feature_id-keyed dict of public features.
         self.cgroup_list = []       # A list of ComplementationGroup objects.
         self.cgroup_dict = {}       # Cgroup-keyed ComplementationGroups.
         self.uniquename = None      # Recomputed uniquename (symbols sorted).
@@ -74,7 +74,7 @@ class GenotypeAnnotation(object):
                 self.cgroup_list.append(cgroup)
         for cgroup in self.cgroup_list:
             for feature_dict in cgroup.features:
-                if feature_dict['feature_id'] is not None:
+                if feature_dict['feature_id'] is not None and feature_dict['type'] != 'bogus symbol':
                     self.features[feature_dict['feature_id']] = feature_dict
         return
 
