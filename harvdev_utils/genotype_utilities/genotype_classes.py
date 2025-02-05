@@ -27,6 +27,7 @@ Notes:
 
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from collections import defaultdict
 from harvdev_utils.production import (
     Cv, Cvterm, Db, Dbxref, Feature, FeatureCvterm, FeatureCvtermprop,
     FeatureGenotype, FeatureRelationship, FeatureSynonym, Genotype,
@@ -34,6 +35,50 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml
+
+
+# Regex patterns as constants (easier to maintain/change if needed)
+FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'
+FBGO_REGEX = r'^FBgo[0-9]{7}$'
+FBTP_REGEX = r'^FBtp[0-9]{7}$'
+FBTI_REGEX = r'^FBti[0-9]{7}$'
+FBGN_REGEX = r'^FBgn[0-9]{7}$'
+
+
+class ChadoCache:
+    """Cache commonly used Chado DB objects to reduce repeated queries."""
+    def __init__(self, session):
+        """Create a ChadoCache object."""
+        self.session = session
+        self._flybase_db = None
+        self._pub_unattributed = None
+        self._synonym_symbol_cvterm = None
+
+    @property
+    def flybase_db(self):
+        """Get FlyBase db.db_id."""
+        if self._flybase_db is None:
+            self._flybase_db = self.session.query(Db).filter(Db.name == 'FlyBase').one()
+        return self._flybase_db
+
+    @property
+    def pub_unattributed(self):
+        """Get FlyBase pub.pub_id for unattributed pub."""
+        if self._pub_unattributed is None:
+            self._pub_unattributed = self.session.query(Pub).filter(Pub.uniquename == 'unattributed').one()
+        return self._pub_unattributed
+
+    @property
+    def synonym_symbol_cvterm(self):
+        """Synonym CV term for 'symbol' from the 'synonym type' CV."""
+        if self._synonym_symbol_cvterm is None:
+            self._synonym_symbol_cvterm = (
+                self.session.query(Cvterm)
+                .join(Cv, Cv.cv_id == Cvterm.cvterm_id)
+                .filter(Cvterm.name == 'symbol', Cv.name == 'synonym type')
+                .one()
+            )
+        return self._synonym_symbol_cvterm
 
 
 class GenotypeAnnotation(object):
@@ -62,6 +107,14 @@ class GenotypeAnnotation(object):
         self.warnings = []          # Warnings about the genotype.
         self.errors = []            # Errors (QC fails) that stop processing.
 
+    def __str__(self):
+        """Informative string for this genotype for logging purposes."""
+        return self.input_genotype_name
+
+    #####################
+    # Internal Methods
+    #####################
+
     def _parse_cgroups(self, session):
         """Parse the input genotype into ComplementationGroups."""
         self.log.debug(f'Parse {self} into ComplementationGroups.\n')
@@ -84,21 +137,16 @@ class GenotypeAnnotation(object):
         GENE_CURIE = 1
         gene_cgroup_counter = {}
         for cgroup in self.cgroup_list:
-            cgroup_genes = []
-            for feature_dict in cgroup.features:
-                if feature_dict['single_cgroup'] is True:
-                    if feature_dict['parental_gene_feature_id'] is not None:
-                        gene_name = feature_dict['parental_gene_name']
-                        gene_curie = feature_dict['parental_gene_curie']
-                        cgroup_rank_gene = (gene_name, gene_curie)
-                        cgroup_genes.append(cgroup_rank_gene)
-            cgroup_genes = set(cgroup_genes)
+            cgroup_genes = {
+                (feature_dict['parental_gene_name'], feature_dict['parental_gene_curie'])
+                for feature_dict in cgroup.features
+                if feature_dict['single_cgroup'] and feature_dict['parental_gene_feature_id']
+            }
             for cgroup_gene in cgroup_genes:
                 try:
                     gene_cgroup_counter[cgroup_gene] += 1
                 except KeyError:
                     gene_cgroup_counter[cgroup_gene] = 1
-        # self.log.debug(f'{self}, have parental genes: {gene_cgroup_counter}')
         for gene, count in gene_cgroup_counter.items():
             if count > 1:
                 msg = f'Classical alleles for {gene[GENE_NAME]} '
@@ -116,43 +164,28 @@ class GenotypeAnnotation(object):
 
     def _calculate_genotype_uniquename(self):
         """Calculate the genotype uniquename."""
-        if not self.errors:
-            cgroups_by_name = {}
-            for cgroup in self.cgroup_list:
-                try:
-                    cgroups_by_name[cgroup.cgroup_name].append(cgroup)
-                except KeyError:
-                    cgroups_by_name[cgroup.cgroup_name] = [cgroup]
-            sorted_cgroup_names = sorted(cgroups_by_name.keys())
-            cgroup_number = 0
-            for cgroup_name in sorted_cgroup_names:
-                for cgroup in cgroups_by_name[cgroup_name]:
-                    self.cgroup_dict[cgroup_number] = cgroup
-                    cgroup_number += 1
-            self.uniquename = ' '.join(sorted_cgroup_names)
-            self.log.debug(f'{self}, have this cgroup ordering.')
-            for cgroup_number, cgroup in self.cgroup_dict.items():
-                self.log.debug(f'cgroup={cgroup_number}, name={cgroup.cgroup_name}')
-            self.log.debug(f'Calculated this uniquename: {self.uniquename}')
+        if self.errors:
+            return
+        cgroups_by_name = defaultdict(list)
+        for cgroup in self.cgroup_list:
+            cgroups_by_name[cgroup.cgroup_name].append(cgroup)
+        sorted_cgroup_names = sorted(cgroups_by_name.keys())
+        cgroup_number = 0
+        for cgroup_name in sorted_cgroup_names:
+            for cgroup in cgroups_by_name[cgroup_name]:
+                self.cgroup_dict[cgroup_number] = cgroup
+                cgroup_number += 1
+        self.uniquename = ' '.join(sorted_cgroup_names)
+        self.log.debug(f'Genotype {self} has this uniquename: {self.uniquename}')
         return
 
     def _calculate_genotype_desc(self):
         """Calculate the genotype description."""
-        if not self.errors:
-            cgroup_descs = sorted([i.cgroup_desc for i in self.cgroup_list])
-            self.description = '_'.join(cgroup_descs)
-            self.log.debug(f'Calculated this description: {self.description}')
-        return
-
-    def process_genotype_annotation(self, session):
-        """Run various GenotypeAnnotation methods in the correct order."""
-        self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
-        self._parse_cgroups(session)
-        self._check_multi_cgroup_genes()
-        self._propagate_cgroup_errors()
-        self._calculate_genotype_uniquename()
-        self._calculate_genotype_desc()
-        self.log.debug('Done initial parsing of genotype.\n\n\n')
+        if self.errors:
+            return
+        cgroup_descs = sorted([i.cgroup_desc for i in self.cgroup_list])
+        self.description = '_'.join(cgroup_descs)
+        self.log.debug(f'Calculated this description: {self.description}')
         return
 
     def _find_known_genotype(self, session):
@@ -163,7 +196,7 @@ class GenotypeAnnotation(object):
             Genotype.uniquename == self.uniquename,
             Genotype.is_obsolete.is_(False),
             GenotypeDbxref.is_current.is_(True),
-            Dbxref.accession.op('~')(r'^FBgo[0-9]{7}$'),
+            Dbxref.accession.op('~')(FBGO_REGEX),
             Db.name == 'FlyBase',
         )
         chado_genotype = session.query(Genotype, Dbxref).\
@@ -181,15 +214,16 @@ class GenotypeAnnotation(object):
                 self.is_new = False
                 self.log.debug(f'The descriptions for the curated and chado genotype are identical: {self.description}.')
             else:
-                self.errors.append(f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}.')
-                self.log.error(f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}.')
+                msg = f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}'
+                self.errors.append(msg)
+                self.log.error(msg)
         else:
             self.is_new = True
-            self.log.debug(f'Could not find genotype {self} in chado.')
+            self.log.debug(f'Genotype {self} not found in chado.')
 
     def _create_new_genotype(self, session):
         """Create a new entry in the chado genotype table."""
-        if self.errors or self.is_new is False or self.is_new is None:
+        if self.errors or not self.is_new:
             return
         new_chado_genotype, created = get_or_create(session, Genotype, uniquename=self.uniquename, description=self.description)
         if created is False:
@@ -201,29 +235,38 @@ class GenotypeAnnotation(object):
         self.genotype_id = new_chado_genotype.genotype_id
         return
 
-    def _assign_genotype_curie(self, session):
+    def _assign_genotype_curie(self, session, cache):
         """Assign a FlyBase curie to the genotype."""
-        if self.errors or self.is_new is False or self.is_new is None:
+        if self.errors or not self.is_new:
             return
-        filters = (
-            Db.name == 'FlyBase',
-        )
-        flybase_db = session.query(Db).filter(*filters).one()
+        # Generate a new FBgo ID from the sequence.
         new_fbgo_query = "SELECT nextval('genotype_curie_seq');"
-        new_fbgo_int = session.execute(new_fbgo_query).one()[0]
+        new_fbgo_int = session.execute(new_fbgo_query).scalar()
         new_fbgo_id = f'FBgo{str(new_fbgo_int).zfill(7)}'
-        new_xref, created = get_or_create(session, Dbxref, db_id=flybase_db.db_id, accession=new_fbgo_id)
-        if created is False:
-            self.log.error(f'{new_xref.accession} should be new, but it already exists? ID minting is malfunctioning.')
-            raise Exception
-        self.log.debug(f'For {self}, reserved new ID: {new_xref.accession}')
-        _, _ = get_or_create(session, GenotypeDbxref, genotype_id=self.genotype_id, dbxref_id=new_xref.dbxref_id)
+        # Create the new FBgo ID in chado.
+        new_xref, created = get_or_create(
+            session,
+            Dbxref,
+            db_id=cache.flybase_db.db_id,
+            accession=new_fbgo_id
+        )
+        if not created:
+            msg = f'{new_xref.accession} should be new, but it already exists. ID minting is malfunctioning.'
+            self.log.error(msg)
+            raise ValueError(msg)
+        get_or_create(
+            session,
+            GenotypeDbxref,
+            genotype_id=self.genotype_id,
+            dbxref_id=new_xref.dbxref_id
+        )
         self.curie = new_xref.accession
+        self.log.debug(f'For {self}, assigned new ID: {self.curie}')
         return
 
     def _create_genotype_component_associations(self, session):
         """Create genotype component entries."""
-        if self.errors or self.is_new is False or self.is_new is None:
+        if self.errors or not self.is_new:
             return
         for cgroup_number, cgroup in self.cgroup_dict.items():
             for feat_rank, feature_dict in cgroup.rank_dict.items():
@@ -231,38 +274,54 @@ class GenotypeAnnotation(object):
                                            cgroup=cgroup_number, rank=feat_rank, cvterm_id=60468, chromosome_id=23159230)
         return
 
-    def _assign_genotype_symbol(self, session):
+    def _assign_genotype_symbol(self, session, cache):
         """Assign the genotype a current symbol."""
-        if self.errors or self.is_new is False or self.is_new is None:
+        if self.errors or not self.is_new:
             return
-        filters = (Pub.uniquename == 'unattributed', )
-        unattr_pub = session.query(Pub).filter(*filters).one()
-        filters = (
-            Cvterm.name == 'symbol',
-            Cv.name == 'synonym type',
+        new_symbol, _ = get_or_create(
+            session,
+            Synonym,
+            type_id=cache.synonym_symbol_cvterm.cvterm_id,
+            name=self.uniquename,
+            synonym_sgml=self.uniquename
         )
-        synonym_cvterm = session.query(Cvterm).\
-            select_from(Cvterm).\
-            join(Cv, (Cv.cv_id == Cvterm.cv_id)).\
-            filter(*filters).\
-            one()
-        new_symbol, _ = get_or_create(session, Synonym, type_id=synonym_cvterm.cvterm_id, name=self.uniquename, synonym_sgml=self.uniquename)
-        _, _ = get_or_create(session, GenotypeSynonym, genotype_id=self.genotype_id, synonym_id=new_symbol.synonym_id, pub_id=unattr_pub.pub_id)
+        get_or_create(
+            session,
+            GenotypeSynonym,
+            genotype_id=self.genotype_id,
+            synonym_id=new_symbol.synonym_id,
+            pub_id=cache.pub_unattributed.pub_id
+        )
+        return
+
+    ###############################
+    # Public Methods (Entry Point)
+    ###############################
+
+    def process_genotype_annotation(self, session):
+        """Run various GenotypeAnnotation methods in sequence."""
+        self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
+        self._parse_cgroups(session)
+        self._check_multi_cgroup_genes()
+        self._propagate_cgroup_errors()
+        self._calculate_genotype_uniquename()
+        self._calculate_genotype_desc()
+        self.log.debug('Done initial parsing of genotype.\n\n\n')
         return
 
     def get_known_or_create_new_genotype(self, session):
         """Find an existing genotype, or, create a new genotype plus a new ID, component entries, and a current symbol."""
+        # We create a cache object once, then reuse it.
+        cache = ChadoCache(session)
+        # Identify if the genotype is already in chado.
         self._find_known_genotype(session)
+        # If not found in chado, create a new genotype in chado.
         if self.is_new is True:
             self._create_new_genotype(session)
-            self._assign_genotype_curie(session)
+            self._assign_genotype_curie(session, cache)
             self._create_genotype_component_associations(session)
-            self._assign_genotype_symbol(session)
+            self._assign_genotype_symbol(session, cache)
         return
-
-    def __str__(self):
-        """Informative string for this genotype for logging purposes."""
-        return self.input_genotype_name
 
 
 class ComplementationGroup(object):
@@ -285,6 +344,10 @@ class ComplementationGroup(object):
         self.cgroup_name = None    # Will be "correct" symbol for the cgroup from its components.
         self.cgroup_desc = None    # Will be sorted concatenation of component IDs.
         self.errors = []           # Error messages: if any, the cgroup (and related genotype) should not be processed.
+
+    #####################
+    # Internal Methods
+    #####################
 
     def _get_feature_info(self, session):
         """Query chado for relevant feature info given a symbol."""
@@ -316,7 +379,7 @@ class ComplementationGroup(object):
             filters = (
                 Feature.is_obsolete.is_(False),
                 Feature.is_analysis.is_(False),
-                Feature.uniquename.op('~')(r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'),
+                Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
                 Feature.name == feature_dict['name'],
                 FeatureSynonym.is_current.is_(True),
                 synonym_type.name == 'symbol',
@@ -391,7 +454,7 @@ class ComplementationGroup(object):
                     filters = (
                         Feature.is_obsolete.is_(False),
                         Feature.is_analysis.is_(False),
-                        Feature.uniquename.op('~')(r'^FBgn[0-9]{7}$'),
+                        Feature.uniquename.op('~')(FBGN_REGEX),
                         Cvterm.name == 'alleleof',
                         FeatureRelationship.subject_id == feature_dict['feature_id'],
                     )
@@ -421,7 +484,7 @@ class ComplementationGroup(object):
                     FeatureRelationship.subject_id == feature_dict['feature_id'],
                     Feature.is_obsolete.is_(False),
                     Feature.is_analysis.is_(False),
-                    Feature.uniquename.op('~')(r'^FBtp[0-9]{7}$'),
+                    Feature.uniquename.op('~')(FBTP_REGEX),
                     Cvterm.name == 'associated_with',
                 )
                 results = session.query(Feature).\
@@ -487,8 +550,8 @@ class ComplementationGroup(object):
         for feature_dict in self.features:
             if feature_dict['uniquename'] and feature_dict['uniquename'].startswith('FBal'):
                 input_symbol = feature_dict['input_symbol']
-                construct_uname_regex = r'^FBtp[0-9]{7}$'
-                insertion_uname_regex = r'^FBti[0-9]{7}$'
+                construct_uname_regex = FBTP_REGEX
+                insertion_uname_regex = FBTI_REGEX
                 allele_feature = aliased(Feature, name='allele_feature')
                 construct_feature = aliased(Feature, name='construct_feature')
                 insertion_feature = aliased(Feature, name='insertion_feature')
@@ -657,8 +720,12 @@ class ComplementationGroup(object):
         self.log.debug(f'cgroup_desc="{self.cgroup_desc}"')
         return
 
+    ###############################
+    # Public Methods (Entry Point)
+    ###############################
+
     def process_cgroup(self, session):
-        """Run various ComplementationGroup methods in the correct order."""
+        """Run various ComplementationGroup methods in sequence."""
         self.log.debug(f'Processing cgroup {self.input_cgroup_str}')
         self._get_feature_info(session)
         self._get_parental_genes(session)
