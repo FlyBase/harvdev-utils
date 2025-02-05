@@ -355,8 +355,7 @@ class ComplementationGroup(object):
                             join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
                             filter(*filters).\
                             one()
-                        feature_dict['name'] = input_symbol
-                        feature_dict['current_symbol'] = input_symbol.replace('[', '<up>').replace(']', '</up>')
+                        feature_dict['current_symbol'] = feature_dict['name'].replace('[', '<up>').replace(']', '</up>')
                         feature_dict['feature_id'] = component_result.feature_id
                         feature_dict['uniquename'] = component_result.uniquename
                         feature_dict['type'] = 'bogus symbol'
@@ -368,8 +367,7 @@ class ComplementationGroup(object):
                         if input_symbol == '+':
                             org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
                         bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=input_symbol, uniquename=input_symbol)
-                        feature_dict['name'] = input_symbol
-                        feature_dict['current_symbol'] = input_symbol.replace('[', '<up>').replace(']', '</up>')
+                        feature_dict['current_symbol'] = feature_dict['name'].replace('[', '<up>').replace(']', '</up>')
                         feature_dict['feature_id'] = bogus_feature.feature_id
                         feature_dict['uniquename'] = input_symbol
                         feature_dict['type'] = 'bogus symbol'
