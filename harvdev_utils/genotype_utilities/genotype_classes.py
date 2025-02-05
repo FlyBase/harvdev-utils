@@ -591,7 +591,6 @@ class ComplementationGroup(object):
             self.log.error('Locus contains a mix of classical and transgenic alleles.')
         return
 
-
     def _check_cgroup_bogus_symbol_count(self):
         """Check that a cgroup has a max of one bogus symbol feature."""
         bogus_symbols = []
