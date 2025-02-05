@@ -573,7 +573,7 @@ class ComplementationGroup(object):
                 cgroup_parental_genes.append(feature_dict['parental_gene_name'])
         cgroup_parental_genes = set(cgroup_parental_genes)
         if len(cgroup_parental_genes) > 1:
-            self.errors.append(f'For "{self.input_cgroup_str}", alleles of two different genes share a cgroup')
+            self.errors.append(f'For "{self.input_cgroup_str}", alleles of two different genes share a cgroup.')
             self.log.error('Alleles of two different genes share a cgroup.')
         return
 
