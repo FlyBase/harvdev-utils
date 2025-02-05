@@ -369,7 +369,7 @@ class ComplementationGroup(object):
                         bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=input_symbol, uniquename=input_symbol)
                         feature_dict['current_symbol'] = feature_dict['name'].replace('[', '<up>').replace(']', '</up>')
                         feature_dict['feature_id'] = bogus_feature.feature_id
-                        feature_dict['uniquename'] = input_symbol
+                        feature_dict['uniquename'] = feature_dict['name']
                         feature_dict['type'] = 'bogus symbol'
                         feature_dict['is_new'] = True
                         self.log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
