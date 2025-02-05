@@ -582,7 +582,7 @@ class ComplementationGroup(object):
         single_cgroup_allele = False
         multi_cgroup_allele = False
         for feature_dict in self.features:
-            if feature_dict['single_cgroup'] is True:
+            if feature_dict['feature_id'] and feature_dict['single_cgroup'] is True:
                 single_cgroup_allele = True
             elif feature_dict['single_cgroup'] is False and feature_dict['type'] == 'allele':
                 multi_cgroup_allele = True
@@ -600,6 +600,24 @@ class ComplementationGroup(object):
         if len(bogus_symbols) > 1:
             self.errors.append(f'For "{self.input_cgroup_str}", more than one bogus symbol feature given')
             self.log.error('More than one bogus symbol feature given.')
+        return
+
+    def _check_bogus_symbol_matches_gene(self):
+        """Check that a bogus symbol matches the locus of the classical allele."""
+        allele_gene_name = None
+        bogus_symbol_gene_name = None
+        for feature_dict in self.features:
+            if feature_dict['feature_id'] and feature_dict['type'] == 'bogus symbol':
+                if feature_dict['name'].endswith('[+]'):
+                    bogus_symbol_gene_name = feature_dict['name'].replace('[+]', '')
+                elif feature_dict['name'].endswith('[-]'):
+                    bogus_symbol_gene_name = feature_dict['name'].replace('[-]', '')
+            elif feature_dict['feature_id'] and feature_dict['type'] == 'allele':
+                if feature_dict['parental_gene_id']:
+                    allele_gene_name = feature_dict['parental_gene_name']
+        if allele_gene_name and bogus_symbol_gene_name and allele_gene_name != bogus_symbol_gene_name:
+            self.errors.append(f'For "{self.input_cgroup_str}", bogus symbol does not match paired allele')
+            self.log.error('Bogus symbol does not match paired allele.')
         return
 
     def _rank_cgroups(self):
@@ -654,6 +672,7 @@ class ComplementationGroup(object):
         self._check_cgroup_gene_count()
         self._check_cgroup_for_mix_of_classical_and_transgenic_alleles()
         self._check_cgroup_bogus_symbol_count()
+        self._check_bogus_symbol_matches_gene()
         self._rank_cgroups()
         self.log.debug('Done initial parsing of cgroup.\n')
         return
