@@ -345,7 +345,7 @@ class ComplementationGroup(object):
                     filters = (
                         Feature.is_obsolete.is_(False),
                         Feature.is_analysis.is_(False),
-                        Feature.name == feature_dict['input_symbol'],
+                        Feature.name == feature_dict['name'],
                         Feature.uniquename == Feature.name,
                         Cvterm.name == 'bogus symbol',
                     )
@@ -366,7 +366,8 @@ class ComplementationGroup(object):
                         org_id = 1
                         if input_symbol == '+':
                             org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
-                        bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=input_symbol, uniquename=input_symbol)
+                        name_to_use = feature_dict['name']
+                        bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=name_to_use, uniquename=input_symbol)
                         feature_dict['current_symbol'] = feature_dict['name'].replace('[', '<up>').replace(']', '</up>')
                         feature_dict['feature_id'] = bogus_feature.feature_id
                         feature_dict['uniquename'] = feature_dict['name']
