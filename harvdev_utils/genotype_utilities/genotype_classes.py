@@ -613,7 +613,7 @@ class ComplementationGroup(object):
                 elif feature_dict['name'].endswith('[-]'):
                     bogus_symbol_gene_name = feature_dict['name'].replace('[-]', '')
             elif feature_dict['feature_id'] and feature_dict['type'] == 'allele':
-                if feature_dict['parental_gene_id']:
+                if feature_dict['parental_gene_feature_id']:
                     allele_gene_name = feature_dict['parental_gene_name']
         if allele_gene_name and bogus_symbol_gene_name and allele_gene_name != bogus_symbol_gene_name:
             self.errors.append(f'For "{self.input_cgroup_str}", bogus symbol does not match paired allele')
