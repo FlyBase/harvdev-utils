@@ -555,7 +555,7 @@ class ComplementationGroup(object):
         return
 
     def _check_cgroup_feature_count(self):
-        """Check that the cgroup has only one or two associated features."""
+        """Check that a cgroup has only one or two associated features."""
         if len(self.features) > 2:
             self.errors.append(f'For "{self.input_cgroup_str}", more than the max of two features given for one cgroup')
             self.log.error(f'For "{self.input_cgroup_str}", more than the max of two features given for one cgroup.')
@@ -566,19 +566,34 @@ class ComplementationGroup(object):
         return
 
     def _check_cgroup_gene_count(self):
-        """Check that for cgroups of classical alleles, only one gene is represented."""
+        """Check that a cgroup contains alleles of only one gene."""
         cgroup_parental_genes = []
         for feature_dict in self.features:
-            if feature_dict['single_cgroup'] is True and feature_dict['parental_gene_feature_id']:
+            if feature_dict['parental_gene_feature_id']:
                 cgroup_parental_genes.append(feature_dict['parental_gene_name'])
         cgroup_parental_genes = set(cgroup_parental_genes)
         if len(cgroup_parental_genes) > 1:
-            self.errors.append(f'For "{self.input_cgroup_str}", classical alleles of two different genes share a cgroup')
-            self.log.error('Classical alleles of two different genes share a cgroup.')
+            self.errors.append(f'For "{self.input_cgroup_str}", alleles of two different genes share a cgroup')
+            self.log.error('Alleles of two different genes share a cgroup.')
         return
 
+    def _check_cgroup_for_mix_of_classical_and_transgenic_alleles(self):
+        """Check that a cgroup does not mix classical and transgenic alleles."""
+        single_cgroup_allele = False
+        multi_cgroup_allele = False
+        for feature_dict in self.features:
+            if feature_dict['single_cgroup'] is True:
+                single_cgroup_allele = True
+            elif feature_dict['single_cgroup'] is False and feature_dict['type'] == 'allele':
+                multi_cgroup_allele = True
+        if single_cgroup_allele is True and multi_cgroup_allele is True:
+            self.errors.append(f'For "{self.input_cgroup_str}", have a mix of classical and transgenic alleles.')
+            self.log.error('Locus contains a mix of classical and transgenic alleles.')
+        return
+
+
     def _check_cgroup_bogus_symbol_count(self):
-        """Check that cgroups have max of one bogus symbol feature."""
+        """Check that a cgroup has a max of one bogus symbol feature."""
         bogus_symbols = []
         for feature_dict in self.features:
             if feature_dict['feature_id'] and feature_dict['type'] == 'bogus symbol':
@@ -638,6 +653,7 @@ class ComplementationGroup(object):
         self._assess_single_group_alleles()
         self._check_cgroup_feature_count()
         self._check_cgroup_gene_count()
+        self._check_cgroup_for_mix_of_classical_and_transgenic_alleles()
         self._check_cgroup_bogus_symbol_count()
         self._rank_cgroups()
         self.log.debug('Done initial parsing of cgroup.\n')
