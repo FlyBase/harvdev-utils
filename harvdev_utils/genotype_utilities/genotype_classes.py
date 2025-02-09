@@ -74,7 +74,7 @@ class ChadoCache:
         if self._synonym_symbol_cvterm is None:
             self._synonym_symbol_cvterm = (
                 self.session.query(Cvterm)
-                .join(Cv, Cv.cv_id == Cvterm.cvterm_id)
+                .join(Cv, Cv.cv_id == Cvterm.cv_id)
                 .filter(Cvterm.name == 'symbol', Cv.name == 'synonym type')
                 .one()
             )
