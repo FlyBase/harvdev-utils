@@ -83,11 +83,12 @@ class ChadoCache:
 
 class GenotypeAnnotation(object):
     """A genotype, its related data, and quality-check attributes."""
-    def __init__(self, input_genotype_name, log):
+    def __init__(self, input_genotype_name, session, log):
         """Create a base GenotypeAnnotation from a genotype name.
 
         Args:
             input_genotype_name (str): A string of component SGML symbols.
+            session (Session): SQLAlchemy session for the database from which to query and export.
             log (Logger): The logging object to use.
 
         Returns:
@@ -106,6 +107,8 @@ class GenotypeAnnotation(object):
         self.is_new = None          # Becomes False if in chado, True if not.
         self.warnings = []          # Warnings about the genotype.
         self.errors = []            # Errors (QC fails) that stop processing.
+        # Immediately process the input genotype.
+        self.process_genotype_annotation(session)
 
     def __str__(self):
         """Informative string for this genotype for logging purposes."""
