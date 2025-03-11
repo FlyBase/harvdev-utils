@@ -107,9 +107,8 @@ class GenotypeAnnotation(object):
         self.is_new = None          # Becomes False if in chado, True if not.
         self.warnings = []          # Warnings about the genotype.
         self.errors = []            # Errors (QC fails) that stop processing.
-        # Immediately process the input genotype.
+        # Process the input genotype.
         self.process_genotype_annotation(session)
-        self.get_known_or_create_new_genotype(session)
 
     def __str__(self):
         """Informative string for this genotype for logging purposes."""
