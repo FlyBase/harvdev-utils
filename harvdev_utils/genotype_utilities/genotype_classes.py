@@ -83,13 +83,14 @@ class ChadoCache:
 
 class GenotypeAnnotation(object):
     """A genotype, its related data, and quality-check attributes."""
-    def __init__(self, input_genotype_name, session, log):
+    def __init__(self, input_genotype_name, session, log, pub_id):
         """Create a base GenotypeAnnotation from a genotype name.
 
         Args:
             input_genotype_name (str): A string of component SGML symbols.
             session (Session): SQLAlchemy session for the database from which to query and export.
             log (Logger): The logging object to use.
+            pub_id (int): The relevant pub.pub_id; may be used for disambiguation.
 
         Returns:
             An object of the GenotypeAnnotation class.
@@ -97,6 +98,7 @@ class GenotypeAnnotation(object):
         """
         self.input_genotype_name = input_genotype_name
         self.log = log              # From a script using this class.
+        self.pub_id = pub_id        # The pub.pub_id to be used for disambiguation.
         self.features = {}          # Feature_id-keyed dict of public features.
         self.cgroup_list = []       # A list of ComplementationGroup objects.
         self.cgroup_dict = {}       # Cgroup-keyed ComplementationGroups.
@@ -125,7 +127,7 @@ class GenotypeAnnotation(object):
         # self.log.debug(f'Found these cgroups: {cgroup_symbols}')
         for cgroup_symbol in cgroup_symbols:
             if cgroup_symbol != '':
-                cgroup = ComplementationGroup(cgroup_symbol, self.log)
+                cgroup = ComplementationGroup(cgroup_symbol, self.log, self.pub_id)
                 cgroup.process_cgroup(session)
                 self.cgroup_list.append(cgroup)
         for cgroup in self.cgroup_list:
@@ -329,12 +331,13 @@ class GenotypeAnnotation(object):
 
 class ComplementationGroup(object):
     """A complementation group of features that is part of a genotype."""
-    def __init__(self, input_cgroup_str, log):
+    def __init__(self, input_cgroup_str, log, pub_id):
         """Create a base ComplementationGroup.
 
         Args:
             input_cgroup_str (str): The components of the cgroup: e.g., "wg[1]/Df(2L)x".
             log (Logger): The logging object to use.
+            pub_id (int): The pub.pub_id to use for disambiguation.
 
         Returns:
             An object of the ComplementationGroup class.
@@ -342,10 +345,12 @@ class ComplementationGroup(object):
         """
         self.input_cgroup_str = input_cgroup_str
         self.log = log             # From a script using this class.
+        self.pub_id = pub_id       # The pub.pub_id to use for disambiguation.
         self.features = []         # Will be dicts with relevant feature info.
         self.rank_dict = {}        # Will be rank-keyed feature dicts.
         self.cgroup_name = None    # Will be "correct" symbol for the cgroup from its components.
         self.cgroup_desc = None    # Will be sorted concatenation of component IDs.
+        self.notes = []            # Notes on mapping of specified feature to one more appropriate for Alliance submission.
         self.errors = []           # Error messages: if any, the cgroup (and related genotype) should not be processed.
 
     #####################
