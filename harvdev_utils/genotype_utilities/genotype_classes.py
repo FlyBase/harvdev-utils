@@ -108,6 +108,7 @@ class GenotypeAnnotation(object):
         self.genotype_id = None     # genotype.genotype_id (existing or new).
         self.is_new = None          # Becomes False if in chado, True if not.
         self.warnings = []          # Warnings about the genotype.
+        self.notes = []             # Notes regarding transformation of input genotype.
         self.errors = []            # Errors (QC fails) that stop processing.
         # Process the input genotype.
         self.process_genotype_annotation(session)
@@ -161,9 +162,10 @@ class GenotypeAnnotation(object):
                 self.errors.append(msg)
         return
 
-    def _propagate_cgroup_errors(self):
-        """Propagate cgroup errors up to the genotype."""
+    def _propagate_cgroup_notes_and_errors(self):
+        """Propagate cgroup notes and errors up to the genotype."""
         for cgroup in self.cgroup_list:
+            self.notes.extend(cgroup.notes)
             self.errors.extend(cgroup.errors)
         return
 
@@ -308,7 +310,7 @@ class GenotypeAnnotation(object):
         self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
         self._parse_cgroups(session)
         self._check_multi_cgroup_genes()
-        self._propagate_cgroup_errors()
+        self._propagate_cgroup_notes_and_errors()
         self._calculate_genotype_uniquename()
         self._calculate_genotype_desc()
         self.log.debug('Done initial parsing of genotype.\n\n\n')
