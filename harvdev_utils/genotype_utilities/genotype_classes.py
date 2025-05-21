@@ -569,7 +569,7 @@ class ComplementationGroup(object):
             try:
                 feature_result = session.query(Feature).filter(*filters).one()
                 self._map_to_public_feature(session, feature_result, feature_dict)
-                self._get_basic_feature_info(feature_dict)
+                self._get_basic_feature_info(session, feature_dict)
             except NoResultFound:
                 self._map_to_bogus_symbol(session, feature_dict)
             self.features.append(feature_dict)
