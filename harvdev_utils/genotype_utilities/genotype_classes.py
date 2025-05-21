@@ -100,7 +100,7 @@ class GenotypeAnnotation(object):
         self.log = log              # From a script using this class.
         self.pub_id = pub_id        # The pub.pub_id to be used for disambiguation.
         self.features = {}          # Feature_id-keyed dict of public features.
-        self.cgroup_list = []       # A list of ComplementationGroup objects.
+        self.cgroup_list = []       # A list of ComplementationGroup objects derived from the input_genotype_name.
         self.cgroup_dict = {}       # Cgroup-keyed ComplementationGroups.
         self.uniquename = None      # Recomputed uniquename (symbols sorted).
         self.description = None     # Description based on feature IDs.
@@ -366,22 +366,21 @@ class ComplementationGroup(object):
         for input_symbol in input_feature_symbols:
             feature_dict = {
                 'input_symbol': input_symbol,
-                'name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
-                'current_symbol': None,                      # The current symbol synonym.synonym_sgml in chado.
-                'feature_id': None,                          # The feature.feature_id for the component.
-                'uniquename': None,                          # The FlyBase ID for the component.
-                'type': None,                                # The CV term for the feature type.
-                'org_abbr': None,                            # The organism.abbreviation for the feature.
-                'parental_gene_feature_id': None,            # The feature.feature_id for the parental gene, if the feature is an FBal allele.
-                'parental_gene_curie': None,                 # The FBgn ID for the parental gene, if the feature is an FBal allele.
-                'parental_gene_name': None,                  # The feature.name for the parental gene.
-                'is_new': False,                             # True if the feature is a bogus symbol made by this script.
-                'has_constructs': False,                     # True if allele has related FBtp.
-                'in_vitro': False,                           # True if allele has "in vitro construct" annotation.
-                'binary_driver': False,                      # True if allele is a binary driver.
-                'misexpression_element': False,              # True if allele is a misexpression element.
-                'single_cgroup': True,                       # False if the component can be present in many cgroups.
-                'has_pub_association': None,                 # True or False; left as None for internal bogus symbol features.
+                'input_name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
+                'current_symbol': None,                            # The current symbol synonym.synonym_sgml in chado.
+                'feature_id': None,                                # The feature.feature_id for the component.
+                'uniquename': None,                                # The FlyBase ID for the component.
+                'type': None,                                      # The CV term for the feature type.
+                'org_abbr': None,                                  # The organism.abbreviation for the feature.
+                'parental_gene_feature_id': None,                  # The feature.feature_id for the parental gene, if the feature is an FBal allele.
+                'parental_gene_curie': None,                       # The FBgn ID for the parental gene, if the feature is an FBal allele.
+                'parental_gene_name': None,                        # The feature.name for the parental gene.
+                'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
+                'has_constructs': False,                           # True if allele has related FBtp.
+                'in_vitro': False,                                 # True if allele has "in vitro construct" annotation.
+                'binary_driver': False,                            # True if allele is a binary driver.
+                'misexpression_element': False,                    # True if allele is a misexpression element.
+                'single_cgroup': True,                             # False if the component can be present in many cgroups.
             }
             # First, identify a public feature (allele, aberration, balancer, construct or insertion).
             feature_type = aliased(Cvterm, name='feature_type')
@@ -390,7 +389,7 @@ class ComplementationGroup(object):
                 Feature.is_obsolete.is_(False),
                 Feature.is_analysis.is_(False),
                 Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
-                Feature.name == feature_dict['name'],
+                Feature.name == feature_dict['input_name'],
                 FeatureSynonym.is_current.is_(True),
                 synonym_type.name == 'symbol',
             )
@@ -418,7 +417,7 @@ class ComplementationGroup(object):
                     filters = (
                         Feature.is_obsolete.is_(False),
                         Feature.is_analysis.is_(False),
-                        Feature.name == feature_dict['name'],
+                        Feature.name == feature_dict['input_name'],
                         Feature.uniquename == Feature.name,
                         Cvterm.name == 'bogus symbol',
                     )
@@ -428,7 +427,7 @@ class ComplementationGroup(object):
                             join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
                             filter(*filters).\
                             one()
-                        feature_dict['current_symbol'] = feature_dict['name'].replace('[', '<up>').replace(']', '</up>')
+                        feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
                         feature_dict['feature_id'] = component_result.feature_id
                         feature_dict['uniquename'] = component_result.uniquename
                         feature_dict['type'] = 'bogus symbol'
@@ -439,11 +438,11 @@ class ComplementationGroup(object):
                         org_id = 1
                         if input_symbol == '+':
                             org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
-                        name_to_use = feature_dict['name']
+                        name_to_use = feature_dict['input_name']
                         bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=name_to_use, uniquename=input_symbol)
-                        feature_dict['current_symbol'] = feature_dict['name'].replace('[', '<up>').replace(']', '</up>')
+                        feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
                         feature_dict['feature_id'] = bogus_feature.feature_id
-                        feature_dict['uniquename'] = feature_dict['name']
+                        feature_dict['uniquename'] = feature_dict['input_name']
                         feature_dict['type'] = 'bogus symbol'
                         feature_dict['is_new'] = True
                         self.log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
@@ -680,10 +679,10 @@ class ComplementationGroup(object):
         bogus_symbol_gene_name = None
         for feature_dict in self.features:
             if feature_dict['feature_id'] and feature_dict['type'] == 'bogus symbol':
-                if feature_dict['name'].endswith('[+]'):
-                    bogus_symbol_gene_name = feature_dict['name'].replace('[+]', '')
-                elif feature_dict['name'].endswith('[-]'):
-                    bogus_symbol_gene_name = feature_dict['name'].replace('[-]', '')
+                if feature_dict['input_name'].endswith('[+]'):
+                    bogus_symbol_gene_name = feature_dict['input_name'].replace('[+]', '')
+                elif feature_dict['input_name'].endswith('[-]'):
+                    bogus_symbol_gene_name = feature_dict['input_name'].replace('[-]', '')
             elif feature_dict['feature_id'] and feature_dict['type'] == 'allele':
                 if feature_dict['parental_gene_feature_id']:
                     allele_gene_name = feature_dict['parental_gene_name']
