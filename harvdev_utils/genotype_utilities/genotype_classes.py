@@ -30,8 +30,9 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from collections import defaultdict
 from harvdev_utils.production import (
     Cv, Cvterm, Db, Dbxref, Feature, FeatureCvterm, FeatureCvtermprop,
-    FeatureGenotype, FeatureRelationship, FeatureSynonym, Genotype,
-    GenotypeDbxref, GenotypeSynonym, Organism, Pub, Synonym
+    FeatureGenotype, FeatureRelationship, FeatureRelationshipPub, FeaturePub,
+    FeatureSynonym, Genotype, GenotypeDbxref, GenotypeSynonym, Organism, Pub,
+    Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml
@@ -359,16 +360,193 @@ class ComplementationGroup(object):
     # Internal Methods
     #####################
 
-    def _get_feature_info(self, session):
-        """Query chado for relevant feature info given a symbol."""
+    def _map_to_bogus_symbol(self, session, feature_dict):
+        """Map the input symbol to a bogus symbol feature."""
+        input_symbol = feature_dict["input_symbol"]
+        if input_symbol == '+' or input_symbol.endswith('[+]') or input_symbol.endswith('[-]'):
+            self.log.debug(f'Look for an internal "bogus symbol" feature for "{input_symbol}".')
+            filters = (
+                Feature.is_obsolete.is_(False),
+                Feature.is_analysis.is_(False),
+                Feature.name == feature_dict['input_name'],
+                Feature.uniquename == Feature.name,
+                Cvterm.name == 'bogus symbol',
+            )
+            try:
+                component_result = session.query(Feature).\
+                    select_from(Feature).\
+                    join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
+                    filter(*filters).\
+                    one()
+                feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
+                feature_dict['feature_id'] = component_result.feature_id
+                feature_dict['uniquename'] = component_result.uniquename
+                feature_dict['type'] = 'bogus symbol'
+                self.log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
+            except NoResultFound:
+                # Make a new bogus symbol feature if needed.
+                # self.log.warning(f'No existing bogus symbol feature found; create one for "{input_symbol}".')
+                org_id = 1
+                if input_symbol == '+':
+                    org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
+                name_to_use = feature_dict['input_name']
+                bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=name_to_use, uniquename=input_symbol)
+                feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
+                feature_dict['feature_id'] = bogus_feature.feature_id
+                feature_dict['uniquename'] = feature_dict['input_name']
+                feature_dict['type'] = 'bogus symbol'
+                feature_dict['is_new'] = True
+                self.log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
+        else:
+            self.errors.append(f'"{input_symbol}" NOT in chado')
+            self.log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
+        return
+
+    def _map_to_public_feature(self, session, initial_feature, feature_dict):
+        """Map the input feature to one that should be used for Alliance export."""
+        feature_dict['input_mapped_feature_id'] = initial_feature.feature_id
+        # For non-FBal features, just use the initial feature found.
+        if not initial_feature.uniquename.startswith('FBal'):
+            feature_dict['feature_id'] = initial_feature.feature_id
+            return
+        # 1. For an FBal feature, look for an at-locus insertion.
+        allele = aliased(Feature, name='allele')
+        insertion = aliased(Feature, name='insertion')
+        filters = (
+            allele.feature_id == initial_feature.feature_id,
+            insertion.is_obsolete.is_(False),
+            insertion.uniquename.op('~')(r'^FBti[0-9]{7}$'),
+            insertion.is_analysis.is_(False),
+            Cvterm.name == 'is_represented_at_alliance_as',
+        )
+        ins_to_report = session.query(insertion).\
+            select_from(allele).\
+            join(FeatureRelationship, (FeatureRelationship.subject_id == allele.feature_id)).\
+            join(insertion, (insertion.feature_id == FeatureRelationship.object_id)).\
+            join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
+            filter(*filters).\
+            one_or_none()
+        if ins_to_report:
+            feature_dict['feature_id'] = ins_to_report.feature_id
+            msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+            self.log.debug(msg)
+            self.notes.append(msg)
+            return
+        # 2. For an FBal feature, look for a single unspecified insertion for an associated construct.
+        allele = aliased(Feature, name='allele')
+        construct = aliased(Feature, name='construct')
+        insertion = aliased(Feature, name='insertion')
+        ac_rel_type = aliased(Cvterm, name='ac_rel_type')
+        ic_rel_type = aliased(Cvterm, name='ic_rel_type')
+        ac_rel = aliased(FeatureRelationship, name='ac_rel')
+        ic_rel = aliased(FeatureRelationship, name='ic_rel')
+        filters = (
+            allele.feature_id == initial_feature.feature_id,
+            construct.is_obsolete.is_(False),
+            construct.uniquename.op('~')(r'^FBtp[0-9]{7}$'),
+            construct.is_analysis.is_(False),
+            insertion.is_obsolete.is_(False),
+            insertion.uniquename.op('~')(r'^FBti[0-9]{7}$'),
+            insertion.is_analysis.is_(False),
+            insertion.name.op('~')('unspecified$'),
+            ac_rel_type.name == 'associated_with',
+            ic_rel_type.name == 'producedby',
+            Pub.uniquename == 'unattributed',    # BOB TBD - replace with real FBrf from .bibl record
+        )
+        results = session.query(construct, insertion).\
+            select_from(allele).\
+            join(ac_rel, (ac_rel.subject_id == allele.feature_id)).\
+            join(construct, (construct.feature_id == ac_rel.object_id)).\
+            join(ac_rel_type, (ac_rel_type.cvterm_id == ac_rel.type_id)).\
+            join(ic_rel, (ic_rel.object_id == construct.feature_id)).\
+            join(insertion, (insertion.feature_id == ic_rel.subject_id)).\
+            join(ic_rel_type, (ic_rel_type.cvterm_id == ic_rel.type_id)).\
+            join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == ic_rel.feature_relationship_id)).\
+            join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
+            filter(*filters).\
+            distinct()
+        cons_ins_dict = {}
+        for result in results:
+            cons_ins_dict[result.construct.feature_id] = result.insertion
+        # If no construct-associated insertions, report the original allele.
+        if len(cons_ins_dict.keys()) == 0:
+            feature_dict['feature_id'] = initial_feature.feature_id
+            return
+        # If a single construct-associated insertion, report that insertion.
+        elif len(cons_ins_dict.keys()) == 1:
+            ins_to_report = list(cons_ins_dict.values())[0]
+            feature_dict['feature_id'] = ins_to_report.feature_id
+            msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+            self.log.debug(msg)
+            self.notes.append(msg)
+            return
+        else:
+            filters = (
+                Feature.feature_id.in_((cons_ins_dict.keys())),
+                Pub.pub_id == self.pub_id
+            )
+            pub_asso_cons = session.query(Feature).\
+                select_from(Feature).\
+                join(FeaturePub, (FeaturePub.feature_id == Feature.feature_id)).\
+                join(Pub, (Pub.pub_id == FeaturePub.pub_id)).\
+                filter(*filters).\
+                distinct()
+            pub_asso_cons_ids = [i.feature_id for i in pub_asso_cons]
+            # If a single construct associated with the pub, report that insertion.
+            if len(pub_asso_cons_ids) == 1:
+                specific_cons_id = pub_asso_cons_ids[0]
+                ins_to_report = cons_ins_dict[specific_cons_id]
+                feature_dict['feature_id'] = ins_to_report.feature_id
+                msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+                self.log.debug(msg)
+                self.notes.append(msg)
+                return
+            else:
+                msg = f'{initial_feature.name} ({initial_feature.uniquename}) has ambiguous mapping to many constructs'
+                self.log.debug(msg)
+                self.errors.append(msg)
+                return
+
+    def _get_basic_feature_info(self, session, feature_dict):
+        feature_type = aliased(Cvterm, name='feature_type')
+        synonym_type = aliased(Cvterm, name='synonym_type')
+        filters = (
+            Feature.is_obsolete.is_(False),
+            Feature.is_analysis.is_(False),
+            Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
+            Feature.feature_id == feature_dict['feature_id'],
+            FeatureSynonym.is_current.is_(True),
+            synonym_type.name == 'symbol',
+        )
+        component_result = session.query(Feature, feature_type, Organism, Synonym).\
+            select_from(Feature).\
+            join(Organism, (Organism.organism_id == Feature.organism_id)).\
+            join(feature_type, (feature_type.cvterm_id == Feature.type_id)).\
+            join(FeatureSynonym, (FeatureSynonym.feature_id == Feature.feature_id)).\
+            join(Synonym, (Synonym.synonym_id == FeatureSynonym.synonym_id)).\
+            join(synonym_type, (synonym_type.cvterm_id == Synonym.type_id)).\
+            filter(*filters).\
+            one()
+        feature_dict['current_symbol'] = greek_to_sgml(component_result.Synonym.synonym_sgml)
+        feature_dict['feature_id'] = component_result.Feature.feature_id
+        feature_dict['uniquename'] = component_result.Feature.uniquename
+        feature_dict['type'] = component_result.feature_type.name
+        feature_dict['org_abbr'] = component_result.Organism.abbreviation
+        self.log.debug(f'Input "{feature_dict["input_symbol"]}" corresponds to {feature_dict["uniquename"]}.')
+        return
+
+    def _identify_feature(self, session):
+        """Identify the chado feature for each symbol given in a complementation group."""
         input_feature_symbols = self.input_cgroup_str.split('/')
         self.log.debug(f'Found these component symbols: {input_feature_symbols}.')
         for input_symbol in input_feature_symbols:
             feature_dict = {
                 'input_symbol': input_symbol,
                 'input_name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
+                'input_mapped_feature_id': None,                   # The feature_id for the feature that corresponds to the input feature symbol.
+                'at_locus': True,                                  # Change to False for transgenic that should not be over classical allele ever.
+                'feature_id': None,                                # The feature.feature_id for the component to report.
                 'current_symbol': None,                            # The current symbol synonym.synonym_sgml in chado.
-                'feature_id': None,                                # The feature.feature_id for the component.
                 'uniquename': None,                                # The FlyBase ID for the component.
                 'type': None,                                      # The CV term for the feature type.
                 'org_abbr': None,                                  # The organism.abbreviation for the feature.
@@ -382,74 +560,18 @@ class ComplementationGroup(object):
                 'misexpression_element': False,                    # True if allele is a misexpression element.
                 'single_cgroup': True,                             # False if the component can be present in many cgroups.
             }
-            # First, identify a public feature (allele, aberration, balancer, construct or insertion).
-            feature_type = aliased(Cvterm, name='feature_type')
-            synonym_type = aliased(Cvterm, name='synonym_type')
             filters = (
                 Feature.is_obsolete.is_(False),
                 Feature.is_analysis.is_(False),
                 Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
                 Feature.name == feature_dict['input_name'],
-                FeatureSynonym.is_current.is_(True),
-                synonym_type.name == 'symbol',
             )
             try:
-                component_result = session.query(Feature, feature_type, Organism, Synonym).\
-                    select_from(Feature).\
-                    join(Organism, (Organism.organism_id == Feature.organism_id)).\
-                    join(feature_type, (feature_type.cvterm_id == Feature.type_id)).\
-                    join(FeatureSynonym, (FeatureSynonym.feature_id == Feature.feature_id)).\
-                    join(Synonym, (Synonym.synonym_id == FeatureSynonym.synonym_id)).\
-                    join(synonym_type, (synonym_type.cvterm_id == Synonym.type_id)).\
-                    filter(*filters).\
-                    one()
-                feature_dict['current_symbol'] = greek_to_sgml(component_result.Synonym.synonym_sgml)
-                feature_dict['feature_id'] = component_result.Feature.feature_id
-                feature_dict['uniquename'] = component_result.Feature.uniquename
-                feature_dict['type'] = component_result.feature_type.name
-                feature_dict['org_abbr'] = component_result.Organism.abbreviation
-                self.log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
+                feature_result = session.query(Feature).filter(*filters).one()
+                self._map_to_public_feature(session, feature_result, feature_dict)
+                self._get_basic_feature_info(feature_dict)
             except NoResultFound:
-                # self.log.debug(f'Could not find a current public feature for "{input_symbol}".')
-                # Second, if no public feature, look for a bogus symbol feature, if applicable.
-                if input_symbol == '+' or input_symbol.endswith('[+]') or input_symbol.endswith('[-]'):
-                    self.log.debug(f'Look for an internal "bogus symbol" feature for "{input_symbol}".')
-                    filters = (
-                        Feature.is_obsolete.is_(False),
-                        Feature.is_analysis.is_(False),
-                        Feature.name == feature_dict['input_name'],
-                        Feature.uniquename == Feature.name,
-                        Cvterm.name == 'bogus symbol',
-                    )
-                    try:
-                        component_result = session.query(Feature).\
-                            select_from(Feature).\
-                            join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
-                            filter(*filters).\
-                            one()
-                        feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
-                        feature_dict['feature_id'] = component_result.feature_id
-                        feature_dict['uniquename'] = component_result.uniquename
-                        feature_dict['type'] = 'bogus symbol'
-                        self.log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
-                    except NoResultFound:
-                        # Third, make a new bogus symbol feature if needed.
-                        # self.log.warning(f'No existing bogus symbol feature found; create one for "{input_symbol}".')
-                        org_id = 1
-                        if input_symbol == '+':
-                            org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
-                        name_to_use = feature_dict['input_name']
-                        bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=name_to_use, uniquename=input_symbol)
-                        feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
-                        feature_dict['feature_id'] = bogus_feature.feature_id
-                        feature_dict['uniquename'] = feature_dict['input_name']
-                        feature_dict['type'] = 'bogus symbol'
-                        feature_dict['is_new'] = True
-                        self.log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
-                # Fourth, if no feature found, note this in the errors list.
-                else:
-                    self.errors.append(f'"{input_symbol}" NOT in chado')
-                    self.log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
+                self._map_to_bogus_symbol(session, feature_dict)
             self.features.append(feature_dict)
         return
 
@@ -736,7 +858,7 @@ class ComplementationGroup(object):
     def process_cgroup(self, session):
         """Run various ComplementationGroup methods in sequence."""
         self.log.debug(f'Processing cgroup {self.input_cgroup_str}')
-        self._get_feature_info(session)
+        self._identify_feature(session)
         self._get_parental_genes(session)
         self._flag_transgenic_alleles(session)
         self._flag_in_vitro_alleles(session)
