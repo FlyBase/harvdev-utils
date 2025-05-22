@@ -618,50 +618,27 @@ class ComplementationGroup(object):
                     self.log.warning(f'Found MANY parental genes for "{input_symbol}".')
         return
 
-    def _flag_transgenic_alleles(self, session):
-        """Flag transgenic alleles."""
-        # self.log.debug(f'Flag alleles related to constructs for this cgroup: "{self.input_cgroup_str}".')
-        for feature_dict in self.features:
-            if feature_dict['feature_id'] and feature_dict['uniquename'].startswith('FBal'):
-                input_symbol = feature_dict['input_symbol']
-                filters = (
-                    FeatureRelationship.subject_id == feature_dict['feature_id'],
-                    Feature.is_obsolete.is_(False),
-                    Feature.is_analysis.is_(False),
-                    Feature.uniquename.op('~')(FBTP_REGEX),
-                    Cvterm.name == 'associated_with',
-                )
-                results = session.query(Feature).\
-                    select_from(Feature).\
-                    join(FeatureRelationship, (FeatureRelationship.object_id == Feature.feature_id)).\
-                    join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
-                    filter(*filters).\
-                    distinct()
-                for _ in results:
-                    feature_dict['has_constructs'] = True
-            if feature_dict['has_constructs'] is True:
-                self.log.debug(f'Allele "{input_symbol}" has associated constructs.')
-        return
-
     def _flag_in_vitro_alleles(self, session):
         """Flag in vitro alleles."""
         # self.log.debug(f'Flag alleles with "in vitro construct" annotations for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
-            if feature_dict['feature_id'] and feature_dict['uniquename'].startswith('FBal'):
+            # Skip assessment of feature already known to have an associated construct.
+            if feature_dict['at_locus'] is False:
+                continue
+            if feature_dict['input_mapped_feature_id'] and feature_dict['input_uniquename'].startswith('FBal'):
                 input_symbol = feature_dict['input_symbol']
                 filters = (
-                    Feature.uniquename == feature_dict['uniquename'],
+                    FeatureCvterm.feature_id == feature_dict['input_mapped_feature_id'],
                     Cvterm.name == 'in vitro construct',
                 )
                 results = session.query(Cvterm).\
-                    select_from(Feature).\
-                    join(FeatureCvterm, (FeatureCvterm.feature_id == Feature.feature_id)).\
+                    select_from(FeatureCvterm).\
                     join(Cvterm, (Cvterm.cvterm_id == FeatureCvterm.cvterm_id)).\
                     filter(*filters).\
                     distinct()
                 for _ in results:
-                    feature_dict['in_vitro'] = True
-            if feature_dict['in_vitro'] is True:
+                    feature_dict['at_locus'] = False
+            if feature_dict['at_locus'] is True:
                 self.log.debug(f'Allele "{input_symbol}" has "in vitro construct" annotation.')
         return
 
