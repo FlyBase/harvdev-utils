@@ -138,6 +138,21 @@ class GenotypeAnnotation(object):
                     self.features[feature_dict['feature_id']] = feature_dict
         return
 
+    # BOB: TESTING THIS REDUNDANCY REDUCER
+    def _remove_redundant_cgroups(self):
+        """For cgroups that have had allele replacements, assess for redundancy."""
+        transformed_cgroup_descs = {}
+        for cgroup in self.cgroup_list:
+            try:
+                transformed_cgroup_descs[cgroup.cgroup_desc].append(cgroup)
+            except KeyError:
+                transformed_cgroup_descs[cgroup.cgroup_desc] = [cgroup]
+        non_redundant_cgroup_list = []
+        for cgroup_list in transformed_cgroup_descs.values():
+            non_redundant_cgroup_list.append(cgroup_list[0])
+        self.cgroup_list = non_redundant_cgroup_list
+        return
+
     def _check_multi_cgroup_genes(self):
         """Look for genes of "single_cgroup" features in many cgroups."""
         GENE_NAME = 0
@@ -170,6 +185,7 @@ class GenotypeAnnotation(object):
             self.errors.extend(cgroup.errors)
         return
 
+    # bob - problem - I'm uniquefying cgroups of same name (but not doing so elsewhere - not when writing f_g cgroups, not when calculating genotype description)
     def _calculate_genotype_uniquename(self):
         """Calculate the genotype uniquename."""
         if self.errors:
@@ -310,6 +326,7 @@ class GenotypeAnnotation(object):
         """Run various GenotypeAnnotation methods in sequence."""
         self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
         self._parse_cgroups(session)
+        self._remove_redundant_cgroups()
         self._check_multi_cgroup_genes()
         self._propagate_cgroup_notes_and_errors()
         self._calculate_genotype_uniquename()
@@ -350,6 +367,7 @@ class ComplementationGroup(object):
         self.log = log             # From a script using this class.
         self.pub_id = pub_id       # The pub.pub_id to use for disambiguation.
         self.features = []         # Will be dicts with relevant feature info.
+        self.feature_replaced = False    # Change to True if an input allele/construct is converted to an insertion.
         self.rank_dict = {}        # Will be rank-keyed feature dicts.
         self.cgroup_name = None    # Will be "correct" symbol for the cgroup from its components.
         self.cgroup_desc = None    # Will be sorted concatenation of component IDs.
@@ -370,6 +388,7 @@ class ComplementationGroup(object):
                 'input_name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
                 'input_mapped_feature_id': None,                   # The feature_id for the feature that corresponds to the input feature symbol.
                 'input_uniquename': None,                          # The uniquename for the feature that corresponds to the input feature symbol.
+                'input_feature_replaced': False,                   # True if input allele replaced with an insertion.
                 'at_locus': True,                                  # True if the feature can share a cgroup with a classical allele (so False for transgenic).
                 'single_cgroup': True,                             # True if the feature should occupy only one cgroup (False for transgenic and aberrations).
                 'feature_id': None,                                # The feature.feature_id for the component to report.
@@ -453,11 +472,11 @@ class ComplementationGroup(object):
             filters = (
                 construct.feature_id == feature_dict['input_mapped_feature_id'],
                 insertion.is_obsolete.is_(False),
-                insertion.uniquename.op('~')(r'^FBti[0-9]{7}$'),
+                insertion.uniquename.op('~')(FBTI_REGEX),
                 insertion.is_analysis.is_(False),
                 insertion.name.op('~')('unspecified$'),
                 ic_rel_type.name == 'producedby',
-                Pub.uniquename == 'unattributed',    # BOB TBD - replace with real FBrf from .bibl record
+                Pub.uniquename == 'FBrf0262355',
             )
             ins_to_report = session.query(insertion).\
                 select_from(construct).\
@@ -469,6 +488,8 @@ class ComplementationGroup(object):
                 filter(*filters).\
                 one()
             feature_dict['feature_id'] = ins_to_report.feature_id
+            feature_dict['input_feature_replaced'] = True
+            self.feature_replaced = True
             feature_dict['at_locus'] = False
             msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
         # 2. For non-FBal features, just use the initial feature found.
@@ -481,7 +502,7 @@ class ComplementationGroup(object):
         filters = (
             allele.feature_id == initial_feature.feature_id,
             insertion.is_obsolete.is_(False),
-            insertion.uniquename.op('~')(r'^FBti[0-9]{7}$'),
+            insertion.uniquename.op('~')(FBTI_REGEX),
             insertion.is_analysis.is_(False),
             Cvterm.name == 'is_represented_at_alliance_as',
         )
@@ -494,6 +515,8 @@ class ComplementationGroup(object):
             one_or_none()
         if ins_to_report:
             feature_dict['feature_id'] = ins_to_report.feature_id
+            feature_dict['input_feature_replaced'] = True
+            self.feature_replaced = True
             msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
             self.log.debug(msg)
             self.notes.append(msg)
@@ -509,15 +532,15 @@ class ComplementationGroup(object):
         filters = (
             allele.feature_id == initial_feature.feature_id,
             construct.is_obsolete.is_(False),
-            construct.uniquename.op('~')(r'^FBtp[0-9]{7}$'),
+            construct.uniquename.op('~')(FBTP_REGEX),
             construct.is_analysis.is_(False),
             insertion.is_obsolete.is_(False),
-            insertion.uniquename.op('~')(r'^FBti[0-9]{7}$'),
+            insertion.uniquename.op('~')(FBTI_REGEX),
             insertion.is_analysis.is_(False),
             insertion.name.op('~')('unspecified$'),
             ac_rel_type.name == 'associated_with',
             ic_rel_type.name == 'producedby',
-            Pub.uniquename == 'unattributed',    # BOB TBD - replace with real FBrf from .bibl record
+            Pub.uniquename == 'FBrf0262355',
         )
         results = session.query(construct, insertion).\
             select_from(allele).\
@@ -542,6 +565,8 @@ class ComplementationGroup(object):
         elif len(cons_ins_dict.keys()) == 1:
             ins_to_report = list(cons_ins_dict.values())[0]
             feature_dict['feature_id'] = ins_to_report.feature_id
+            feature_dict['input_feature_replaced'] = True
+            self.feature_replaced = True
             feature_dict['at_locus'] = False
             msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
             self.log.debug(msg)
@@ -564,6 +589,8 @@ class ComplementationGroup(object):
                 specific_cons_id = pub_asso_cons_ids[0]
                 ins_to_report = cons_ins_dict[specific_cons_id]
                 feature_dict['feature_id'] = ins_to_report.feature_id
+                feature_dict['input_feature_replaced'] = True
+                self.feature_replaced = True
                 feature_dict['at_locus'] = False
                 msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
                 self.log.debug(msg)
