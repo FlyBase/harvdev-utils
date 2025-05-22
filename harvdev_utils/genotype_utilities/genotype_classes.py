@@ -370,9 +370,10 @@ class ComplementationGroup(object):
                 'input_name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
                 'input_mapped_feature_id': None,                   # The feature_id for the feature that corresponds to the input feature symbol.
                 'input_uniquename': None,                          # The uniquename for the feature that corresponds to the input feature symbol.
-                'at_locus': True,                                  # Change to False for transgenic alleles (which should not be over classical allele ever).
+                'at_locus': True,                                  # True if the feature can share a cgroup with a classical allele (so False for transgenic).
+                'single_cgroup': True,                             # True if the feature should occupy only one cgroup (False for transgenic and aberrations).
                 'feature_id': None,                                # The feature.feature_id for the component to report.
-                'current_symbol': None,                            # The current symbol synonym.synonym_sgml in chado.
+                'current_symbol': None,                            # The current symbol synonym.synonym_sgml (in SGML, Greeks converted to &agr; style).
                 'uniquename': None,                                # The FlyBase ID for the component.
                 'type': None,                                      # The CV term for the feature type.
                 'org_abbr': None,                                  # The organism.abbreviation for the feature.
@@ -380,11 +381,7 @@ class ComplementationGroup(object):
                 'parental_gene_curie': None,                       # The FBgn ID for the parental gene, if the feature is an FBal allele.
                 'parental_gene_name': None,                        # The feature.name for the parental gene.
                 'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
-                'has_constructs': False,                           # True if allele has related FBtp.
-                'in_vitro': False,                                 # True if allele has "in vitro construct" annotation.
-                'binary_driver': False,                            # True if allele is a binary driver.
                 'misexpression_element': False,                    # True if allele is a misexpression element.
-                'single_cgroup': True,                             # False if the component can be present in many cgroups.
             }
             filters = (
                 Feature.is_obsolete.is_(False),
@@ -447,11 +444,38 @@ class ComplementationGroup(object):
         """Map the input feature to one that should be used for Alliance export."""
         feature_dict['input_mapped_feature_id'] = initial_feature.feature_id
         feature_dict['input_uniquename'] = initial_feature.uniquename
-        # For non-FBal features, just use the initial feature found.
-        if not initial_feature.uniquename.startswith('FBal'):
+        # 1. Convert FBtp to associated insertion.
+        if initial_feature.uniquename.startswith('FBtp'):
+            construct = aliased(Feature, name='construct')
+            insertion = aliased(Feature, name='insertion')
+            ic_rel_type = aliased(Cvterm, name='ic_rel_type')
+            ic_rel = aliased(FeatureRelationship, name='ic_rel')
+            filters = (
+                construct.feature_id == feature_dict['input_mapped_feature_id'],
+                insertion.is_obsolete.is_(False),
+                insertion.uniquename.op('~')(r'^FBti[0-9]{7}$'),
+                insertion.is_analysis.is_(False),
+                insertion.name.op('~')('unspecified$'),
+                ic_rel_type.name == 'producedby',
+                Pub.uniquename == 'unattributed',    # BOB TBD - replace with real FBrf from .bibl record
+            )
+            ins_to_report = session.query(insertion).\
+                select_from(construct).\
+                join(ic_rel, (ic_rel.object_id == construct.feature_id)).\
+                join(insertion, (insertion.feature_id == ic_rel.subject_id)).\
+                join(ic_rel_type, (ic_rel_type.cvterm_id == ic_rel.type_id)).\
+                join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == ic_rel.feature_relationship_id)).\
+                join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
+                filter(*filters).\
+                one()
+            feature_dict['feature_id'] = ins_to_report.feature_id
+            feature_dict['at_locus'] = False
+            msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+        # 2. For non-FBal features, just use the initial feature found.
+        elif not initial_feature.uniquename.startswith('FBal'):
             feature_dict['feature_id'] = initial_feature.feature_id
             return
-        # 1. For an FBal feature, look for an at-locus insertion.
+        # 3. For an FBal feature, look for an at-locus insertion.
         allele = aliased(Feature, name='allele')
         insertion = aliased(Feature, name='insertion')
         filters = (
@@ -474,7 +498,7 @@ class ComplementationGroup(object):
             self.log.debug(msg)
             self.notes.append(msg)
             return
-        # 2. For an FBal feature, look for a single unspecified insertion for an associated construct.
+        # 4. For an FBal feature, look for a single unspecified insertion for an associated construct.
         allele = aliased(Feature, name='allele')
         construct = aliased(Feature, name='construct')
         insertion = aliased(Feature, name='insertion')
@@ -510,11 +534,11 @@ class ComplementationGroup(object):
         cons_ins_dict = {}
         for result in results:
             cons_ins_dict[result.construct.feature_id] = result.insertion
-        # 2a. If no construct-associated insertions, report the original allele.
+        # 4a. If no construct-associated insertions, report the original allele.
         if len(cons_ins_dict.keys()) == 0:
             feature_dict['feature_id'] = initial_feature.feature_id
             return
-        # 2b. If a single construct-associated insertion, report that insertion.
+        # 4b. If a single construct-associated insertion, report that insertion.
         elif len(cons_ins_dict.keys()) == 1:
             ins_to_report = list(cons_ins_dict.values())[0]
             feature_dict['feature_id'] = ins_to_report.feature_id
@@ -535,7 +559,7 @@ class ComplementationGroup(object):
                 filter(*filters).\
                 distinct()
             pub_asso_cons_ids = [i.feature_id for i in pub_asso_cons]
-            # 2c. If a single construct associated with the pub, report that insertion.
+            # 4c. If a single construct associated with the pub, report that insertion.
             if len(pub_asso_cons_ids) == 1:
                 specific_cons_id = pub_asso_cons_ids[0]
                 ins_to_report = cons_ins_dict[specific_cons_id]
@@ -545,7 +569,7 @@ class ComplementationGroup(object):
                 self.log.debug(msg)
                 self.notes.append(msg)
                 return
-            # 2d. Do not map if there are many allele-associated constructs for the given pub.
+            # 4d. Do not map if there are many allele-associated constructs for the given pub.
             else:
                 msg = f'{initial_feature.name} ({initial_feature.uniquename}) has ambiguous mapping to many constructs'
                 self.log.debug(msg)
@@ -642,29 +666,6 @@ class ComplementationGroup(object):
                 self.log.debug(f'Allele "{input_symbol}" has "in vitro construct" annotation.')
         return
 
-    def _flag_binary_drivers(self, session):
-        """Flag drivers, like GAL4."""
-        # self.log.debug(f'Flag drivers, like GAL4, for this cgroup: "{self.input_cgroup_str}".')
-        for feature_dict in self.features:
-            if feature_dict['uniquename'] and feature_dict['uniquename'].startswith('FBal'):
-                if not feature_dict['parental_gene_feature_id']:
-                    continue
-                input_symbol = feature_dict['input_symbol']
-                filters = (
-                    FeatureCvterm.feature_id == feature_dict['parental_gene_feature_id'],
-                    Cvterm.name.op('~')(r'^binary expression system.+driver$'),
-                )
-                results = session.query(Cvterm).\
-                    select_from(FeatureCvterm).\
-                    join(Cvterm, Cvterm.cvterm_id == FeatureCvterm.cvterm_id).\
-                    filter(*filters).\
-                    distinct()
-                for _ in results:
-                    feature_dict['binary_driver'] = True
-            if feature_dict['binary_driver'] is True:
-                self.log.debug(f'Allele "{input_symbol}" is a binary driver.')
-        return
-
     def _flag_misexpression_elements(self, session):
         """Flag misexpression alleles."""
         # self.log.debug(f'Flag misexpression alleles for this cgroup: "{self.input_cgroup_str}".')
@@ -720,19 +721,10 @@ class ComplementationGroup(object):
             if not feature_dict['uniquename']:
                 continue
             input_symbol = feature_dict['input_symbol']
-            if feature_dict['type'] in ['transgenic_transposable_element', 'chromosome_structure_variation']:
+            if feature_dict['type'] == 'chromosome_structure_variation':
                 feature_dict['single_cgroup'] = False
-            elif feature_dict['type'] == 'allele':
-                if feature_dict['org_abbr'] != 'Dmel':
-                    feature_dict['single_cgroup'] = False
-                elif feature_dict['has_constructs'] is True:
-                    feature_dict['single_cgroup'] = False
-                elif feature_dict['in_vitro'] is True:
-                    feature_dict['single_cgroup'] = False
-                elif feature_dict['binary_driver'] is True:
-                    feature_dict['single_cgroup'] = False
-                elif feature_dict['misexpression_element'] is True:
-                    feature_dict['single_cgroup'] = False
+            elif feature_dict['at_locus'] is False:
+                feature_dict['single_cgroup'] = False
             if feature_dict['single_cgroup'] is False:
                 self.log.debug(f'"{input_symbol}" is allowed to occupy many complementation groups.')
         return
@@ -762,14 +754,14 @@ class ComplementationGroup(object):
 
     def _check_cgroup_for_mix_of_classical_and_transgenic_alleles(self):
         """Check that a cgroup does not mix classical and transgenic alleles."""
-        single_cgroup_allele = False
-        multi_cgroup_allele = False
+        at_locus = False
+        not_at_locus = False
         for feature_dict in self.features:
-            if feature_dict['feature_id'] and feature_dict['single_cgroup'] is True:
-                single_cgroup_allele = True
-            elif feature_dict['single_cgroup'] is False and feature_dict['type'] == 'allele':
-                multi_cgroup_allele = True
-        if single_cgroup_allele is True and multi_cgroup_allele is True:
+            if feature_dict['feature_id'] and feature_dict['at_locus'] is True:
+                at_locus = True
+            elif feature_dict['feature_id'] and feature_dict['at_locus'] is False:
+                not_at_locus = True
+        if at_locus is True and not_at_locus is True:
             self.errors.append(f'For "{self.input_cgroup_str}", have a mix of classical and transgenic alleles.')
             self.log.error('Locus contains a mix of classical and transgenic alleles.')
         return
@@ -795,9 +787,8 @@ class ComplementationGroup(object):
                     bogus_symbol_gene_name = feature_dict['input_name'].replace('[+]', '')
                 elif feature_dict['input_name'].endswith('[-]'):
                     bogus_symbol_gene_name = feature_dict['input_name'].replace('[-]', '')
-            elif feature_dict['feature_id'] and feature_dict['type'] == 'allele':
-                if feature_dict['parental_gene_feature_id']:
-                    allele_gene_name = feature_dict['parental_gene_name']
+            elif feature_dict['feature_id'] and feature_dict['parental_gene_feature_id']:
+                allele_gene_name = feature_dict['parental_gene_name']
         if allele_gene_name and bogus_symbol_gene_name and allele_gene_name != bogus_symbol_gene_name:
             self.errors.append(f'For "{self.input_cgroup_str}", bogus symbol does not match paired allele')
             self.log.error('Bogus symbol does not match paired allele.')
@@ -850,9 +841,7 @@ class ComplementationGroup(object):
         self.log.debug(f'Processing cgroup {self.input_cgroup_str}')
         self._identify_feature(session)
         self._get_parental_genes(session)
-        self._flag_transgenic_alleles(session)
         self._flag_in_vitro_alleles(session)
-        self._flag_binary_drivers(session)
         self._flag_misexpression_elements(session)
         self._assess_single_group_alleles()
         self._check_cgroup_feature_count()
