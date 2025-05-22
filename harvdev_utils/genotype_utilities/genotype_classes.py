@@ -138,7 +138,14 @@ class GenotypeAnnotation(object):
                     self.features[feature_dict['feature_id']] = feature_dict
         return
 
-    # BOB: TESTING THIS REDUNDANCY REDUCER
+    def _propagate_cgroup_notes_and_errors(self):
+        """Propagate cgroup notes and errors up to the genotype."""
+        for cgroup in self.cgroup_list:
+            self.notes.extend(cgroup.notes)
+            self.errors.extend(cgroup.errors)
+        return
+
+    # BOB: TESTING THIS REDUNDANCY REDUCER ON FBti unspecified
     def _remove_redundant_cgroups(self):
         """For cgroups that have had allele replacements, assess for redundancy."""
         transformed_cgroup_descs = {}
@@ -152,6 +159,11 @@ class GenotypeAnnotation(object):
             non_redundant_cgroup_list.append(cgroup_list[0])
         self.cgroup_list = non_redundant_cgroup_list
         return
+
+    # BOB: MUST UPDATE flysql27 protein2go to attribute FBal-FBtp-FBti unspecified to new pub FBrf0262355
+    # BOB: Otherwise, mapping to FBti unspecified won't work now.
+
+    # BOB: new method for moving lone insertion into cgroup across classical allele.
 
     def _check_multi_cgroup_genes(self):
         """Look for genes of "single_cgroup" features in many cgroups."""
@@ -176,13 +188,6 @@ class GenotypeAnnotation(object):
                 msg += f'are listed in {count} different cgroups'
                 self.log.error(msg)
                 self.errors.append(msg)
-        return
-
-    def _propagate_cgroup_notes_and_errors(self):
-        """Propagate cgroup notes and errors up to the genotype."""
-        for cgroup in self.cgroup_list:
-            self.notes.extend(cgroup.notes)
-            self.errors.extend(cgroup.errors)
         return
 
     # bob - problem - I'm uniquefying cgroups of same name (but not doing so elsewhere - not when writing f_g cgroups, not when calculating genotype description)
