@@ -326,9 +326,9 @@ class GenotypeAnnotation(object):
         """Run various GenotypeAnnotation methods in sequence."""
         self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
         self._parse_cgroups(session)
+        self._propagate_cgroup_notes_and_errors()
         self._remove_redundant_cgroups()
         self._check_multi_cgroup_genes()
-        self._propagate_cgroup_notes_and_errors()
         self._calculate_genotype_uniquename()
         self._calculate_genotype_desc()
         self.log.debug('Done initial parsing of genotype.\n\n\n')
