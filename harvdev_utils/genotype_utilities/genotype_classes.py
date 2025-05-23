@@ -194,7 +194,6 @@ class GenotypeAnnotation(object):
         """Look for FBti cgroups that can be combined with another cgroup."""
         if self.errors:
             return
-        # BOB. If lone FBti can move to a single cgroup occupied by only one classical allele, move it (can replace a bogus symbol?)
         cgroup_desc_dict = {}    # cgroup_desc-keyed cgroups
         receptor_cgroups = {}    # keys are cgroups of single classical allele with open cgroup slot: each value a list of compatible donor cgroups
         donor_cgroups = {}       # keys are cgroups with single FBti that might get moved to another cgroup: each value a list of compatible receptor cgroups
@@ -202,13 +201,20 @@ class GenotypeAnnotation(object):
         new_cgroup_list = []
         # 1. Check for potential donor cgroups (must be a single at-locus FBti, not assigned to a Dros gene by curation).
         for cgroup in self.cgroup_list:
+            self.log.debug(f'Assess cgroup {cgroup.cgroup_desc}')
             if cgroup.at_locus is False or cgroup.gene_locus_id or 'FBti' not in cgroup.cgroup_desc:
+                self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential donor.')
                 continue
-            public_feature_ids = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
+            else:
+                self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential donor.')
+            public_uniquenames = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
+            self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with only one FBti in the cgroup (ignore bogus symbols).
-            if len(public_feature_ids) == 1:
+            if len(public_uniquenames) == 1:
                 donor_cgroups[cgroup.cgroup_desc] = []
+                self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential donor.')
         if not donor_cgroups:
+            self.log.debug('Found no donor cgroups.')
             return
         # 2. Check for potential receptor cgroups (must have been assigned to a Dros gene by curation of FBal classical/insertion allele).
         for cgroup in self.cgroup_list:
