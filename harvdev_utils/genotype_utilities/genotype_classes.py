@@ -201,7 +201,7 @@ class GenotypeAnnotation(object):
         new_cgroup_list = []
         # 1. Check for potential donor cgroups (must be a single at-locus FBti, not assigned to a Dros gene by curation).
         for cgroup in self.cgroup_list:
-            self.log.debug(f'Assess cgroup {cgroup.cgroup_desc}')
+            self.log.debug(f'Assess donor-potential of cgroup {cgroup.cgroup_desc}')
             if cgroup.at_locus is False or cgroup.gene_locus_id or 'FBti' not in cgroup.cgroup_desc:
                 self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential donor.')
                 continue
@@ -218,13 +218,18 @@ class GenotypeAnnotation(object):
             return
         # 2. Check for potential receptor cgroups (must have been assigned to a Dros gene by curation of FBal classical/insertion allele).
         for cgroup in self.cgroup_list:
+            self.log.debug(f'Assess donor-potential of cgroup {cgroup.cgroup_desc}')
             if cgroup.at_locus is False or cgroup.gene_locus_id is None:
+                self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential acceptor.')
                 continue
             public_feature_ids = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
+            self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with an open spot (ignore bogus symbols).
             if len(public_feature_ids) == 1:
                 receptor_cgroups[cgroup.cgroup_desc] = []
+                self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential acceptor.')
         if not receptor_cgroups:
+            self.log.debug('Found no acceptor cgroups.')
             return
         # 3. Look for compatible donor/acceptor cgroups: the two sets should be non-overlapping.
         # First make a cgroup_desc-keyed dict of cgroups.
