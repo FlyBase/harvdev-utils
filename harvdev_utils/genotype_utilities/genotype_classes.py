@@ -161,6 +161,9 @@ class GenotypeAnnotation(object):
 
     # BOB: new method for moving lone insertion into cgroup across classical allele.
     def _reassign_insertions_to_classical_cgroups(self, session):
+        # 1. If lone FBti already in another at locus cgroup - delete it - it is redundant
+        # e.g. "CG13102[07717] Df(2L)Exel6021/Rcd-1r[07717]"
+        # 2. If lone FBti can move to a single cgroup occupied by only one classical allele, move it (can replace a bogus symbol?)
         return
 
     def _check_multi_cgroup_genes(self):
@@ -439,7 +442,7 @@ class ComplementationGroup(object):
                     join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
                     filter(*filters).\
                     one()
-                feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
+                feature_dict['current_symbol'] = feature_dict['input_name'].replace('<up>', '[').replace('</up>', ']')
                 feature_dict['feature_id'] = component_result.feature_id
                 feature_dict['uniquename'] = component_result.uniquename
                 feature_dict['type'] = 'bogus symbol'
@@ -452,7 +455,7 @@ class ComplementationGroup(object):
                     org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
                 name_to_use = feature_dict['input_name']
                 bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=name_to_use, uniquename=input_symbol)
-                feature_dict['current_symbol'] = feature_dict['input_name'].replace('[', '<up>').replace(']', '</up>')
+                feature_dict['current_symbol'] = feature_dict['input_name'].replace('<up>', '[').replace('</up>', ']')
                 feature_dict['feature_id'] = bogus_feature.feature_id
                 feature_dict['uniquename'] = feature_dict['input_name']
                 feature_dict['type'] = 'bogus symbol'
