@@ -306,7 +306,8 @@ class GenotypeAnnotation(object):
             filter(*filters).\
             distinct()
         for result in results:
-            fbgn_id_list.append(gene.uniquename)
+            self.log.debug(f'Found this gene: {result.uniquename}')
+            fbgn_id_list.append(result.uniquename)
         return fbgn_id_list
 
     def _check_multi_cgroup_genes(self):
