@@ -479,26 +479,26 @@ class ComplementationGroup(object):
             self.log.debug(f'BOB: Assess FBtp for unspecified insertion.')
             construct = aliased(Feature, name='construct')
             insertion = aliased(Feature, name='insertion')
-            ic_rel_type = aliased(Cvterm, name='ic_rel_type')
-            ic_rel = aliased(FeatureRelationship, name='ic_rel')
             filters = (
                 construct.feature_id == feature_dict['input_mapped_feature_id'],
                 insertion.is_obsolete.is_(False),
                 insertion.uniquename.op('~')(FBTI_REGEX),
                 insertion.is_analysis.is_(False),
                 insertion.name.op('~')('unspecified$'),
-                ic_rel_type.name == 'producedby',
+                Cvterm.name == 'producedby',
                 Pub.uniquename == 'FBrf0262355',
             )
             ins_to_report = session.query(insertion).\
                 select_from(construct).\
-                join(ic_rel, (ic_rel.object_id == construct.feature_id)).\
-                join(insertion, (insertion.feature_id == ic_rel.subject_id)).\
-                join(ic_rel_type, (ic_rel_type.cvterm_id == ic_rel.type_id)).\
-                join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == ic_rel.feature_relationship_id)).\
+                join(FeatureRelationship, (FeatureRelationship.object_id == construct.feature_id)).\
+                join(insertion, (insertion.feature_id == FeatureRelationship.subject_id)).\
+                join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
+                join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == FeatureRelationship.feature_relationship_id)).\
                 join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
                 filter(*filters).\
                 one()
+            self.log.debug('BOB: DID IF FIND AN INSERTION?')
+            self.log.debug(f'"{feature_dict['input_uniquename']}" maps to "{ins_to_report.uniquename}"')
             feature_dict['feature_id'] = ins_to_report.feature_id
             feature_dict['input_feature_replaced'] = True
             self.feature_replaced = True
