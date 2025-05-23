@@ -25,6 +25,7 @@ Notes:
 
 """
 
+import re
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from collections import defaultdict
@@ -159,6 +160,24 @@ class GenotypeAnnotation(object):
         self.cgroup_list = non_redundant_cgroup_list
         return
 
+    # BOB - method for removing less informative FBti cgroups
+    def _remove_less_informative_cgroups(self):
+        """Remove FBti-containing cgroups if more informative cgroups exist."""
+        cgroup_descs = [i.cgroup_desc for i in self.cgroup_list if i.cgroup_desc]
+        for this_cgroup in self.cgroup_list:
+            # Assess only cgroups representing a single FBti insertion.
+            if re.match(FBTI_REGEX, this_cgroup.cgroup_desc):
+                more_informative_cgroup_exists = False
+                for other_desc in cgroup_descs:
+                    if this_cgroup.cgroup_desc in other_desc and this_cgroup.cgroup_desc != other_desc:
+                        msg = f'cgroup "{this_cgroup.cgroup_desc}" is less informative than other cgroup "{other_desc}"'
+                        self.notes.append(msg)
+                        self.log.debug(msg)
+                        more_informative_cgroup_exists = True
+                if more_informative_cgroup_exists is True:
+                    self.cgroup_list.pop(this_cgroup)
+        return
+
     # BOB: new method for moving lone insertion into cgroup across classical allele.
     def _reassign_insertions_to_classical_cgroups(self, session):
         # 1. If lone FBti already in another at locus cgroup - delete it - it is redundant
@@ -175,7 +194,7 @@ class GenotypeAnnotation(object):
             cgroup_genes = {
                 (feature_dict['parental_gene_name'], feature_dict['parental_gene_uniquename'])
                 for feature_dict in cgroup.features
-                if feature_dict['single_cgroup'] and feature_dict['parental_gene_feature_id']
+                if feature_dict['at_locus'] and feature_dict['parental_gene_feature_id']
             }
             for cgroup_gene in cgroup_genes:
                 try:
@@ -332,6 +351,7 @@ class GenotypeAnnotation(object):
         self.log.debug(f'Processing input genotype {self.input_genotype_name}.')
         self._parse_cgroups(session)
         self._propagate_cgroup_notes_and_errors()
+        self._remove_less_informative_cgroups()
         self._remove_redundant_cgroups()
         self._reassign_insertions_to_classical_cgroups(session)
         self._check_multi_cgroup_genes()
@@ -652,7 +672,7 @@ class ComplementationGroup(object):
             if not feature_dict['feature_id']:
                 continue
             input_symbol = feature_dict['input_symbol']
-            if feature_dict['input_uniquename'].startswith('FBal'):
+            if feature_dict['input_uniquename'] and feature_dict['input_uniquename'].startswith('FBal'):
                 try:
                     filters = (
                         FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
@@ -692,7 +712,7 @@ class ComplementationGroup(object):
             # Skip assessment of feature already known to have an associated construct.
             if feature_dict['at_locus'] is False:
                 continue
-            if feature_dict['input_uniquename'].startswith('FBal'):
+            if feature_dict['input_uniquename'] and feature_dict['input_uniquename'].startswith('FBal'):
                 filters = (
                     FeatureCvterm.feature_id == feature_dict['input_mapped_feature_id'],
                     Cvterm.name == 'in vitro construct',
@@ -715,7 +735,7 @@ class ComplementationGroup(object):
             if not feature_dict['feature_id']:
                 continue
             input_symbol = feature_dict['input_symbol']
-            if feature_dict['input_uniquename'].startswith('FBal'):
+            if feature_dict['input_uniquename'] and feature_dict['input_uniquename'].startswith('FBal'):
                 allele_feature = aliased(Feature, name='allele_feature')
                 construct_feature = aliased(Feature, name='construct_feature')
                 insertion_feature = aliased(Feature, name='insertion_feature')
