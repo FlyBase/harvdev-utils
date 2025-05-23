@@ -504,6 +504,9 @@ class ComplementationGroup(object):
             self.feature_replaced = True
             feature_dict['at_locus'] = False
             msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
+            self.log.debug(msg)
+            self.notes.append(msg)
+            return
         # 2. For non-FBal features, just use the initial feature found.
         elif not initial_feature.uniquename.startswith('FBal'):
             feature_dict['feature_id'] = initial_feature.feature_id
