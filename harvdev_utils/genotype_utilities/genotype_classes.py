@@ -41,6 +41,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml
 
 # Regex patterns as constants (easier to maintain/change if needed)
 FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'
+FBAL_REGEX = r'^FBal[0-9]{7}$'
 FBGO_REGEX = r'^FBgo[0-9]{7}$'
 FBTP_REGEX = r'^FBtp[0-9]{7}$'
 FBTI_REGEX = r'^FBti[0-9]{7}$'
@@ -148,6 +149,8 @@ class GenotypeAnnotation(object):
 
     def _remove_redundant_cgroups(self):
         """For cgroups that have had allele replacements, assess for redundancy."""
+        if self.errors:
+            return
         transformed_cgroup_descs = {}
         for cgroup in self.cgroup_list:
             try:
@@ -160,9 +163,10 @@ class GenotypeAnnotation(object):
         self.cgroup_list = non_redundant_cgroup_list
         return
 
-    # BOB - method for removing less informative FBti cgroups
     def _remove_less_informative_cgroups(self):
         """Remove FBti-containing cgroups if more informative cgroups exist."""
+        if self.errors:
+            return
         cgroup_descs = [i.cgroup_desc for i in self.cgroup_list if i.cgroup_desc]
         new_cgroup_list = []
         for this_cgroup in self.cgroup_list:
@@ -186,12 +190,108 @@ class GenotypeAnnotation(object):
         self.cgroup_list = new_cgroup_list
         return
 
-    # BOB: new method for moving lone insertion into cgroup across classical allele.
     def _reassign_insertions_to_classical_cgroups(self, session):
-        # 1. If lone FBti already in another at locus cgroup - delete it - it is redundant
-        # e.g. "CG13102[07717] Df(2L)Exel6021/Rcd-1r[07717]"
-        # 2. If lone FBti can move to a single cgroup occupied by only one classical allele, move it (can replace a bogus symbol?)
+        """Look for FBti cgroups that can be combined with another cgroup."""
+        if self.errors:
+            return
+        # BOB. If lone FBti can move to a single cgroup occupied by only one classical allele, move it (can replace a bogus symbol?)
+        cgroup_desc_dict = {}    # cgroup_desc-keyed cgroups
+        receptor_cgroups = {}    # keys are cgroups of single classical allele with open cgroup slot: each value a list of compatible donor cgroups
+        donor_cgroups = {}       # keys are cgroups with single FBti that might get moved to another cgroup: each value a list of compatible receptor cgroups
+        final_matches = {}       # A 1:1 donor-receptor match (using cgroup descs).
+        new_cgroup_list = []
+        # 1. Check for potential donor cgroups (must be a single at-locus FBti, not assigned to a Dros gene by curation).
+        for cgroup in self.cgroup_list:
+            if cgroup.at_locus is False or cgroup.gene_locus_id or 'FBti' not in cgroup.cgroup_desc:
+                continue
+            public_feature_ids = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
+            # Must be a cgroup with only one FBti in the cgroup (ignore bogus symbols).
+            if len(public_feature_ids) == 1:
+                donor_cgroups[cgroup.cgroup_desc] = []
+        if not donor_cgroups:
+            return
+        # 2. Check for potential receptor cgroups (must have been assigned to a Dros gene by curation of FBal classical/insertion allele).
+        for cgroup in self.cgroup_list:
+            if cgroup.at_locus is False or cgroup.gene_locus_id is None:
+                continue
+            public_feature_ids = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
+            # Must be a cgroup with an open spot (ignore bogus symbols).
+            if len(public_feature_ids) == 1:
+                receptor_cgroups[cgroup.cgroup_desc] = []
+        if not receptor_cgroups:
+            return
+        # 3. Look for compatible donor/acceptor cgroups: the two sets should be non-overlapping.
+        # First make a cgroup_desc-keyed dict of cgroups.
+        for cgroup in self.cgroup_lists:
+            cgroup_desc_dict[cgroup.cgroup_desc] = cgroup
+        for donor_desc in donor_cgroups.keys():
+            donor = cgroup_desc_dict[donor_desc]
+            public_feature_ids = [i['feature_id'] for i in donor.features if i['feature_id'] and i['uniquename'].startswith('FBti')]
+            compatible_fbgn_ids = self._find_possible_genes_for_insertion(session, public_feature_ids[0])
+            for receptor_desc in receptor_cgroups.keys():
+                receptor = receptor_cgroups[receptor_desc]
+                if receptor.gene_locus_id in compatible_fbgn_ids:
+                    donor_cgroups[donor_desc].append(receptor_desc)
+                    receptor_cgroups[receptor_desc].append(donor_desc)
+                    msg = f'{donor_desc} can be combined with {receptor_desc} representing {receptor.gene_locus_id} locus'
+                    self.notes.append(msg)
+                    self.log.debug(msg)
+        # 4. Find one-to-one donor/receptor pairs (ignore cases of many-to-one or many-to-many).
+        for donor_desc, receptor_list in donor_cgroups.items():
+            if len(receptor_list) == 1:
+                receptor_desc = receptor_list[0]
+                if donor_desc in receptor_cgroups[receptor_desc] and len(receptor_cgroups[receptor_desc]) == 1:
+                    final_matches[donor_desc] = receptor_desc
+        # 5. Move non-donor/receptor cgroups to the final list.
+        cgroups_to_edit = list(final_matches.keys())
+        cgroups_to_edit.extend(list(final_matches.values()))
+        for cgroup in self.cgroup_list:
+            if cgroup.cgroup_desc not in cgroups_to_edit:
+                new_cgroup_list.append(cgroup)
+        # 6. Combine the donor/receptor pairs and add them to the final list of cgroups.
+        for donor_desc, receptor_desc in final_matches.items():
+            donor_cgroup = cgroup_desc_dict[donor_desc]
+            donor_symbol = [i['input_symbol'] for i in donor_cgroup if i['uniquename'].startswith('FBti')][0]
+            receptor_cgroup = cgroup_desc_dict[receptor_desc]
+            receptor_symbol = [i['input_symbol'] for i in receptor_cgroup if i['uniquename'] and i['type'] != 'bogus symbol'][0]
+            new_input_cgroup_symbol = f'{donor_symbol}/{receptor_symbol}'
+            new_cgroup = ComplementationGroup(new_input_cgroup_symbol, self.log, self.pub_id)
+            new_cgroup_list.append(new_cgroup)
+        self.cgroup_list = new_cgroup_list
         return
+
+    def _find_possible_genes_for_insertion(self, session, insertion_feature_id):
+        """Find possible Dros genes for an at-locus FBti insertion via alleles."""
+        fbgn_id_list = []
+        gene = aliased(Feature, name='gene')
+        allele = aliased(Feature, name='allele')
+        ag_rel = aliased(FeatureRelationship, name='ag_rel')
+        ai_rel = aliased(FeatureRelationship, name='ai_rel')
+        ag_rel_type = aliased(Cvterm, name='ag_rel_type')
+        ai_rel_type = aliased(Cvterm, name='ai_rel_type')
+        filters = (
+            ai_rel.object_id == insertion_feature_id,
+            allele.is_obsolete.is_(False),
+            allele.uniquename.op('~')(FBAL_REGEX),
+            gene.is_obsolete.is_(False),
+            gene.uniquename.op('~')(FBGN_REGEX),
+            ai_rel_type.name == 'associated_with',
+            ag_rel_type.name == 'alleleof',
+            Organismprop.value == 'drosophilid',
+        )
+        results = session.query(gene).\
+            select_from(gene).\
+            join(Organismprop, (Organismprop.organism_id == gene.organism_id)).\
+            join(ag_rel, (ag_rel.object_id == gene.feature_id)).\
+            join(ag_rel_type, (ag_rel_type.cvterm_id == ag_rel.type_id)).\
+            join(allele, (allele.feature_id == ag_rel.subject_id)).\
+            join(ai_rel, (ai_rel.subject_id == allele.feature_id)).\
+            join(ai_rel_type, (ai_rel_type.cvterm_id == ai_rel.type_id)).\
+            filter(*filters).\
+            distinct()
+        for result in results:
+            fbgn_id_list.append(gene.uniquename)
+        return fbgn_id_list
 
     def _check_multi_cgroup_genes(self):
         """Look for genes of "single_cgroup" features in many cgroups."""
@@ -402,6 +502,7 @@ class ComplementationGroup(object):
         self.pub_id = pub_id             # The pub.pub_id to use for disambiguation.
         self.features = []               # Will be dicts with relevant feature info.
         self.feature_replaced = False    # Change to True if an input allele/construct is converted to an insertion.
+        self.at_locus = False            # Change to True if there are at_locus features present.
         self.rank_dict = {}              # Will be rank-keyed feature dicts.
         self.cgroup_name = None          # Will be "correct" symbol for the cgroup from its components.
         self.cgroup_desc = None          # Will be sorted concatenation of component IDs.
@@ -432,7 +533,7 @@ class ComplementationGroup(object):
                 'type': None,                                      # The CV term for the feature type.
                 'org_abbr': None,                                  # The organism.abbreviation for the feature.
                 'parental_gene_feature_id': None,                  # The feature.feature_id for the parental gene, if the feature is an FBal allele.
-                'parental_gene_uniquename': None,                       # The FBgn ID for the parental gene, if the feature is an FBal allele.
+                'parental_gene_uniquename': None,                  # The FBgn ID for the parental gene, if the feature is an FBal allele.
                 'parental_gene_name': None,                        # The feature.name for the parental gene.
                 'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
                 'misexpression_element': False,                    # True if allele is a misexpression element.
@@ -677,10 +778,10 @@ class ComplementationGroup(object):
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
-            if not feature_dict['feature_id']:
+            if not feature_dict['input_uniquename']:
                 continue
             input_symbol = feature_dict['input_symbol']
-            if feature_dict['input_uniquename'] and feature_dict['input_uniquename'].startswith('FBal'):
+            if feature_dict['at_locus'] and feature_dict['input_uniquename'].startswith('FBal'):
                 try:
                     filters = (
                         FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
@@ -820,7 +921,7 @@ class ComplementationGroup(object):
         cgroup_parental_genes = set(cgroup_parental_genes)
         if len(cgroup_parental_genes) > 1:
             self.gene_locus_id = None
-            self.errors.append(f'For "{self.input_cgroup_str}", alleles of many different genes share a cgroup.')
+            self.errors.append(f'For "{self.input_cgroup_str}", classical alleles of many different genes share a cgroup.')
             self.log.error('Alleles of many different genes share a cgroup.')
         return
 
@@ -836,6 +937,8 @@ class ComplementationGroup(object):
         if at_locus is True and not_at_locus is True:
             self.errors.append(f'For "{self.input_cgroup_str}", have a mix of classical and transgenic alleles.')
             self.log.error('Locus contains a mix of classical and transgenic alleles.')
+        elif at_locus is True:
+            self.at_locus = True
         return
 
     def _check_cgroup_bogus_symbol_count(self):
