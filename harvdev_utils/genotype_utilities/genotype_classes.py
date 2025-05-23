@@ -145,7 +145,6 @@ class GenotypeAnnotation(object):
             self.errors.extend(cgroup.errors)
         return
 
-    # BOB: TESTING THIS REDUNDANCY REDUCER ON FBti unspecified
     def _remove_redundant_cgroups(self):
         """For cgroups that have had allele replacements, assess for redundancy."""
         transformed_cgroup_descs = {}
@@ -160,10 +159,9 @@ class GenotypeAnnotation(object):
         self.cgroup_list = non_redundant_cgroup_list
         return
 
-    # BOB: MUST UPDATE flysql27 protein2go to attribute FBal-FBtp-FBti unspecified to new pub FBrf0262355
-    # BOB: Otherwise, mapping to FBti unspecified won't work now.
-
     # BOB: new method for moving lone insertion into cgroup across classical allele.
+    def _reassign_insertions_to_classical_cgroups(self, session):
+        return
 
     def _check_multi_cgroup_genes(self):
         """Look for genes of "single_cgroup" features in many cgroups."""
@@ -172,7 +170,7 @@ class GenotypeAnnotation(object):
         gene_cgroup_counter = {}
         for cgroup in self.cgroup_list:
             cgroup_genes = {
-                (feature_dict['parental_gene_name'], feature_dict['parental_gene_curie'])
+                (feature_dict['parental_gene_name'], feature_dict['parental_gene_uniquename'])
                 for feature_dict in cgroup.features
                 if feature_dict['single_cgroup'] and feature_dict['parental_gene_feature_id']
             }
@@ -190,7 +188,6 @@ class GenotypeAnnotation(object):
                 self.errors.append(msg)
         return
 
-    # bob - problem - I'm uniquefying cgroups of same name (but not doing so elsewhere - not when writing f_g cgroups, not when calculating genotype description)
     def _calculate_genotype_uniquename(self):
         """Calculate the genotype uniquename."""
         if self.errors:
@@ -333,6 +330,7 @@ class GenotypeAnnotation(object):
         self._parse_cgroups(session)
         self._propagate_cgroup_notes_and_errors()
         self._remove_redundant_cgroups()
+        self._reassign_insertions_to_classical_cgroups()
         self._check_multi_cgroup_genes()
         self._calculate_genotype_uniquename()
         self._calculate_genotype_desc()
@@ -369,15 +367,16 @@ class ComplementationGroup(object):
 
         """
         self.input_cgroup_str = input_cgroup_str
-        self.log = log             # From a script using this class.
-        self.pub_id = pub_id       # The pub.pub_id to use for disambiguation.
-        self.features = []         # Will be dicts with relevant feature info.
+        self.log = log                   # From a script using this class.
+        self.pub_id = pub_id             # The pub.pub_id to use for disambiguation.
+        self.features = []               # Will be dicts with relevant feature info.
         self.feature_replaced = False    # Change to True if an input allele/construct is converted to an insertion.
-        self.rank_dict = {}        # Will be rank-keyed feature dicts.
-        self.cgroup_name = None    # Will be "correct" symbol for the cgroup from its components.
-        self.cgroup_desc = None    # Will be sorted concatenation of component IDs.
-        self.notes = []            # Notes on mapping of specified feature to one more appropriate for Alliance submission.
-        self.errors = []           # Error messages: if any, the cgroup (and related genotype) should not be processed.
+        self.rank_dict = {}              # Will be rank-keyed feature dicts.
+        self.cgroup_name = None          # Will be "correct" symbol for the cgroup from its components.
+        self.cgroup_desc = None          # Will be sorted concatenation of component IDs.
+        self.gene_locus_id = None        # Will be FBgn ID of gene if cgroup represents classical/insertion alleles of a gene.
+        self.notes = []                  # Notes on mapping of specified feature to one more appropriate for Alliance submission.
+        self.errors = []                 # Error messages: if any, the cgroup (and related genotype) should not be processed.
 
     #####################
     # Internal Methods
@@ -402,7 +401,7 @@ class ComplementationGroup(object):
                 'type': None,                                      # The CV term for the feature type.
                 'org_abbr': None,                                  # The organism.abbreviation for the feature.
                 'parental_gene_feature_id': None,                  # The feature.feature_id for the parental gene, if the feature is an FBal allele.
-                'parental_gene_curie': None,                       # The FBgn ID for the parental gene, if the feature is an FBal allele.
+                'parental_gene_uniquename': None,                       # The FBgn ID for the parental gene, if the feature is an FBal allele.
                 'parental_gene_name': None,                        # The feature.name for the parental gene.
                 'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
                 'misexpression_element': False,                    # True if allele is a misexpression element.
@@ -496,7 +495,7 @@ class ComplementationGroup(object):
             feature_dict['input_feature_replaced'] = True
             self.feature_replaced = True
             feature_dict['at_locus'] = False
-            msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+            msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
         # 2. For non-FBal features, just use the initial feature found.
         elif not initial_feature.uniquename.startswith('FBal'):
             feature_dict['feature_id'] = initial_feature.feature_id
@@ -522,7 +521,7 @@ class ComplementationGroup(object):
             feature_dict['feature_id'] = ins_to_report.feature_id
             feature_dict['input_feature_replaced'] = True
             self.feature_replaced = True
-            msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+            msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
             self.log.debug(msg)
             self.notes.append(msg)
             return
@@ -573,7 +572,7 @@ class ComplementationGroup(object):
             feature_dict['input_feature_replaced'] = True
             self.feature_replaced = True
             feature_dict['at_locus'] = False
-            msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+            msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
             self.log.debug(msg)
             self.notes.append(msg)
             return
@@ -597,7 +596,7 @@ class ComplementationGroup(object):
                 feature_dict['input_feature_replaced'] = True
                 self.feature_replaced = True
                 feature_dict['at_locus'] = False
-                msg = f'Convert {initial_feature.name} ({initial_feature.uniquename}) to {ins_to_report.name} {ins_to_report.uniquename}'
+                msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
                 self.log.debug(msg)
                 self.notes.append(msg)
                 return
@@ -667,7 +666,7 @@ class ComplementationGroup(object):
                         filter(*filters).\
                         one()
                     feature_dict['parental_gene_feature_id'] = gene_result.feature_id
-                    feature_dict['parental_gene_curie'] = gene_result.uniquename
+                    feature_dict['parental_gene_uniquename'] = gene_result.uniquename
                     feature_dict['parental_gene_name'] = gene_result.name
                     self.log.debug(f'For "{input_symbol}", found this parental gene: {gene_result.name} ({gene_result.uniquename}).')
                 except NoResultFound:
@@ -781,11 +780,13 @@ class ComplementationGroup(object):
         cgroup_parental_genes = []
         for feature_dict in self.features:
             if feature_dict['parental_gene_feature_id']:
-                cgroup_parental_genes.append(feature_dict['parental_gene_name'])
+                self.gene_locus_id = feature_dict['parental_gene_uniquename']
+                cgroup_parental_genes.append(feature_dict['parental_gene_uniquename'])
         cgroup_parental_genes = set(cgroup_parental_genes)
         if len(cgroup_parental_genes) > 1:
-            self.errors.append(f'For "{self.input_cgroup_str}", alleles of two different genes share a cgroup.')
-            self.log.error('Alleles of two different genes share a cgroup.')
+            self.gene_locus_id = None
+            self.errors.append(f'For "{self.input_cgroup_str}", alleles of many different genes share a cgroup.')
+            self.log.error('Alleles of many different genes share a cgroup.')
         return
 
     def _check_cgroup_for_mix_of_classical_and_transgenic_alleles(self):
