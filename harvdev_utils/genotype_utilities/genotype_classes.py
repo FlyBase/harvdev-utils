@@ -421,6 +421,9 @@ class ComplementationGroup(object):
                 self._get_basic_feature_info(session, feature_dict)
             except NoResultFound:
                 self._map_to_bogus_symbol(session, feature_dict)
+            except MultipleResultsFound:
+                self.errors.append(f'"{input_symbol}" has MANY features in chado')
+                self.log.error(f'For "{input_symbol}", found MANY chado features.')
             self.features.append(feature_dict)
         return
 
@@ -470,8 +473,10 @@ class ComplementationGroup(object):
         """Map the input feature to one that should be used for Alliance export."""
         feature_dict['input_mapped_feature_id'] = initial_feature.feature_id
         feature_dict['input_uniquename'] = initial_feature.uniquename
+        self.log.debug(f'BOB: Start with initial ID: {initial_feature.uniquename}')
         # 1. Convert FBtp to associated insertion.
         if initial_feature.uniquename.startswith('FBtp'):
+            self.log.debug(f'BOB: Assess FBtp for unspecified insertion.')
             construct = aliased(Feature, name='construct')
             insertion = aliased(Feature, name='insertion')
             ic_rel_type = aliased(Cvterm, name='ic_rel_type')
