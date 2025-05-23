@@ -227,22 +227,25 @@ class GenotypeAnnotation(object):
             public_uniquenames = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
             self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with an open spot (ignore bogus symbols).
-            if len(public_feature_ids) == 1:
+            if len(public_uniquenames) == 1:
                 receptor_cgroups[cgroup.cgroup_desc] = []
                 self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential acceptor.')
         if not receptor_cgroups:
             self.log.debug('Found no acceptor cgroups.')
             return
-        # 3. Look for compatible donor/acceptor cgroups: the two sets should be non-overlapping.
-        # First make a cgroup_desc-keyed dict of cgroups.
+        # Make a cgroup_desc-keyed dict of cgroups.
         for cgroup in self.cgroup_list:
             cgroup_desc_dict[cgroup.cgroup_desc] = cgroup
+        # 3. Look for compatible donor/acceptor cgroups: the two sets should be non-overlapping.
         for donor_desc in donor_cgroups.keys():
             donor = cgroup_desc_dict[donor_desc]
             public_feature_ids = [i['feature_id'] for i in donor.features if i['feature_id'] and i['uniquename'].startswith('FBti')]
             compatible_fbgn_ids = self._find_possible_genes_for_insertion(session, public_feature_ids[0])
+            self.log.debug(f'For {donor_desc}, found these compatible FBgn IDs: {compatible_fbgn_ids}')
             for receptor_desc in receptor_cgroups.keys():
                 receptor = cgroup_desc_dict[receptor_desc]
+                self.log.debug(f'For {receptor_desc}, found this FBgn ID locus: {receptor.gene_locus_id}')
+                # BOB - continue debug analysis here
                 if receptor.gene_locus_id in compatible_fbgn_ids:
                     donor_cgroups[donor_desc].append(receptor_desc)
                     receptor_cgroups[receptor_desc].append(donor_desc)
