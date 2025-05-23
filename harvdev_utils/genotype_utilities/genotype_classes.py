@@ -201,37 +201,39 @@ class GenotypeAnnotation(object):
         new_cgroup_list = []
         # 1. Check for potential donor cgroups (must be a single at-locus FBti, not assigned to a Dros gene by curation).
         for cgroup in self.cgroup_list:
-            self.log.debug(f'Assess donor-potential of cgroup {cgroup.cgroup_desc}')
+            # self.log.debug(f'Assess donor-potential of cgroup {cgroup.cgroup_desc}')
             if cgroup.at_locus is False or cgroup.gene_locus_id or 'FBti' not in cgroup.cgroup_desc:
-                self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential donor.')
+                # self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential donor.')
                 continue
             else:
-                self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential donor.')
+                # self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential donor.')
+                pass
             public_uniquenames = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
-            self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
+            # self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with only one FBti in the cgroup (ignore bogus symbols).
             if len(public_uniquenames) == 1:
                 donor_cgroups[cgroup.cgroup_desc] = []
-                self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential donor.')
+                # self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential donor.')
         if not donor_cgroups:
-            self.log.debug('Found no donor cgroups.')
+            # self.log.debug('Found no donor cgroups.')
             return
         # 2. Check for potential receptor cgroups (must have been assigned to a Dros gene by curation of FBal classical/insertion allele).
         for cgroup in self.cgroup_list:
-            self.log.debug(f'Assess acceptor-potential of cgroup {cgroup.cgroup_desc}')
+            # self.log.debug(f'Assess acceptor-potential of cgroup {cgroup.cgroup_desc}')
             if cgroup.at_locus is False or cgroup.gene_locus_id is None:
-                self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential acceptor.')
+                # self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential acceptor.')
                 continue
             else:
-                self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential acceptor.')
+                # self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential acceptor.')
+                pass
             public_uniquenames = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
-            self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
+            # self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with an open spot (ignore bogus symbols).
             if len(public_uniquenames) == 1:
                 receptor_cgroups[cgroup.cgroup_desc] = []
-                self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential acceptor.')
+                # self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential acceptor.')
         if not receptor_cgroups:
-            self.log.debug('Found no acceptor cgroups.')
+            # self.log.debug('Found no acceptor cgroups.')
             return
         # Make a cgroup_desc-keyed dict of cgroups.
         for cgroup in self.cgroup_list:
@@ -241,10 +243,10 @@ class GenotypeAnnotation(object):
             donor = cgroup_desc_dict[donor_desc]
             public_feature_ids = [i['feature_id'] for i in donor.features if i['feature_id'] and i['uniquename'].startswith('FBti')]
             compatible_fbgn_ids = self._find_possible_genes_for_insertion(session, public_feature_ids[0])
-            self.log.debug(f'For {donor_desc}, found these compatible FBgn IDs: {compatible_fbgn_ids}')
+            # self.log.debug(f'For {donor_desc}, found these compatible FBgn IDs: {compatible_fbgn_ids}')
             for receptor_desc in receptor_cgroups.keys():
                 receptor = cgroup_desc_dict[receptor_desc]
-                self.log.debug(f'For {receptor_desc}, found this FBgn ID locus: {receptor.gene_locus_id}')
+                # self.log.debug(f'For {receptor_desc}, found this FBgn ID locus: {receptor.gene_locus_id}')
                 if receptor.gene_locus_id in compatible_fbgn_ids:
                     donor_cgroups[donor_desc].append(receptor_desc)
                     receptor_cgroups[receptor_desc].append(donor_desc)
@@ -272,7 +274,7 @@ class GenotypeAnnotation(object):
             receptor_cgroup = cgroup_desc_dict[receptor_desc]
             receptor_symbol = [i['input_symbol'] for i in receptor_cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol'][0]
             new_input_cgroup_symbol = f'{donor_symbol}/{receptor_symbol}'
-            self.log.debug(f'Create new combined cgroup: {new_input_cgroup_symbol}')
+            # self.log.debug(f'Create new combined cgroup: {new_input_cgroup_symbol}')
             new_cgroup = ComplementationGroup(new_input_cgroup_symbol, self.log, self.pub_id)
             new_cgroup.process_cgroup(session)
             new_cgroup_list.append(new_cgroup)
