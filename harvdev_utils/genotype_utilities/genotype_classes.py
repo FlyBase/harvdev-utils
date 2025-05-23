@@ -218,11 +218,13 @@ class GenotypeAnnotation(object):
             return
         # 2. Check for potential receptor cgroups (must have been assigned to a Dros gene by curation of FBal classical/insertion allele).
         for cgroup in self.cgroup_list:
-            self.log.debug(f'Assess donor-potential of cgroup {cgroup.cgroup_desc}')
+            self.log.debug(f'Assess acceptor-potential of cgroup {cgroup.cgroup_desc}')
             if cgroup.at_locus is False or cgroup.gene_locus_id is None:
                 self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential acceptor.')
                 continue
-            public_feature_ids = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
+            else:
+                self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential acceptor.')
+            public_uniquenames = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
             self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with an open spot (ignore bogus symbols).
             if len(public_feature_ids) == 1:
