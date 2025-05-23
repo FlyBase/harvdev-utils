@@ -250,7 +250,7 @@ class GenotypeAnnotation(object):
                 if receptor.gene_locus_id in compatible_fbgn_ids:
                     donor_cgroups[donor_desc].append(receptor_desc)
                     receptor_cgroups[receptor_desc].append(donor_desc)
-                    msg = f'{donor_desc} can be combined with {receptor_desc} representing {receptor.gene_locus_id} locus'
+                    msg = f'Might be possible to combine {donor_desc} with {receptor_desc} at {receptor.gene_locus_id} locus'
                     self.notes.append(msg)
                     self.log.debug(msg)
         # 4. Find one-to-one donor/receptor pairs (ignore cases of many-to-one or many-to-many).
@@ -311,7 +311,6 @@ class GenotypeAnnotation(object):
             filter(*filters).\
             distinct()
         for result in results:
-            self.log.debug(f'Found this gene: {result.uniquename}')
             fbgn_id_list.append(result.uniquename)
         return fbgn_id_list
 
