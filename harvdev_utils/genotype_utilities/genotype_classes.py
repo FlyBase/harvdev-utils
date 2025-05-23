@@ -330,7 +330,7 @@ class GenotypeAnnotation(object):
         self._parse_cgroups(session)
         self._propagate_cgroup_notes_and_errors()
         self._remove_redundant_cgroups()
-        self._reassign_insertions_to_classical_cgroups()
+        self._reassign_insertions_to_classical_cgroups(session)
         self._check_multi_cgroup_genes()
         self._calculate_genotype_uniquename()
         self._calculate_genotype_desc()
