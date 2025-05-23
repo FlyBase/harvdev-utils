@@ -229,7 +229,7 @@ class GenotypeAnnotation(object):
             public_feature_ids = [i['feature_id'] for i in donor.features if i['feature_id'] and i['uniquename'].startswith('FBti')]
             compatible_fbgn_ids = self._find_possible_genes_for_insertion(session, public_feature_ids[0])
             for receptor_desc in receptor_cgroups.keys():
-                receptor = receptor_cgroups[receptor_desc]
+                receptor = cgroup_desc_dict[receptor_desc]
                 if receptor.gene_locus_id in compatible_fbgn_ids:
                     donor_cgroups[donor_desc].append(receptor_desc)
                     receptor_cgroups[receptor_desc].append(donor_desc)
@@ -833,7 +833,7 @@ class ComplementationGroup(object):
                     distinct()
                 for _ in results:
                     feature_dict['at_locus'] = False
-            if feature_dict['at_locus'] is True:
+            if feature_dict['at_locus'] is False:
                 self.log.debug(f'Allele "{input_symbol}" has "in vitro construct" annotation.')
         return
 
