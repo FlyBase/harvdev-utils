@@ -164,9 +164,12 @@ class GenotypeAnnotation(object):
     def _remove_less_informative_cgroups(self):
         """Remove FBti-containing cgroups if more informative cgroups exist."""
         cgroup_descs = [i.cgroup_desc for i in self.cgroup_list if i.cgroup_desc]
+        new_cgroup_list = []
         for this_cgroup in self.cgroup_list:
-            # Assess only cgroups representing a single FBti insertion.
-            if re.match(FBTI_REGEX, this_cgroup.cgroup_desc):
+            if not re.match(FBTI_REGEX, this_cgroup.cgroup_desc):
+                new_cgroup_list.append(this_cgroup)
+            # Assess cgroups representing a single FBti insertion further
+            else:
                 more_informative_cgroup_exists = False
                 for other_desc in cgroup_descs:
                     if this_cgroup.cgroup_desc in other_desc and this_cgroup.cgroup_desc != other_desc:
@@ -174,8 +177,13 @@ class GenotypeAnnotation(object):
                         self.notes.append(msg)
                         self.log.debug(msg)
                         more_informative_cgroup_exists = True
-                if more_informative_cgroup_exists is True:
-                    self.cgroup_list.pop(this_cgroup)
+                if more_informative_cgroup_exists is False:
+                    new_cgroup_list.append(this_cgroup)
+                else:
+                    msg = f'cgroup "{this_cgroup.cgroup_desc}" has been removed'
+                    self.notes.append(msg)
+                    self.log.debug(msg)
+        self.cgroup_list = new_cgroup_list
         return
 
     # BOB: new method for moving lone insertion into cgroup across classical allele.
