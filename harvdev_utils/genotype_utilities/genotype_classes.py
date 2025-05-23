@@ -498,7 +498,7 @@ class ComplementationGroup(object):
                 filter(*filters).\
                 one()
             self.log.debug('BOB: DID IF FIND AN INSERTION?')
-            self.log.debug(f'"{feature_dict['input_uniquename']}" maps to "{ins_to_report.uniquename}"')
+            self.log.debug(f'"{feature_dict["input_uniquename"]}" maps to "{ins_to_report.uniquename}"')
             feature_dict['feature_id'] = ins_to_report.feature_id
             feature_dict['input_feature_replaced'] = True
             self.feature_replaced = True
