@@ -643,8 +643,10 @@ class ComplementationGroup(object):
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
+            if not feature_dict['feature_id']:
+                continue
             input_symbol = feature_dict['input_symbol']
-            if feature_dict['input_mapped_feature_id'] and feature_dict['input_uniquename'].startswith('FBal'):
+            if feature_dict['input_uniquename'].startswith('FBal'):
                 try:
                     filters = (
                         FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
@@ -678,11 +680,13 @@ class ComplementationGroup(object):
         """Flag in vitro alleles."""
         # self.log.debug(f'Flag alleles with "in vitro construct" annotations for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
+            if not feature_dict['feature_id']:
+                continue
+            input_symbol = feature_dict['input_symbol']
             # Skip assessment of feature already known to have an associated construct.
             if feature_dict['at_locus'] is False:
                 continue
-            if feature_dict['input_mapped_feature_id'] and feature_dict['input_uniquename'].startswith('FBal'):
-                input_symbol = feature_dict['input_symbol']
+            if feature_dict['input_uniquename'].startswith('FBal'):
                 filters = (
                     FeatureCvterm.feature_id == feature_dict['input_mapped_feature_id'],
                     Cvterm.name == 'in vitro construct',
@@ -702,10 +706,10 @@ class ComplementationGroup(object):
         """Flag misexpression alleles."""
         # self.log.debug(f'Flag misexpression alleles for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
-            if feature_dict['uniquename'] and feature_dict['uniquename'].startswith('FBal'):
-                input_symbol = feature_dict['input_symbol']
-                construct_uname_regex = FBTP_REGEX
-                insertion_uname_regex = FBTI_REGEX
+            if not feature_dict['feature_id']:
+                continue
+            input_symbol = feature_dict['input_symbol']
+            if feature_dict['input_uniquename'].startswith('FBal'):
                 allele_feature = aliased(Feature, name='allele_feature')
                 construct_feature = aliased(Feature, name='construct_feature')
                 insertion_feature = aliased(Feature, name='insertion_feature')
@@ -716,10 +720,10 @@ class ComplementationGroup(object):
                 tool_type = aliased(Cvterm, name='tool_type')
                 tool_rel = aliased(Cvterm, name='tool_rel')
                 filters = (
-                    allele_feature.feature_id == feature_dict['feature_id'],
-                    construct_feature.uniquename.op('~')(construct_uname_regex),
+                    allele_feature.feature_id == feature_dict['input_mapped_feature_id'],
+                    construct_feature.uniquename.op('~')(FBTP_REGEX),
                     construct_feature.is_obsolete.is_(False),
-                    insertion_feature.uniquename.op('~')(insertion_uname_regex),
+                    insertion_feature.uniquename.op('~')(FBTI_REGEX),
                     insertion_feature.is_obsolete.is_(False),
                     ai_rel_type.name == 'associated_with',
                     ic_rel_type.name == 'producedby',
@@ -750,7 +754,7 @@ class ComplementationGroup(object):
         """Assess genotype components that should be restricted to a single cgroup."""
         # self.log.debug(f'Assess genotype components that should be restricted to a single cgroup for this cgroup: "{self.input_cgroup_str}".')
         for feature_dict in self.features:
-            if not feature_dict['uniquename']:
+            if not feature_dict['feature_id']:
                 continue
             input_symbol = feature_dict['input_symbol']
             if feature_dict['type'] == 'chromosome_structure_variation':
