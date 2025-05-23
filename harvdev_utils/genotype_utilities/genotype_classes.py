@@ -245,7 +245,6 @@ class GenotypeAnnotation(object):
             for receptor_desc in receptor_cgroups.keys():
                 receptor = cgroup_desc_dict[receptor_desc]
                 self.log.debug(f'For {receptor_desc}, found this FBgn ID locus: {receptor.gene_locus_id}')
-                # BOB - continue debug analysis here
                 if receptor.gene_locus_id in compatible_fbgn_ids:
                     donor_cgroups[donor_desc].append(receptor_desc)
                     receptor_cgroups[receptor_desc].append(donor_desc)
@@ -258,6 +257,8 @@ class GenotypeAnnotation(object):
                 receptor_desc = receptor_list[0]
                 if donor_desc in receptor_cgroups[receptor_desc] and len(receptor_cgroups[receptor_desc]) == 1:
                     final_matches[donor_desc] = receptor_desc
+        for k, v in final_matches.items():
+            self.log.debug(f'Found complementary cgroups: {k} and {v}')
         # 5. Move non-donor/receptor cgroups to the final list.
         cgroups_to_edit = list(final_matches.keys())
         cgroups_to_edit.extend(list(final_matches.values()))
@@ -267,10 +268,11 @@ class GenotypeAnnotation(object):
         # 6. Combine the donor/receptor pairs and add them to the final list of cgroups.
         for donor_desc, receptor_desc in final_matches.items():
             donor_cgroup = cgroup_desc_dict[donor_desc]
-            donor_symbol = [i['input_symbol'] for i in donor_cgroup if i['uniquename'].startswith('FBti')][0]
+            donor_symbol = [i['input_symbol'] for i in donor_cgroup.features if i['uniquename'].startswith('FBti')][0]
             receptor_cgroup = cgroup_desc_dict[receptor_desc]
-            receptor_symbol = [i['input_symbol'] for i in receptor_cgroup if i['uniquename'] and i['type'] != 'bogus symbol'][0]
+            receptor_symbol = [i['input_symbol'] for i in receptor_cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol'][0]
             new_input_cgroup_symbol = f'{donor_symbol}/{receptor_symbol}'
+            self.log.debug(f'Create new combined cgroup: {new_input_cgroup_symbol}')
             new_cgroup = ComplementationGroup(new_input_cgroup_symbol, self.log, self.pub_id)
             new_cgroup_list.append(new_cgroup)
         self.cgroup_list = new_cgroup_list
