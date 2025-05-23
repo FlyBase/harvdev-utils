@@ -222,7 +222,7 @@ class GenotypeAnnotation(object):
             return
         # 3. Look for compatible donor/acceptor cgroups: the two sets should be non-overlapping.
         # First make a cgroup_desc-keyed dict of cgroups.
-        for cgroup in self.cgroup_lists:
+        for cgroup in self.cgroup_list:
             cgroup_desc_dict[cgroup.cgroup_desc] = cgroup
         for donor_desc in donor_cgroups.keys():
             donor = cgroup_desc_dict[donor_desc]
