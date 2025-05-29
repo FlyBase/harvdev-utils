@@ -103,6 +103,7 @@ class GenotypeAnnotation(object):
         self.log = log              # From a script using this class.
         self.pub_id = pub_id        # The pub.pub_id to be used for disambiguation.
         self.features = {}          # Feature_id-keyed dict of public features.
+        self.input_features_replaced = {}    # Will be old FBal/FBtp ID to new FBti ID list of replacements.
         self.cgroup_list = []       # A list of ComplementationGroup objects derived from the input_genotype_name.
         self.cgroup_dict = {}       # Cgroup-keyed ComplementationGroups.
         self.uniquename = None      # Recomputed uniquename (symbols sorted).
@@ -145,6 +146,9 @@ class GenotypeAnnotation(object):
         for cgroup in self.cgroup_list:
             self.notes.extend(cgroup.notes)
             self.errors.extend(cgroup.errors)
+            for feature_dict in cgroup.features:
+                for old_id, new_id in feature_dict['input_features_replaced']:
+                    self.input_features_replaced[old_id] = new_id
         return
 
     def _remove_redundant_cgroups(self):
