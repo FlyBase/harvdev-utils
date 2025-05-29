@@ -545,7 +545,7 @@ class ComplementationGroup(object):
                 'input_name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
                 'input_mapped_feature_id': None,                   # The feature_id for the feature that corresponds to the input feature symbol.
                 'input_uniquename': None,                          # The uniquename for the feature that corresponds to the input feature symbol.
-                'input_feature_replaced': False,                   # True if input allele replaced with an insertion.
+                'input_features_replaced': {},                     # Old ID - new ID replacement tracking.
                 'at_locus': True,                                  # True if the feature can share a cgroup with a classical allele (so False for transgenic).
                 'single_cgroup': True,                             # True if the feature should occupy only one cgroup (False for transgenic and aberrations).
                 'feature_id': None,                                # The feature.feature_id for the component to report.
@@ -646,7 +646,7 @@ class ComplementationGroup(object):
                 filter(*filters).\
                 one()
             feature_dict['feature_id'] = ins_to_report.feature_id
-            feature_dict['input_feature_replaced'] = True
+            feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
             self.feature_replaced = True
             feature_dict['at_locus'] = False
             msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
@@ -676,7 +676,7 @@ class ComplementationGroup(object):
             one_or_none()
         if ins_to_report:
             feature_dict['feature_id'] = ins_to_report.feature_id
-            feature_dict['input_feature_replaced'] = True
+            feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
             self.feature_replaced = True
             msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
             self.log.debug(msg)
@@ -726,7 +726,7 @@ class ComplementationGroup(object):
         elif len(cons_ins_dict.keys()) == 1:
             ins_to_report = list(cons_ins_dict.values())[0]
             feature_dict['feature_id'] = ins_to_report.feature_id
-            feature_dict['input_feature_replaced'] = True
+            feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
             self.feature_replaced = True
             feature_dict['at_locus'] = False
             msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
@@ -750,7 +750,7 @@ class ComplementationGroup(object):
                 specific_cons_id = pub_asso_cons_ids[0]
                 ins_to_report = cons_ins_dict[specific_cons_id]
                 feature_dict['feature_id'] = ins_to_report.feature_id
-                feature_dict['input_feature_replaced'] = True
+                feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
                 self.feature_replaced = True
                 feature_dict['at_locus'] = False
                 msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
