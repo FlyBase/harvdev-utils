@@ -32,8 +32,8 @@ from collections import defaultdict
 from harvdev_utils.production import (
     Cv, Cvterm, Db, Dbxref, Feature, FeatureCvterm, FeatureCvtermprop,
     FeatureGenotype, FeatureRelationship, FeatureRelationshipPub, FeaturePub,
-    FeatureSynonym, Genotype, GenotypeDbxref, GenotypeSynonym, Organism,
-    Organismprop, Pub, Synonym
+    FeatureSynonym, Genotype, GenotypeCvterm, GenotypeDbxref, GenotypeSynonym,
+    Organism, Organismprop, Pub, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml
@@ -82,6 +82,18 @@ class ChadoCache:
                 .one()
             )
         return self._synonym_symbol_cvterm
+
+    @property
+    def alliance_compliant_cvterm(self):
+        """The "alliance_compliant" CV term from the "genotype characteristics" CV."""
+        if self._alliance_compliant_cvterm is None:
+            self._alliance_compliant_cvterm = (
+                self.session.query(Cvterm)
+                .join(Cv, Cv.cv_id == Cvterm.cv_id)
+                .filter(Cvterm.name == 'alliance_compliant', Cv.name == 'genotype characteristics')
+                .one()
+            )
+        return self._alliance_compliant_cvterm
 
 
 class GenotypeAnnotation(object):
@@ -370,7 +382,7 @@ class GenotypeAnnotation(object):
         self.log.debug(f'Calculated this description: {self.description}')
         return
 
-    def _find_known_genotype(self, session):
+    def _find_known_genotype(self, session, cache):
         """Find a corresponding genotype in chado."""
         if self.errors:
             return
@@ -394,6 +406,7 @@ class GenotypeAnnotation(object):
                 self.curie = chado_genotype.Dbxref.accession
                 self.genotype_id = chado_genotype.Genotype.genotype_id
                 self.is_new = False
+                self._mark_as_alliance_compliant(session, cache)
                 self.log.debug(f'The descriptions for the curated and chado genotype are identical: {self.description}.')
             else:
                 msg = f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}'
@@ -478,6 +491,20 @@ class GenotypeAnnotation(object):
         )
         return
 
+    def _mark_as_alliance_compliant(self, session, cache):
+        """Mark the genotype as Alliance compliant."""
+        if self.errors:
+            return
+        alliance_compliant_cvterm_id = cache.alliance_compliant_cvterm.cvterm_id
+        get_or_create(
+            session,
+            GenotypeCvterm,
+            genotype_id=self.genotype_id,
+            cvterm_id=alliance_compliant_cvterm_id,
+            pub_id=cache.pub_unattributed.pub_id
+        )
+        return
+
     ###############################
     # Public Methods (Entry Point)
     ###############################
@@ -501,13 +528,14 @@ class GenotypeAnnotation(object):
         # We create a cache object once, then reuse it.
         cache = ChadoCache(session)
         # Identify if the genotype is already in chado.
-        self._find_known_genotype(session)
+        self._find_known_genotype(session, cache)
         # If not found in chado, create a new genotype in chado.
         if self.is_new is True:
             self._create_new_genotype(session)
             self._assign_genotype_curie(session, cache)
             self._create_genotype_component_associations(session)
             self._assign_genotype_symbol(session, cache)
+            self._mark_as_alliance_compliant(session, cache)
         return
 
 
