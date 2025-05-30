@@ -278,7 +278,8 @@ class GenotypeAnnotation(object):
             receptor_cgroup = cgroup_desc_dict[receptor_desc]
             receptor_symbol = [i['input_symbol'] for i in receptor_cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol'][0]
             new_input_cgroup_symbol = f'{donor_symbol}/{receptor_symbol}'
-            # self.log.debug(f'Create new combined cgroup: {new_input_cgroup_symbol}')
+            msg = f'Created new combined cgroup: {new_input_cgroup_symbol}'
+            self.log.debug(msg)
             new_cgroup = ComplementationGroup(new_input_cgroup_symbol, self.log, self.pub_id)
             new_cgroup.process_cgroup(session)
             new_cgroup_list.append(new_cgroup)
