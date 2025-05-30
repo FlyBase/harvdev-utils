@@ -730,16 +730,17 @@ class ComplementationGroup(object):
             return
         # 4b. If a single construct-associated insertion, report that insertion.
         elif len(cons_ins_dict.keys()) == 1:
+            feature_dict['at_locus'] = False
             ins_to_report = list(cons_ins_dict.values())[0]
             feature_dict['feature_id'] = ins_to_report.feature_id
             feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
             self.feature_replaced = True
-            feature_dict['at_locus'] = False
             msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
             self.log.debug(msg)
             self.notes.append(msg)
             return
         else:
+            feature_dict['at_locus'] = False
             filters = (
                 Feature.feature_id.in_((cons_ins_dict.keys())),
                 Pub.pub_id == self.pub_id
@@ -758,7 +759,6 @@ class ComplementationGroup(object):
                 feature_dict['feature_id'] = ins_to_report.feature_id
                 feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
                 self.feature_replaced = True
-                feature_dict['at_locus'] = False
                 msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{ins_to_report.name}" ({ins_to_report.uniquename})'
                 self.log.debug(msg)
                 self.notes.append(msg)
@@ -805,7 +805,7 @@ class ComplementationGroup(object):
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
-            if not feature_dict['input_uniquename']:
+            if not feature_dict['input_uniquename'] or not feature_dict['uniquename']:
                 continue
             input_symbol = feature_dict['input_symbol']
             if feature_dict['at_locus'] and feature_dict['input_uniquename'].startswith('FBal'):
@@ -1042,9 +1042,9 @@ class ComplementationGroup(object):
         """Run various ComplementationGroup methods in sequence."""
         self.log.debug(f'Processing cgroup {self.input_cgroup_str}')
         self._identify_feature(session)
-        self._get_parental_genes(session)
         self._flag_in_vitro_alleles(session)
         self._flag_misexpression_elements(session)
+        self._get_parental_genes(session)
         self._assess_single_group_alleles()
         self._check_cgroup_feature_count()
         self._check_cgroup_gene_count()
