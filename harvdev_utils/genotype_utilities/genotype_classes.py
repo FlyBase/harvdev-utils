@@ -127,7 +127,7 @@ class GenotypeAnnotation(object):
 
     def _parse_cgroups(self, session):
         """Parse the input genotype into ComplementationGroups."""
-        self.log.debug(f'Parse {self} into ComplementationGroups.\n')
+        self.log.debug(f'Parse {self} into ComplementationGroups.')
         cgroup_symbols = self.input_genotype_name.split(' ')
         # self.log.debug(f'Found these cgroups: {cgroup_symbols}')
         for cgroup_symbol in cgroup_symbols:
@@ -412,7 +412,9 @@ class GenotypeAnnotation(object):
             self.log.error(f'For {self}, initial attempt to find chado genotype missed this existing one: genotype_id={new_chado_genotype.genotype_id}')
             return
         else:
-            self.log.debug(f'For {self}, made this genotype: {new_chado_genotype}')
+            geno_desc = f'genotype_id={new_chado_genotype.genotype_id}; uniquename="{new_chado_genotype.uniquename}"'
+            geno_desc += f'; description="{new_chado_genotype.description}"'
+            self.log.debug(f'For {self}, made this genotype: {geno_desc}')
         self.genotype_id = new_chado_genotype.genotype_id
         return
 
@@ -490,7 +492,7 @@ class GenotypeAnnotation(object):
         self._check_multi_cgroup_genes()
         self._calculate_genotype_uniquename()
         self._calculate_genotype_desc()
-        self.log.debug('Done initial parsing of genotype.\n\n\n')
+        self.log.debug('Done initial parsing of genotype.')
         return
 
     def get_known_or_create_new_genotype(self, session):
@@ -1050,5 +1052,5 @@ class ComplementationGroup(object):
         self._check_cgroup_bogus_symbol_count()
         self._check_bogus_symbol_matches_gene()
         self._rank_cgroups()
-        self.log.debug('Done initial parsing of cgroup.\n')
+        self.log.debug('Done initial parsing of cgroup.')
         return
