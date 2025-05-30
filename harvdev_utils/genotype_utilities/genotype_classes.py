@@ -56,6 +56,8 @@ class ChadoCache:
         self._flybase_db = None
         self._pub_unattributed = None
         self._synonym_symbol_cvterm = None
+        self._alliance_compliant_cvterm = None
+
 
     @property
     def flybase_db(self):
