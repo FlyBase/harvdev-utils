@@ -147,7 +147,7 @@ class GenotypeAnnotation(object):
             self.notes.extend(cgroup.notes)
             self.errors.extend(cgroup.errors)
             for feature_dict in cgroup.features:
-                for old_id, new_id in feature_dict['input_features_replaced']:
+                for old_id, new_id in feature_dict['input_features_replaced'].items():
                     self.input_features_replaced[old_id] = new_id
         return
 
