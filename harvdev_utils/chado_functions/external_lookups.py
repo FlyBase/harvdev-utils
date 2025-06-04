@@ -246,7 +246,6 @@ class ExternalLookup:
                     if 'Synonym' in synonym_item.keys():
                         self.synonyms = synonym_item['Synonym']
         except Exception as e:
-            self.warning(f"No sysnonyms for {self.external_id}: {e}")
             self.synonyms = []
 
         ##################
