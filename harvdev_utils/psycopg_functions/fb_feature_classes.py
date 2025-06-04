@@ -375,16 +375,15 @@ class Allele(Feature):
         self.classify_allele()
         if self.classification != 'transgenic':
             return
-        if self.transgenic_class is None:
-            log.warning(f'Allele {self.name} ({self.uniquename}) is missing the transgenic class info needed to determine its action on the parent gene.')
-            return
+        # By default, assume transgenic allele "expresses" gene.
+        self.gene_action = 'expresses'
+        self.expresses = self.gene_id
+        # Adjust if there's an appropriate transgenic_product_class term.
         target_type_set = {'antisense', 'RNAi_reagent', 'sgRNA'}
-        if target_type_set.intersection(set(self.transgenic_class)):
+        if self.transgenic_class is not None and target_type_set.intersection(set(self.transgenic_class)):
             self.gene_action = 'targets'
             self.targets = self.gene_id
-        else:
-            self.gene_action = 'expresses'
-            self.expresses = self.gene_id
+            self.expresses = None
         return
 
     def is_for_agr_export(self):

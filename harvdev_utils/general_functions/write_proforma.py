@@ -197,7 +197,7 @@ def detect_proforma_type(data_object, field_to_proforma_dict):
     """
     log.debug('TIME: {}. Detecting proforma type for this object: {}'.format(timenow(), data_object))
     # First make sure it's a dictionary.
-    if type(data_object) != dict:
+    if type(data_object) is not dict:
         log.warning('Data object is not of expected type dictionary.')
         resolved_proforma_type = 'undetermined'
     # Scan the dictionary keys.
