@@ -236,14 +236,18 @@ class ExternalLookup:
         ###########################
         # Get synonyms if requested
         ###########################
-        if self.get_synonyms:
-            syn = pubchempy.request(self.external_id, operation='synonyms')
-            raw_data = syn.read()
-            encoding = syn.info().get_content_charset('utf8')  # JSON default
-            syn_data = json.loads(raw_data.decode(encoding))
-            for synonym_item in syn_data['InformationList']['Information']:
-                if 'Synonym' in synonym_item.keys():
-                    self.synonyms = synonym_item['Synonym']
+        try:
+            if self.get_synonyms:
+                syn = pubchempy.request(self.external_id, operation='synonyms')
+                raw_data = syn.read()
+                encoding = syn.info().get_content_charset('utf8')  # JSON default
+                syn_data = json.loads(raw_data.decode(encoding))
+                for synonym_item in syn_data['InformationList']['Information']:
+                    if 'Synonym' in synonym_item.keys():
+                        self.synonyms = synonym_item['Synonym']
+        except Exception as e:
+            self.warning(f"No sysnonyms for {self.external_id}: {e}")
+            self.synonyms = []
 
         ##################
         # Get the inchikey
