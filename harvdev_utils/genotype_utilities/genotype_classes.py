@@ -498,6 +498,14 @@ class GenotypeAnnotation(object):
         if self.errors:
             return
         alliance_compliant_cvterm_id = cache.alliance_compliant_cvterm.cvterm_id
+        # Check if genotype is already marked.
+        filters = (
+            GenotypeCvterm.genotype_id == self.genotype_id,
+            GenotypeCvterm.cvterm_id == alliance_compliant_cvterm_id,
+        )
+        existing_annotation = session.query(GenotypeCvterm).filter(*filters).one_or_none()
+        if existing_annotation:
+            return
         get_or_create(
             session,
             GenotypeCvterm,
