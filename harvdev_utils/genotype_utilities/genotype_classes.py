@@ -58,7 +58,6 @@ class ChadoCache:
         self._synonym_symbol_cvterm = None
         self._alliance_compliant_cvterm = None
 
-
     @property
     def flybase_db(self):
         """Get FlyBase db.db_id."""
@@ -805,11 +804,13 @@ class ComplementationGroup(object):
             # 4d. Do not map if there are many allele-associated constructs for the given pub.
             else:
                 msg = f'{initial_feature.name} ({initial_feature.uniquename}) has ambiguous mapping to many constructs'
-                self.log.debug(msg)
+                self.log.error(msg)
                 self.errors.append(msg)
                 return
 
     def _get_basic_feature_info(self, session, feature_dict):
+        if feature_dict['feature_id'] is None:
+            return
         feature_type = aliased(Cvterm, name='feature_type')
         synonym_type = aliased(Cvterm, name='synonym_type')
         filters = (
