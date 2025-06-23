@@ -158,6 +158,7 @@ class GenotypeAnnotation(object):
         """Propagate cgroup notes and errors up to the genotype."""
         for cgroup in self.cgroup_list:
             self.notes.extend(cgroup.notes)
+            self.warnings.extend(cgroup.warnings)
             self.errors.extend(cgroup.errors)
             for feature_dict in cgroup.features:
                 for old_id, new_id in feature_dict['input_features_replaced'].items():
@@ -573,6 +574,7 @@ class ComplementationGroup(object):
         self.cgroup_desc = None          # Will be sorted concatenation of component IDs.
         self.gene_locus_id = None        # Will be FBgn ID of gene if cgroup represents classical/insertion alleles of a gene.
         self.notes = []                  # Notes on mapping of specified feature to one more appropriate for Alliance submission.
+        self.warnings = []               # Warnings about the cgroup.
         self.errors = []                 # Error messages: if any, the cgroup (and related genotype) should not be processed.
 
     #####################
@@ -1033,8 +1035,8 @@ class ComplementationGroup(object):
             elif feature_dict['feature_id'] and feature_dict['parental_gene_feature_id']:
                 allele_gene_name = feature_dict['parental_gene_name']
         if allele_gene_name and bogus_symbol_gene_name and allele_gene_name != bogus_symbol_gene_name:
-            self.errors.append(f'For "{self.input_cgroup_str}", bogus symbol does not match paired allele')
-            self.log.error('Bogus symbol does not match paired allele.')
+            self.warnings.append(f'For "{self.input_cgroup_str}", bogus symbol does not match paired allele')
+            self.log.warning('Bogus symbol does not match paired allele.')
         return
 
     def _rank_cgroups(self):
