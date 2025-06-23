@@ -36,11 +36,11 @@ from harvdev_utils.production import (
     Organism, Organismprop, Pub, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml
+from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml, sub_sup_to_sgml
 
 
 # Regex patterns as constants (easier to maintain/change if needed)
-FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'
+FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ti|tp)[0-9]{7}$'    # Exclude FBba balancers since these are not submitted to Alliance.
 FBAL_REGEX = r'^FBal[0-9]{7}$'
 FBGO_REGEX = r'^FBgo[0-9]{7}$'
 FBTP_REGEX = r'^FBtp[0-9]{7}$'
@@ -623,13 +623,15 @@ class ComplementationGroup(object):
 
     def _map_to_bogus_symbol(self, session, feature_dict):
         """Map the input symbol to a bogus symbol feature."""
-        input_symbol = feature_dict["input_symbol"]
+        # For bogus symbols, keep SGML Greek representations.
+        input_symbol = feature_dict['input_symbol']
+        feature_dict['input_name'] = input_symbol
         if input_symbol == '+' or input_symbol.endswith('[+]') or input_symbol.endswith('[-]'):
             self.log.debug(f'Look for an internal "bogus symbol" feature for "{input_symbol}".')
             filters = (
                 Feature.is_obsolete.is_(False),
                 Feature.is_analysis.is_(False),
-                Feature.name == feature_dict['input_name'],
+                Feature.name == input_symbol,
                 Feature.uniquename == Feature.name,
                 Cvterm.name == 'bogus symbol',
             )
@@ -639,7 +641,7 @@ class ComplementationGroup(object):
                     join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
                     filter(*filters).\
                     one()
-                feature_dict['current_symbol'] = feature_dict['input_name'].replace('<up>', '[').replace('</up>', ']')
+                feature_dict['current_symbol'] = sub_sup_to_sgml(feature_dict['input_name'])
                 feature_dict['feature_id'] = component_result.feature_id
                 feature_dict['uniquename'] = component_result.uniquename
                 feature_dict['type'] = 'bogus symbol'
@@ -650,14 +652,13 @@ class ComplementationGroup(object):
                 org_id = 1
                 if input_symbol == '+':
                     org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
-                name_to_use = feature_dict['input_name']
-                bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=name_to_use, uniquename=input_symbol)
-                feature_dict['current_symbol'] = feature_dict['input_name'].replace('<up>', '[').replace('</up>', ']')
+                bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=input_symbol, uniquename=input_symbol)
+                feature_dict['current_symbol'] = sub_sup_to_sgml(feature_dict['input_name'])
                 feature_dict['feature_id'] = bogus_feature.feature_id
                 feature_dict['uniquename'] = feature_dict['input_name']
                 feature_dict['type'] = 'bogus symbol'
                 feature_dict['is_new'] = True
-                self.log.warning(f'No existing feature for "bogus symbol" {input_symbol}", so one was created.')
+                self.log.warning(f'No existing feature for bogus symbol {feature_dict["input_symbol"]}, so one was created.')
         else:
             self.errors.append(f'"{input_symbol}" NOT in chado')
             self.log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
