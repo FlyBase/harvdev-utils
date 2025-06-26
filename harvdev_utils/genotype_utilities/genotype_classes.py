@@ -647,7 +647,7 @@ class ComplementationGroup(object):
                 feature_dict['feature_id'] = component_result.feature_id
                 feature_dict['uniquename'] = component_result.uniquename
                 feature_dict['type'] = 'bogus symbol'
-                self.log.debug(f'"{input_symbol}" corresponds to {feature_dict["uniquename"]}.')
+                self.log.debug(f'"{input_symbol}" corresponds to bogus symbol {feature_dict["uniquename"]}.')
             except NoResultFound:
                 # Make a new bogus symbol feature if needed.
                 # self.log.warning(f'No existing bogus symbol feature found; create one for "{input_symbol}".')
