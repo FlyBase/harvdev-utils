@@ -848,49 +848,52 @@ class ComplementationGroup(object):
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
+            # Skip undetermined features.
             if not feature_dict['input_uniquename'] or not feature_dict['uniquename']:
                 continue
+            # Skip non-at-locus or non-FBal features.
+            if not feature_dict['at_locus'] or not feature_dict['input_uniquename'].startswith('FBal'):
+                continue
+            # Skip non-Drosophilid alleles.
+            dros_filters = (
+                Feature.feature_id == feature_dict['input_mapped_feature_id'],
+                org_prop_type.name == 'taxgroup',
+                Organismprop.value == 'drosophilid',
+            )
+            dros_result = session.query(Feature).\
+                select_from(Feature).\
+                join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
+                join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
+                filter(*dros_filters).\
+                one_or_none()
+            if not dros_result:
+                continue
+            # For Drosophilid alleles, get the parental gene.
             input_symbol = feature_dict['input_symbol']
-            if feature_dict['at_locus'] and feature_dict['input_uniquename'].startswith('FBal'):
-                try:
-                    # First, get parental gene.
-                    filters = (
-                        FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
-                        rel_type.name == 'alleleof',
-                        Feature.is_obsolete.is_(False),
-                        Feature.is_analysis.is_(False),
-                        Feature.uniquename.op('~')(FBGN_REGEX),
-                    )
-                    gene_result = session.query(Feature).\
-                        select_from(Feature).\
-                        join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
-                        join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
-                        join(FeatureRelationship, (FeatureRelationship.object_id == Feature.feature_id)).\
-                        join(rel_type, (rel_type.cvterm_id == FeatureRelationship.type_id)).\
-                        filter(*filters).\
-                        one()
-                    # Then, check if parental gene is Drosophilid.
-                    dros_filters = (
-                        Feature.feature_id == gene_result.feature_id,
-                        org_prop_type.name == 'taxgroup',
-                        Organismprop.value == 'drosophilid',
-                    )
-                    dros_gene_result = session.query(Feature).\
-                        select_from(Feature).\
-                        join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
-                        join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
-                        filter(*dros_filters).\
-                        one_or_none()
-                    # Record Drosophilid parental gene.
-                    if dros_gene_result:
-                        feature_dict['parental_gene_feature_id'] = gene_result.feature_id
-                        feature_dict['parental_gene_uniquename'] = gene_result.uniquename
-                        feature_dict['parental_gene_name'] = gene_result.name
-                        self.log.debug(f'For "{input_symbol}", found this parental gene: {gene_result.name} ({gene_result.uniquename}).')
-                except NoResultFound:
-                    self.log.warning(f'Found NO parental genes for "{input_symbol}".')
-                except MultipleResultsFound:
-                    self.log.warning(f'Found MANY parental genes for "{input_symbol}".')
+            try:
+                filters = (
+                    FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
+                    rel_type.name == 'alleleof',
+                    Feature.is_obsolete.is_(False),
+                    Feature.is_analysis.is_(False),
+                    Feature.uniquename.op('~')(FBGN_REGEX),
+                )
+                parent_gene_result = session.query(Feature).\
+                    select_from(Feature).\
+                    join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
+                    join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
+                    join(FeatureRelationship, (FeatureRelationship.object_id == Feature.feature_id)).\
+                    join(rel_type, (rel_type.cvterm_id == FeatureRelationship.type_id)).\
+                    filter(*filters).\
+                    one()
+                feature_dict['parental_gene_feature_id'] = parent_gene_result.feature_id
+                feature_dict['parental_gene_uniquename'] = parent_gene_result.uniquename
+                feature_dict['parental_gene_name'] = parent_gene_result.name
+                self.log.debug(f'For "{input_symbol}", found this parental gene: {parent_gene_result.name} ({parent_gene_result.uniquename}).')
+            except NoResultFound:
+                self.log.warning(f'Found NO parental genes for "{input_symbol}".')
+            except MultipleResultsFound:
+                self.log.warning(f'Found MANY parental genes for "{input_symbol}".')
         return
 
     def _flag_in_vitro_alleles(self, session):
