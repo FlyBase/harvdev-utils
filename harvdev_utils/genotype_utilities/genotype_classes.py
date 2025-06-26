@@ -1015,7 +1015,7 @@ class ComplementationGroup(object):
         at_locus = False
         not_at_locus = False
         for feature_dict in self.features:
-            if feature_dict['feature_id'] and feature_dict['at_locus'] is True:
+            if feature_dict['feature_id'] and feature_dict['at_locus'] is True and feature_dict['type'] != 'bogus symbol':
                 at_locus = True
             elif feature_dict['feature_id'] and feature_dict['at_locus'] is False:
                 not_at_locus = True
