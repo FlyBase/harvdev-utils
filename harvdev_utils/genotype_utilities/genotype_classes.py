@@ -155,7 +155,7 @@ class GenotypeAnnotation(object):
         return
 
     def _propagate_cgroup_notes_and_errors(self):
-        """Propagate cgroup notes and errors up to the genotype."""
+        """Propagate cgroup notes, warnings, and errors up to the genotype."""
         for cgroup in self.cgroup_list:
             self.notes.extend(cgroup.notes)
             self.warnings.extend(cgroup.warnings)
@@ -657,7 +657,7 @@ class ComplementationGroup(object):
                 bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=input_symbol, uniquename=input_symbol)
                 feature_dict['current_symbol'] = sub_sup_to_sgml(feature_dict['input_name'])
                 feature_dict['feature_id'] = bogus_feature.feature_id
-                feature_dict['uniquename'] = feature_dict['input_name']
+                feature_dict['uniquename'] = bogus_feature.uniquename
                 feature_dict['type'] = 'bogus symbol'
                 feature_dict['is_new'] = True
                 self.log.warning(f'No existing feature for bogus symbol {feature_dict["input_symbol"]}, so one was created.')
