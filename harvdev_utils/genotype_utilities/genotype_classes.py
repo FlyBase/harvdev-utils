@@ -845,7 +845,6 @@ class ComplementationGroup(object):
         """Get parental Drosophilid genes for each allele specified."""
         # Note - get the parental gene for the input allele, even if the allele is converted to an insertion in the output genotype.
         # self.log.debug(f'Getting parental gene(s) for this cgroup: "{self.input_cgroup_str}".')
-        input_symbol = feature_dict['input_symbol']
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
@@ -855,6 +854,7 @@ class ComplementationGroup(object):
             # Skip non-at-locus or non-FBal features.
             if not feature_dict['at_locus'] or not feature_dict['input_uniquename'].startswith('FBal'):
                 continue
+            input_symbol = feature_dict['input_symbol']
             try:
                 filters = (
                     org_prop_type.name == 'taxgroup',
