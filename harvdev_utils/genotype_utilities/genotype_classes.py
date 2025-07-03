@@ -843,8 +843,9 @@ class ComplementationGroup(object):
 
     def _get_parental_genes(self, session):
         """Get parental Drosophilid genes for each allele specified."""
-        # Note - get the gene for the input allele, even if the allele is reported as an insertion.
+        # Note - get the parental gene for the input allele, even if the allele is converted to an insertion in the output genotype.
         # self.log.debug(f'Getting parental gene(s) for this cgroup: "{self.input_cgroup_str}".')
+        input_symbol = feature_dict['input_symbol']
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
@@ -854,24 +855,10 @@ class ComplementationGroup(object):
             # Skip non-at-locus or non-FBal features.
             if not feature_dict['at_locus'] or not feature_dict['input_uniquename'].startswith('FBal'):
                 continue
-            # Skip non-Drosophilid alleles.
-            dros_filters = (
-                Feature.feature_id == feature_dict['input_mapped_feature_id'],
-                org_prop_type.name == 'taxgroup',
-                Organismprop.value == 'drosophilid',
-            )
-            dros_result = session.query(Feature).\
-                select_from(Feature).\
-                join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
-                join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
-                filter(*dros_filters).\
-                one_or_none()
-            if not dros_result:
-                continue
-            # For Drosophilid alleles, get the parental gene.
-            input_symbol = feature_dict['input_symbol']
             try:
                 filters = (
+                    org_prop_type.name == 'taxgroup',
+                    Organismprop.value == 'drosophilid',
                     FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
                     rel_type.name == 'alleleof',
                     Feature.is_obsolete.is_(False),
@@ -891,7 +878,8 @@ class ComplementationGroup(object):
                 feature_dict['parental_gene_name'] = parent_gene_result.name
                 self.log.debug(f'For "{input_symbol}", found this parental gene: {parent_gene_result.name} ({parent_gene_result.uniquename}).')
             except NoResultFound:
-                self.log.warning(f'Found NO parental genes for "{input_symbol}".')
+                # This only occurs for non-Drosophilid genes, for which we do not want the parental gene.
+                pass
             except MultipleResultsFound:
                 self.log.warning(f'Found MANY parental genes for "{input_symbol}".')
         return
