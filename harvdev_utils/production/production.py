@@ -2399,7 +2399,7 @@ class GenotypeRelationship(Base):
         output_str += f'genotype_relationship_id={self.genotype_relationship_id}: '
         output_str += f'subject={self.subject.uniquename}: '
         output_str += f'object={self.object.uniquename}: '
-        output_str += f'type={self.cvterm.name}'
+        output_str += f'type={self.type.name}'
         return output_str
 
 
