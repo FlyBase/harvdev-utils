@@ -71,6 +71,7 @@ from .production import Genotype
 from .production import GenotypeCvterm
 from .production import GenotypeCvtermprop
 from .production import GenotypeDbxref
+from .production import GenotypeRelationship
 from .production import GenotypeSynonym
 from .production import Genotypeprop
 from .production import GenotypepropPub
