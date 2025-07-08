@@ -71,6 +71,7 @@ from .reporting import Genotype
 from .reporting import GenotypeCvterm
 from .reporting import GenotypeCvtermprop
 from .reporting import GenotypeDbxref
+from .reporting import GenotypeRelationship
 from .reporting import GenotypeSynonym
 from .reporting import Genotypeprop
 from .reporting import GenotypepropPub
