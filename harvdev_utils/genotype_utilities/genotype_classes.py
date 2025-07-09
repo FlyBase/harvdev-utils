@@ -994,8 +994,8 @@ class ComplementationGroup(object):
         cgroup_parental_genes = set(cgroup_parental_genes)
         if len(cgroup_parental_genes) > 1:
             self.gene_locus_id = None
-            self.errors.append(f'For "{self.input_cgroup_str}", classical alleles of many different genes share a cgroup.')
-            self.log.error('Alleles of many different genes share a cgroup.')
+            self.warnings.append(f'For "{self.input_cgroup_str}", classical alleles of many different genes share a cgroup.')
+            self.log.warning('Alleles of many different genes share a cgroup.')
         return
 
     def _check_cgroup_for_mix_of_classical_and_transgenic_alleles(self):
