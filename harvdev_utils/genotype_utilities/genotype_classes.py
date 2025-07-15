@@ -354,8 +354,8 @@ class GenotypeAnnotation(object):
                 msg = f'Classical alleles for {gene[GENE_NAME]} '
                 msg += f'({gene[GENE_CURIE]}) '
                 msg += f'are listed in {count} different cgroups'
-                self.log.error(msg)
-                self.errors.append(msg)
+                self.log.warning(msg)
+                self.warnings.append(msg)
         return
 
     def _calculate_genotype_uniquename(self):
@@ -1008,8 +1008,8 @@ class ComplementationGroup(object):
             elif feature_dict['feature_id'] and feature_dict['at_locus'] is False:
                 not_at_locus = True
         if at_locus is True and not_at_locus is True:
-            self.errors.append(f'For "{self.input_cgroup_str}", have a mix of classical and transgenic alleles.')
-            self.log.error('Locus contains a mix of classical and transgenic alleles.')
+            self.warnings.append(f'For "{self.input_cgroup_str}", have a mix of classical and transgenic alleles.')
+            self.log.warning('Locus contains a mix of classical and transgenic alleles.')
         elif at_locus is True:
             self.at_locus = True
         return
