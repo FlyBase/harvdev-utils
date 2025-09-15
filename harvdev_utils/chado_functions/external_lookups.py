@@ -172,7 +172,12 @@ class ExternalLookup:
             lookup_id = lookup_id[6:]  # Remove CHEBI: prefix for EBI Search API
 
         # Use EBI Search REST API instead of SOAP service
-        url = f'https://www.ebi.ac.uk/ebisearch/ws/rest/chebi/entry/{lookup_id}?format=json&fields=id%2Cname%2Cdescription%2Csynonyms%2Cinchikey'
+        params = {
+            "format": "json",
+            "fields": "id,name,description,synonyms,inchikey"
+        }
+        query_string = urlencode(params)
+        url = f'https://www.ebi.ac.uk/ebisearch/ws/rest/chebi/entry/{lookup_id}?{query_string}'
 
         try:
             response = requests.get(url, timeout=30)
