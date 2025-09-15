@@ -212,10 +212,12 @@ class ExternalLookup:
                         seen_it.add(synonym)
 
         except requests.RequestException as e:
-            self.error = f"Error connecting to ChEBI service: {e}"
+            log.exception("Error connecting to ChEBI service for ID %s", self.external_id)
+            self.error = "Error connecting to ChEBI service. Please try again later."
             return self
         except (KeyError, IndexError, json.JSONDecodeError) as e:
-            self.error = f"Error parsing ChEBI response: {e}"
+            log.exception("Error parsing ChEBI response for ID %s", self.external_id)
+            self.error = "Error parsing ChEBI response. Please try again later."
             return self
 
         return self
