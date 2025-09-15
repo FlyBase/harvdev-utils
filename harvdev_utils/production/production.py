@@ -2371,6 +2371,38 @@ class GenotypeDbxref(Base):
         return self.dbxref_id
 
 
+class GenotypeRelationship(Base):
+    __tablename__ = 'genotype_relationship'
+    __table_args__ = (
+        UniqueConstraint('subject_id', 'type_id', 'object_id', 'pub_id', name='genotype_relationship_c1'),
+        Index('genotype_relationship_idx1', 'genotype_relationship_id'),
+        Index('genotype_relationship_idx2', 'subject_id'),
+        Index('genotype_relationship_idx3', 'object_id'),
+        Index('genotype_relationship_idx4', 'type_id'),
+        Index('genotype_relationship_idx5', 'pub_id')
+    )
+
+    genotype_relationship_id = Column(Integer, primary_key=True, server_default=text("nextval('genotype_relationship_genotype_relationship_id_seq'::regclass)"))
+    subject_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    object_id: int = Column(ForeignKey('genotype.genotype_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    type_id: int = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+    pub_id: int = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False, index=True)
+
+    subject: 'Genotype' = relationship('Genotype', primaryjoin='GenotypeRelationship.subject_id == Genotype.genotype_id')
+    object: 'Genotype' = relationship('Genotype', primaryjoin='GenotypeRelationship.object_id == Genotype.genotype_id')
+    type: 'Cvterm' = relationship('Cvterm')
+    pub: 'Pub' = relationship('Pub')
+
+    def __str__(self):
+        """Over write the default output."""
+        output_str = f'pub={self.pub.uniquename}: '
+        output_str += f'genotype_relationship_id={self.genotype_relationship_id}: '
+        output_str += f'subject={self.subject.uniquename}: '
+        output_str += f'object={self.object.uniquename}: '
+        output_str += f'type={self.type.name}'
+        return output_str
+
+
 class GenotypeSynonym(Base):
     __tablename__ = 'genotype_synonym'
     __table_args__ = (
