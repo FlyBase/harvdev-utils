@@ -30,7 +30,7 @@
 # COSMIC https://cancer.sanger.ac.uk/cosmic/search?q=KMT2A
 # GHR_gene https://ghr.nlm.nih.gov/search?query=TBC1D24
 # external api's
-from bioservices import ChEBI, HGNC
+from bioservices import HGNC
 import pubchempy
 
 # general imports
@@ -167,37 +167,64 @@ class ExternalLookup:
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
     def _lookup_chebi_id(self):
-        chebi_web = ChEBI()
         lookup_id = str(self.external_id)
-        if not lookup_id.startswith("CHEBI:"):
-            lookup_id = "CHEBI:{}".format(self.external_id)
-        chebi = chebi_web.getCompleteEntity(lookup_id)
-        if not chebi:
-            self.error = "No results found when querying ChEBI for {}".format(self.external_id)
-            return self
-        # log.debug("######### {} ############".format(lookup_id))
-        # log.debug(chebi)
-        # log.debug("#####################")
-        if 'definition' in chebi and chebi.definition:
-            self.description = chebi.definition
-        # Synonyms
-        # We get duplicates so filter these.
-        if self.get_synonyms:
-            try:
-                seen_it = {}
-                for item in chebi.Synonyms:
-                    if item.data not in seen_it:
-                        self.synonyms.append(item.data)
-                        seen_it[item.data] = 1
-            except AttributeError:
-                pass  # Some may not have synonyms apparently
-        # Name
-        self.name = chebi.chebiAsciiName
-        # inchikey
+        if lookup_id.startswith("CHEBI:"):
+            lookup_id = lookup_id[6:]  # Remove CHEBI: prefix for EBI Search API
+
+        # Use EBI Search REST API instead of SOAP service
+        params = {
+            "format": "json",
+            "fields": "id,name,description,synonyms,inchikey"
+        }
+        query_string = urlencode(params)
+        url = f'https://www.ebi.ac.uk/ebisearch/ws/rest/chebi/entry/{lookup_id}?{query_string}'
+
         try:
-            self.inchikey = chebi.inchiKey
-        except AttributeError:
-            self.error = 'No InChIKey found for entry: {}'.format(self.external_id)
+            response = requests.get(url, timeout=30)
+            if response.status_code != 200:
+                self.error = "No results found when querying ChEBI for {}".format(self.external_id)
+                return self
+
+            data = response.json()
+            if not data.get('entries'):
+                self.error = "No results found when querying ChEBI for {}".format(self.external_id)
+                return self
+
+            entry = data['entries'][0]
+            fields = entry.get('fields', {})
+
+            # Name
+            if 'name' in fields and fields['name']:
+                self.name = fields['name'][0]
+            else:
+                self.error = "No name found for ChEBI entry {}".format(self.external_id)
+                return self
+
+            # Description
+            if 'description' in fields and fields['description']:
+                self.description = fields['description'][0]
+
+            # InChIKey
+            if 'inchikey' in fields and fields['inchikey']:
+                self.inchikey = fields['inchikey'][0]
+
+            # Synonyms (if requested)
+            if self.get_synonyms and 'synonyms' in fields and fields['synonyms']:
+                seen_it = set()
+                for synonym in fields['synonyms']:
+                    if synonym and synonym not in seen_it:
+                        self.synonyms.append(synonym)
+                        seen_it.add(synonym)
+
+        except requests.RequestException as e:
+            log.exception("Error connecting to ChEBI service for ID %s", self.external_id)
+            self.error = "Error connecting to ChEBI service. Please try again later."
+            return self
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            log.exception("Error parsing ChEBI response for ID %s", self.external_id)
+            self.error = "Error parsing ChEBI response. Please try again later."
+            return self
+
         return self
 
     #################
