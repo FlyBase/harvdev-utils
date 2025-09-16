@@ -178,7 +178,7 @@ class ExternalLookup:
         }
         query_string = urlencode(params)
         url = f'https://www.ebi.ac.uk/ebisearch/ws/rest/chebi/entry/{lookup_id}?{query_string}'
-
+        print(url)
         try:
             response = requests.get(url, timeout=30)
             if response.status_code != 200:
@@ -192,10 +192,14 @@ class ExternalLookup:
 
             entry = data['entries'][0]
             fields = entry.get('fields', {})
+            for f in fields:
+                print(f"{f}: {fields[f]}, type: {type(fields[f])}")
 
             # Name
             if 'name' in fields and fields['name']:
                 self.name = fields['name'][0]
+                print(type(fields['name'][0]))
+                print(f"Setting name to {self.name}")
             else:
                 self.error = "No name found for ChEBI entry {}".format(self.external_id)
                 return self
@@ -411,6 +415,8 @@ class ExternalLookup:
             self.error = "No results found when querying DOID for {}".format(self.external_id)
         return self
 
+    def __str__(self):
+        return f"name: {self.name}, DB:{self.dbname}, desc: {self.description}, inchikey: {self.inchikey}, synonyms: {self.synonyms}"
 
 ##########
 # Examples
@@ -508,3 +514,5 @@ if __name__ == '__main__':  # noqa: C901
             print("\tinchikey: {}".format(hgnc.inchikey))
             print("\tdesc: {}".format(hgnc.description))
             print("\tsynonyms: {}".format(hgnc.synonyms))
+
+
