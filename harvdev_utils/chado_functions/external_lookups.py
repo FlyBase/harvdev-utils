@@ -177,8 +177,6 @@ class ExternalLookup:
         query_string = urlencode(params)
 
         url = f'https://www.ebi.ac.uk/chebi/backend/api/public/compounds/?{query_string}'
-        # url = f'https://www.ebi.ac.uk/chebi/backend/api/public/compounds/?chebi_ids=CHEBI:18357'
-        print(url)
         data = []
         try:
             response = requests.get(url, timeout=30)
@@ -203,9 +201,6 @@ class ExternalLookup:
             return self
 
         top = data[external_id]['data']
-        print("###############")
-        # pprint.pprint(top)
-        # print(top['default_structure'])
         if 'default_structure' in top and 'standard_inchi_key' in top['default_structure']:
             self.inchikey = top['default_structure']['standard_inchi_key']
 
@@ -214,7 +209,6 @@ class ExternalLookup:
         if 'name' in top:
             self.name = top['name']
         if 'names' in top and 'SYNONYM' in top['names']:
-            # pprint.pprint(top['names']['SYNONYM'])
             syns = top['names']['SYNONYM']
             seen_it = set()
             synonyms = []
