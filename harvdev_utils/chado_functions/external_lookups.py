@@ -169,65 +169,60 @@ class ExternalLookup:
     def _lookup_chebi_id(self):
         lookup_id = str(self.external_id)
         if lookup_id.startswith("CHEBI:"):
-            lookup_id = lookup_id[6:]  # Remove CHEBI: prefix for EBI Search API
+            external_id = lookup_id[6:]  # Remove CHEBI: prefix for EBI Search API
 
-        # Use EBI Search REST API instead of SOAP service
         params = {
-            "format": "json",
-            "fields": "id,name,description,synonyms,inchikey"
+            "chebi_ids": external_id
         }
         query_string = urlencode(params)
-        url = f'https://www.ebi.ac.uk/ebisearch/ws/rest/chebi/entry/{lookup_id}?{query_string}'
+
+        url = f'https://www.ebi.ac.uk/chebi/backend/api/public/compounds/?{query_string}'
+        # url = f'https://www.ebi.ac.uk/chebi/backend/api/public/compounds/?chebi_ids=CHEBI:18357'
         print(url)
+        data = []
         try:
             response = requests.get(url, timeout=30)
             if response.status_code != 200:
-                self.error = "No results found when querying ChEBI for {}".format(self.external_id)
+                self.error = "No results found when querying ChEBI for {}".format(external_id)
                 return self
-
             data = response.json()
-            if not data.get('entries'):
-                self.error = "No results found when querying ChEBI for {}".format(self.external_id)
-                return self
-
-            entry = data['entries'][0]
-            fields = entry.get('fields', {})
-            for f in fields:
-                print(f"{f}: {fields[f]}, type: {type(fields[f])}")
-
-            # Name
-            if 'name' in fields and fields['name']:
-                self.name = fields['name'][0]
-                print(type(fields['name'][0]))
-                print(f"Setting name to {self.name}")
-            else:
-                self.error = "No name found for ChEBI entry {}".format(self.external_id)
-                return self
-
-            # Description
-            if 'description' in fields and fields['description']:
-                self.description = fields['description'][0]
-
-            # InChIKey
-            if 'inchikey' in fields and fields['inchikey']:
-                self.inchikey = fields['inchikey'][0]
-
-            # Synonyms (if requested)
-            if self.get_synonyms and 'synonyms' in fields and fields['synonyms']:
-                seen_it = set()
-                for synonym in fields['synonyms']:
-                    if synonym and synonym not in seen_it:
-                        self.synonyms.append(synonym)
-                        seen_it.add(synonym)
 
         except requests.RequestException as e:
-            log.exception("Error connecting to ChEBI service for ID %s", self.external_id)
             self.error = "Error connecting to ChEBI service. Please try again later."
             return self
         except (KeyError, IndexError, json.JSONDecodeError) as e:
-            log.exception("Error parsing ChEBI response for ID %s", self.external_id)
             self.error = "Error parsing ChEBI response. Please try again later."
             return self
+
+        if not data or external_id not in data:
+            self.error = "No results found when querying ChEBI for {}".format(external_id)
+            return self
+
+        if 'data' not in data[external_id]:
+            self.error = "No results found when querying ChEBI for {}".format(external_id)
+            return self
+
+        top = data[external_id]['data']
+        print("###############")
+        # pprint.pprint(top)
+        # print(top['default_structure'])
+        if 'default_structure' in top and 'standard_inchi_key' in top['default_structure']:
+            self.inchikey = top['default_structure']['standard_inchi_key']
+
+        if 'definition' in top:
+            self.description = top['definition']
+        if 'name' in top:
+            self.name = top['name']
+        if 'names' in top and 'SYNONYM' in top['names']:
+            # pprint.pprint(top['names']['SYNONYM'])
+            syns = top['names']['SYNONYM']
+            seen_it = set()
+            synonyms = []
+            for syn in syns:
+                if syn['name'] and syn['name'] not in seen_it:
+                    synonyms.append(syn['name'])
+                    seen_it.add(syn['name'])
+            self.synonyms = synonyms
 
         return self
 
