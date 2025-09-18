@@ -206,16 +206,16 @@ class ExternalLookup:
 
         if 'definition' in top:
             self.description = top['definition']
-        if 'name' in top:
-            self.name = top['name']
+        if 'ascii_name' in top:
+            self.name = top['ascii_name']
         if 'names' in top and 'SYNONYM' in top['names']:
             syns = top['names']['SYNONYM']
             seen_it = set()
             synonyms = []
             for syn in syns:
-                if syn['name'] and syn['name'] not in seen_it:
-                    synonyms.append(syn['name'])
-                    seen_it.add(syn['name'])
+                if syn['ascii_name'] and syn['ascii_name'] not in seen_it:
+                    synonyms.append(syn['ascii_name'])
+                    seen_it.add(syn['ascii_name'])
             self.synonyms = synonyms
 
         return self
