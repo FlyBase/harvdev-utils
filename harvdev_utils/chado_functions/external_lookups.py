@@ -167,9 +167,9 @@ class ExternalLookup:
 
     @retry(tries=MAX_TRIES, delay=SLEEP_TIME, logger=log)
     def _lookup_chebi_id(self):
-        lookup_id = str(self.external_id)
-        if lookup_id.startswith("CHEBI:"):
-            external_id = lookup_id[6:]  # Remove CHEBI: prefix for EBI Search API
+        external_id = str(self.external_id)
+        if external_id.startswith("CHEBI:"):
+            external_id = external_id[6:]  # Remove CHEBI: prefix for EBI Search API
 
         params = {
             "chebi_ids": external_id
