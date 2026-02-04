@@ -103,9 +103,11 @@ def set_up_db_reading(report_label):
     set_up_dict['testing'] = args.testing
 
     # Output filename
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : Line No %(lineno)d : %(message)s')
     alliance = args.alliance
     if alliance is True:
         set_up_dict['output_filename'] = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.json'
+        formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s : Line No %(lineno)d : %(message)s')
     else:
         set_up_dict['output_filename'] = output_dir + report_label + '_' + database + '.tsv'
 
@@ -115,7 +117,6 @@ def set_up_db_reading(report_label):
     else:
         log_filename = log_dir + report_label + '_' + database + '.log'
     file_handler = logging.FileHandler(log_filename, mode='a')
-    formatter = logging.Formatter('%(asctime)s : %(levelname)s : Line No %(lineno)d : %(message)s')
     file_handler.setFormatter(formatter)
     log.addHandler(file_handler)
     # Determine log level.
