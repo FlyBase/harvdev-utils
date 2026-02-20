@@ -14,7 +14,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def establish_db_connection(database_host, database, username, password):
+def establish_db_connection(database_host, database, username, password, port=5432):
     """Establish a connection to some postgres db.
 
     Args:
@@ -22,12 +22,13 @@ def establish_db_connection(database_host, database, username, password):
         arg2 (str): The "database" name.
         arg3 (str): The "username".
         arg4 (str): The postgres "password".
+        arg5 (int): The "port" (default 5432).
 
     Returns:
         psycopg2.extensions.connection: A psycopg2 database connection object.
 
     """
-    conn_string = "host={} dbname={} user={} password='{}'".format(database_host, database, username, password)
+    conn_string = "host={} dbname={} user={} password='{}' port={}".format(database_host, database, username, password, port)
     db_connection = psycopg2.connect(conn_string)
     conn_description = 'Made connection to database {} on db_host {}.'.format(database, database_host)
 
