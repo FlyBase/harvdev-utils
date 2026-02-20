@@ -52,6 +52,7 @@ def set_up_db_reading(report_label):
         database = config['default']['Database']
         username = config['default']['User']
         password = config['default']['PGPassword']
+        port = config['default'].get('Port', '5432')
         database_release = config['default']['Release']
         epicycle = config['default']['Epicycle']
         assembly = config['default']['Assembly']
@@ -73,6 +74,7 @@ def set_up_db_reading(report_label):
         input_dir = '/src/input/'
         log_dir = '/src/logs/'
         # Optional variables:
+        port = os.environ.get('PORT', '5432')
         epicycle = os.environ.get('EPICYCLE', 'unspecified')
         assembly = os.environ.get('ASSEMBLY', 'R6')
         annotation_release = os.environ.get('ANNOTATIONRELEASE', 'unspecified')
@@ -103,6 +105,7 @@ def set_up_db_reading(report_label):
     set_up_dict['testing'] = args.testing
 
     # Output filename
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(filename)s : Line No %(lineno)d : %(message)s')
     alliance = args.alliance
     if alliance is True:
         set_up_dict['output_filename'] = output_dir + 'FB_' + alliance_schema + '_' + report_label + '.json'
@@ -128,7 +131,7 @@ def set_up_db_reading(report_label):
     set_up_dict['log'] = logging.getLogger(__name__)
 
     # Establish database connection.
-    set_up_dict['conn'], conn_description = establish_db_connection(server, database, username, password)
+    set_up_dict['conn'], conn_description = establish_db_connection(server, database, username, password, port)
 
     # Official timestamp for this script.
     set_up_dict['the_time'] = strict_rfc3339.now_to_rfc3339_localoffset()
