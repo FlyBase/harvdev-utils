@@ -201,14 +201,14 @@ class ExternalLookup:
             return self
 
         top = data[external_id]['data']
-        if 'default_structure' in top and 'standard_inchi_key' in top['default_structure']:
+        if top.get('default_structure') and 'standard_inchi_key' in top['default_structure']:
             self.inchikey = top['default_structure']['standard_inchi_key']
 
         if 'definition' in top:
             self.description = top['definition']
         if 'ascii_name' in top:
             self.name = top['ascii_name']
-        if 'names' in top and 'SYNONYM' in top['names']:
+        if top.get('names') and 'SYNONYM' in top['names']:
             syns = top['names']['SYNONYM']
             seen_it = set()
             synonyms = []
