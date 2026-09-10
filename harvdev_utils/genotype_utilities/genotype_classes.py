@@ -6,48 +6,65 @@ Author(s):
     Gil dos Santos dossantos@morgan.harvard.edu
 
 Notes:
-    Given a genotype name (a string of feature SGML symbols), a
-    GenotypeAnnotation object is created that will check for data problems
-    with the genotype, if there are no issues, it can find an existing
-    genotype in chado, or, create one. The genotype input name should consist
-    of SGML symbols (but using square brackets for sub/superscript) for
-    alleles, aberrations, balancers (and rarely, constructs and insertions):
-    e.g., &agr;Tub67C[3] (Greeks in sgml, superscript using square brackets).
-    Features may also include internal "bogus symbol" features typically
-    meant to represent an unspecified wildtype allele: e.g., "wg[+]".
-    Components at the same locus should be separated by a "/" character, with
-    spaces separating different loci. FeSee curation rules for more details.
-    Creating a new genotype in chado involves not just adding to the genotype
-    table, but also assigning an ID (genotype_dbxref), a current symbol
-    (genotype_synonym), and the components (feature_genotype).
-    While these objects can write directly to chado, they should be
-    controlled by handlers that have a postgress Session object.
+    A GenotypeAnnotation object will check for data problems with a genotype,
+    and, if there are no issues, find an existing genotype in chado, or create
+    one. Creating a new genotype in chado involves not just adding to the
+    genotype table, but also assigning an ID (genotype_dbxref), a current
+    symbol (genotype_synonym), and the components (feature_genotype).
+    While these objects can write directly to chado, they should be controlled
+    by handlers that have a postgres Session object.
+
+    A genotype can be given to a GenotypeAnnotation in either of two ways.
+
+    1. As a name: a string of component SGML symbols (but using square
+    brackets for sub/superscript) for alleles, aberrations, balancers (and
+    rarely, constructs and insertions): e.g., &agr;Tub67C[3] (Greeks in sgml,
+    superscript using square brackets). Features may also include internal
+    "bogus symbol" features typically meant to represent an unspecified
+    wildtype allele: e.g., "wg[+]". Components at the same locus should be
+    separated by a "/" character, with spaces separating different loci. See
+    curation rules for more details. This is the form curators type, and the
+    form disease annotation proformae carry, so it is what those callers use.
+
+    2. As components: cgroup-keyed lists of feature.feature_ids, straight from
+    the feature_genotype table of a genotype already in chado. Callers
+    re-assessing chado genotypes should use this form. Parsing a genotype's
+    uniquename back into features is both slow (a symbol has to be looked up
+    to get back to the feature_id that feature_genotype already holds) and
+    ambiguous (a "/" in a component's own symbol is indistinguishable from
+    the "/" that separates components at a locus).
+
+    Both forms are checked and transformed by the same code once components
+    have been identified: only the identification step differs.
+
+    The per-component chado lookups live in component_lookup.py. Pass a
+    PrefetchedComponentLookup when processing many genotypes; the default
+    ComponentLookup queries chado per component, which is cheaper for one-offs
+    but far too slow for a whole-database pass.
 
 """
 
 import re
-from sqlalchemy.orm import aliased
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from collections import defaultdict
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from harvdev_utils.production import (
-    Cv, Cvterm, Db, Dbxref, Feature, FeatureCvterm, FeatureCvtermprop,
-    FeatureGenotype, FeatureRelationship, FeatureRelationshipPub, FeaturePub,
-    FeatureSynonym, Featureprop, Genotype, GenotypeCvterm, GenotypeDbxref,
-    GenotypeSynonym, Organism, Organismprop, Pub, Synonym
+    Cv, Cvterm, Db, Dbxref, FeatureGenotype, Genotype, GenotypeCvterm,
+    GenotypeDbxref, GenotypeSynonym, Pub, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml, sub_sup_to_sgml
+from harvdev_utils.char_conversions import sgml_to_plain_text, sub_sup_to_sgml
+from harvdev_utils.genotype_utilities.component_lookup import (
+    ComponentLookup, FeatureRef, FBAB_REGEX, FBAL_REGEX, FBBA_REGEX,
+    FBGN_REGEX, FBGO_REGEX, FBTI_REGEX, FBTP_REGEX,
+    FEATURE_UNIQUENAME_REGEX
+)
 
-
-# Regex patterns as constants (easier to maintain/change if needed)
-FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'    # FTA-258: include FBba balancers.
-FBAL_REGEX = r'^FBal[0-9]{7}$'
-FBAB_REGEX = r'^FBab[0-9]{7}$'
-FBBA_REGEX = r'^FBba[0-9]{7}$'
-FBGO_REGEX = r'^FBgo[0-9]{7}$'
-FBTP_REGEX = r'^FBtp[0-9]{7}$'
-FBTI_REGEX = r'^FBti[0-9]{7}$'
-FBGN_REGEX = r'^FBgn[0-9]{7}$'
+# Names re-exported for callers that used to import them from this module.
+__all__ = [
+    'ChadoCache', 'ComplementationGroup', 'GenotypeAnnotation',
+    'FBAB_REGEX', 'FBAL_REGEX', 'FBBA_REGEX', 'FBGN_REGEX', 'FBGO_REGEX',
+    'FBTI_REGEX', 'FBTP_REGEX', 'FEATURE_UNIQUENAME_REGEX',
+]
 
 
 class ChadoCache:
@@ -101,25 +118,35 @@ class ChadoCache:
 
 class GenotypeAnnotation(object):
     """A genotype, its related data, and quality-check attributes."""
-    def __init__(self, input_genotype_name, session, log, pub_id):
-        """Create a base GenotypeAnnotation from a genotype name.
+    def __init__(self, input_genotype_name, session, log, pub_id, input_components=None, lookup=None, cache=None):
+        """Create a base GenotypeAnnotation from a genotype name, or from its components.
 
         Args:
-            input_genotype_name (str): A string of component SGML symbols.
+            input_genotype_name (str): A string of component SGML symbols. When
+                input_components is given this string is used only as a label
+                for logging, so the chado genotype's uniquename is a good value.
             session (Session): SQLAlchemy session for the database from which to query and export.
             log (Logger): The logging object to use.
             pub_id (int): The relevant pub.pub_id; may be used for disambiguation.
+            input_components (dict): Optional cgroup-keyed lists of feature.feature_ids,
+                each list ordered by feature_genotype.rank. When given, the genotype is
+                built from these rather than from input_genotype_name.
+            lookup (ComponentLookup): Optional shared source of per-component chado facts.
+            cache (ChadoCache): Optional shared cache of common chado objects.
 
         Returns:
             An object of the GenotypeAnnotation class.
 
         """
         self.input_genotype_name = input_genotype_name
+        self.input_components = input_components    # Cgroup-keyed lists of feature_ids, when built from feature_genotype.
         self.log = log              # From a script using this class.
         self.pub_id = pub_id        # The pub.pub_id to be used for disambiguation.
+        self.lookup = lookup if lookup is not None else ComponentLookup(log)
+        self.cache = cache if cache is not None else ChadoCache(session)
         self.features = {}          # Feature_id-keyed dict of public features.
         self.input_features_replaced = {}    # Will be old FBal/FBtp ID to new FBti ID list of replacements.
-        self.cgroup_list = []       # A list of ComplementationGroup objects derived from the input_genotype_name.
+        self.cgroup_list = []       # A list of ComplementationGroup objects derived from the input genotype.
         self.cgroup_dict = {}       # Cgroup-keyed ComplementationGroups.
         self.uniquename = None      # Recomputed uniquename (symbols sorted).
         self.description = None     # Description based on feature IDs.
@@ -143,13 +170,23 @@ class GenotypeAnnotation(object):
     def _parse_cgroups(self, session):
         """Parse the input genotype into ComplementationGroups."""
         self.log.debug(f'Parse {self} into ComplementationGroups.')
-        cgroup_symbols = self.input_genotype_name.split(' ')
-        # self.log.debug(f'Found these cgroups: {cgroup_symbols}')
-        for cgroup_symbol in cgroup_symbols:
-            if cgroup_symbol != '':
-                cgroup = ComplementationGroup(cgroup_symbol, self.log, self.pub_id)
+        if self.input_components is not None:
+            if not self.input_components:
+                self.errors.append('Genotype has no feature_genotype components')
+                self.log.error(f'For {self}, found no feature_genotype components.')
+                return
+            for cgroup_number in sorted(self.input_components.keys()):
+                cgroup = ComplementationGroup.from_feature_ids(self.input_components[cgroup_number], self.log, self.pub_id, self.lookup)
                 cgroup.process_cgroup(session)
                 self.cgroup_list.append(cgroup)
+        else:
+            cgroup_symbols = self.input_genotype_name.split(' ')
+            # self.log.debug(f'Found these cgroups: {cgroup_symbols}')
+            for cgroup_symbol in cgroup_symbols:
+                if cgroup_symbol != '':
+                    cgroup = ComplementationGroup(cgroup_symbol, self.log, self.pub_id, self.lookup)
+                    cgroup.process_cgroup(session)
+                    self.cgroup_list.append(cgroup)
         for cgroup in self.cgroup_list:
             for feature_dict in cgroup.features:
                 if feature_dict['feature_id'] is not None and feature_dict['type'] != 'bogus symbol':
@@ -262,7 +299,7 @@ class GenotypeAnnotation(object):
         for donor_desc in donor_cgroups.keys():
             donor = cgroup_desc_dict[donor_desc]
             public_feature_ids = [i['feature_id'] for i in donor.features if i['feature_id'] and i['uniquename'].startswith('FBti')]
-            compatible_fbgn_ids = self._find_possible_genes_for_insertion(session, public_feature_ids[0])
+            compatible_fbgn_ids = self.lookup.possible_genes_for_insertion(session, public_feature_ids[0])
             # self.log.debug(f'For {donor_desc}, found these compatible FBgn IDs: {compatible_fbgn_ids}')
             for receptor_desc in receptor_cgroups.keys():
                 receptor = cgroup_desc_dict[receptor_desc]
@@ -288,52 +325,21 @@ class GenotypeAnnotation(object):
             if cgroup.cgroup_desc not in cgroups_to_edit:
                 new_cgroup_list.append(cgroup)
         # 6. Combine the donor/receptor pairs and add them to the final list of cgroups.
+        # The pair's components have already been identified, mapped and flagged, so the combined
+        # cgroup reuses those feature dicts. Rebuilding it from a "donor/receptor" symbol string
+        # would re-do all that work, and would split a component symbol that contains a "/".
         for donor_desc, receptor_desc in final_matches.items():
             donor_cgroup = cgroup_desc_dict[donor_desc]
-            donor_symbol = [i['input_symbol'] for i in donor_cgroup.features if i['uniquename'].startswith('FBti')][0]
+            donor_feature = [i for i in donor_cgroup.features if i['uniquename'] and i['uniquename'].startswith('FBti')][0]
             receptor_cgroup = cgroup_desc_dict[receptor_desc]
-            receptor_symbol = [i['input_symbol'] for i in receptor_cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol'][0]
-            new_input_cgroup_symbol = f'{donor_symbol}/{receptor_symbol}'
-            msg = f'Created new combined cgroup: {new_input_cgroup_symbol}'
+            receptor_feature = [i for i in receptor_cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol'][0]
+            msg = f'Created new combined cgroup: {donor_feature["input_symbol"]}/{receptor_feature["input_symbol"]}'
             self.log.debug(msg)
-            new_cgroup = ComplementationGroup(new_input_cgroup_symbol, self.log, self.pub_id)
+            new_cgroup = ComplementationGroup.from_feature_dicts([donor_feature, receptor_feature], self.log, self.pub_id, self.lookup)
             new_cgroup.process_cgroup(session)
             new_cgroup_list.append(new_cgroup)
         self.cgroup_list = new_cgroup_list
         return
-
-    def _find_possible_genes_for_insertion(self, session, insertion_feature_id):
-        """Find possible Dros genes for an at-locus FBti insertion via alleles."""
-        fbgn_id_list = []
-        gene = aliased(Feature, name='gene')
-        allele = aliased(Feature, name='allele')
-        ag_rel = aliased(FeatureRelationship, name='ag_rel')
-        ai_rel = aliased(FeatureRelationship, name='ai_rel')
-        ag_rel_type = aliased(Cvterm, name='ag_rel_type')
-        ai_rel_type = aliased(Cvterm, name='ai_rel_type')
-        filters = (
-            ai_rel.object_id == insertion_feature_id,
-            allele.is_obsolete.is_(False),
-            allele.uniquename.op('~')(FBAL_REGEX),
-            gene.is_obsolete.is_(False),
-            gene.uniquename.op('~')(FBGN_REGEX),
-            ai_rel_type.name == 'associated_with',
-            ag_rel_type.name == 'alleleof',
-            Organismprop.value == 'drosophilid',
-        )
-        results = session.query(gene).\
-            select_from(gene).\
-            join(Organismprop, (Organismprop.organism_id == gene.organism_id)).\
-            join(ag_rel, (ag_rel.object_id == gene.feature_id)).\
-            join(ag_rel_type, (ag_rel_type.cvterm_id == ag_rel.type_id)).\
-            join(allele, (allele.feature_id == ag_rel.subject_id)).\
-            join(ai_rel, (ai_rel.subject_id == allele.feature_id)).\
-            join(ai_rel_type, (ai_rel_type.cvterm_id == ai_rel.type_id)).\
-            filter(*filters).\
-            distinct()
-        for result in results:
-            fbgn_id_list.append(result.uniquename)
-        return fbgn_id_list
 
     def _check_multi_cgroup_genes(self):
         """Look for genes of "single_cgroup" features in many cgroups."""
@@ -386,43 +392,54 @@ class GenotypeAnnotation(object):
         self.log.debug(f'Calculated this description: {self.description}')
         return
 
-    def _find_known_genotype(self, session, cache):
-        """Find a corresponding genotype in chado."""
+    def _find_known_genotype(self, session):
+        """Find a corresponding genotype in chado.
+
+        The genotype.description is the match key: it is built from the FlyBase IDs of the
+        genotype's components, so unlike genotype.uniquename it does not go stale when a
+        component is renamed. check_genotypes.py derives it from feature_genotype and merges
+        genotypes that share one, so it identifies a genotype.
+        """
         if self.errors:
             return
-        filters = (
-            Genotype.uniquename == self.uniquename,
-            Genotype.is_obsolete.is_(False),
-            GenotypeDbxref.is_current.is_(True),
-            Dbxref.accession.op('~')(FBGO_REGEX),
-            Db.name == 'FlyBase',
-        )
-        chado_genotype = session.query(Genotype, Dbxref).\
-            select_from(Genotype).\
-            join(GenotypeDbxref, (GenotypeDbxref.genotype_id == Genotype.genotype_id)).\
-            join(Dbxref, (Dbxref.dbxref_id == GenotypeDbxref.dbxref_id)).\
-            join(Db, (Db.db_id == Dbxref.db_id)).\
-            filter(*filters).\
-            one_or_none()
-        if chado_genotype:
-            self.log.debug(f'{self} matches {chado_genotype.Genotype.uniquename} (genotype_id={chado_genotype.Genotype.genotype_id})')
-            if chado_genotype.Genotype.description == self.description:
-                self.curie = chado_genotype.Dbxref.accession
-                self.genotype_id = chado_genotype.Genotype.genotype_id
-                self.is_new = False
-                self._mark_as_alliance_compliant(session, cache)
-                self.log.debug(f'The descriptions for the curated and chado genotype are identical: {self.description}.')
-            else:
-                msg = f'Description mismatch: chado_desc={chado_genotype.Genotype.description}, calc_desc={self.description}'
-                self.errors.append(msg)
-                self.log.error(msg)
-        else:
+        try:
+            known_genotype = self.lookup.genotype_by_description(session, self.description)
+        except MultipleResultsFound:
+            msg = f'Many current genotypes with FBgo IDs have the description {self.description}'
+            self.errors.append(msg)
+            self.log.error(msg)
+            return
+        if known_genotype is None:
             self.is_new = True
             self.log.debug(f'Genotype {self} not found in chado.')
+            return
+        self.curie = known_genotype.curie
+        self.genotype_id = known_genotype.genotype_id
+        self.is_new = False
+        self.log.debug(f'{self} matches {known_genotype.uniquename} (genotype_id={self.genotype_id}, {self.curie})')
+        # The uniquename is the genotype's current symbol, and is what XORT matches on, so a
+        # disagreement is worth seeing. It is not a reason to reject the match, though: it is
+        # check_genotypes.py that recalculates uniquenames, and it may not have run since the
+        # component was renamed. Recorded as a note so that it does not gate callers that stop
+        # on warnings.
+        if known_genotype.uniquename != self.uniquename:
+            msg = f'Uniquename mismatch: chado_uniquename={known_genotype.uniquename}, calc_uniquename={self.uniquename}'
+            self.notes.append(msg)
+            self.log.warning(msg)
+        self._mark_as_alliance_compliant(session)
 
     def _create_new_genotype(self, session):
         """Create a new entry in the chado genotype table."""
         if self.errors or not self.is_new:
+            return
+        # genotype.uniquename is unique, so check before inserting: a uniquename held by a
+        # genotype with some other description would otherwise abort the whole transaction.
+        uniquename_holder = self.lookup.genotype_by_uniquename(session, self.uniquename)
+        if uniquename_holder is not None and uniquename_holder[1] != self.description:
+            msg = f'Uniquename "{self.uniquename}" belongs to genotype_id={uniquename_holder[0]}, '
+            msg += f'whose description is "{uniquename_holder[1]}", not "{self.description}"'
+            self.errors.append(msg)
+            self.log.error(msg)
             return
         new_chado_genotype, created = get_or_create(session, Genotype, uniquename=self.uniquename, description=self.description)
         if created is False:
@@ -436,7 +453,7 @@ class GenotypeAnnotation(object):
         self.genotype_id = new_chado_genotype.genotype_id
         return
 
-    def _assign_genotype_curie(self, session, cache):
+    def _assign_genotype_curie(self, session):
         """Assign a FlyBase curie to the genotype."""
         if self.errors or not self.is_new:
             return
@@ -448,7 +465,7 @@ class GenotypeAnnotation(object):
         new_xref, created = get_or_create(
             session,
             Dbxref,
-            db_id=cache.flybase_db.db_id,
+            db_id=self.cache.flybase_db.db_id,
             accession=new_fbgo_id
         )
         if not created:
@@ -463,6 +480,9 @@ class GenotypeAnnotation(object):
         )
         self.curie = new_xref.accession
         self.log.debug(f'For {self}, assigned new ID: {self.curie}')
+        # Make the new genotype findable, so that a later genotype deriving to it is mapped
+        # onto it rather than colliding with it.
+        self.lookup.register_genotype(self.description, self.uniquename, self.genotype_id, self.curie)
         return
 
     def _create_genotype_component_associations(self, session):
@@ -475,14 +495,14 @@ class GenotypeAnnotation(object):
                                            cgroup=cgroup_number, rank=feat_rank, cvterm_id=60468, chromosome_id=23159230)
         return
 
-    def _assign_genotype_symbol(self, session, cache):
+    def _assign_genotype_symbol(self, session):
         """Assign the genotype a current symbol."""
         if self.errors or not self.is_new:
             return
         new_symbol, _ = get_or_create(
             session,
             Synonym,
-            type_id=cache.synonym_symbol_cvterm.cvterm_id,
+            type_id=self.cache.synonym_symbol_cvterm.cvterm_id,
             name=self.uniquename,
             synonym_sgml=self.uniquename
         )
@@ -491,30 +511,25 @@ class GenotypeAnnotation(object):
             GenotypeSynonym,
             genotype_id=self.genotype_id,
             synonym_id=new_symbol.synonym_id,
-            pub_id=cache.pub_unattributed.pub_id
+            pub_id=self.cache.pub_unattributed.pub_id
         )
         return
 
-    def _mark_as_alliance_compliant(self, session, cache):
+    def _mark_as_alliance_compliant(self, session):
         """Mark the genotype as Alliance compliant."""
         if self.errors:
             return
-        alliance_compliant_cvterm_id = cache.alliance_compliant_cvterm.cvterm_id
-        # Check if genotype is already marked.
-        filters = (
-            GenotypeCvterm.genotype_id == self.genotype_id,
-            GenotypeCvterm.cvterm_id == alliance_compliant_cvterm_id,
-        )
-        existing_annotation = session.query(GenotypeCvterm).filter(*filters).one_or_none()
-        if existing_annotation:
+        # Many genotypes derive to the same compliant genotype, so check before writing.
+        if self.lookup.is_alliance_compliant(session, self.genotype_id):
             return
         get_or_create(
             session,
             GenotypeCvterm,
             genotype_id=self.genotype_id,
-            cvterm_id=alliance_compliant_cvterm_id,
-            pub_id=cache.pub_unattributed.pub_id
+            cvterm_id=self.cache.alliance_compliant_cvterm.cvterm_id,
+            pub_id=self.cache.pub_unattributed.pub_id
         )
+        self.lookup.register_alliance_compliant(self.genotype_id)
         return
 
     ###############################
@@ -537,29 +552,28 @@ class GenotypeAnnotation(object):
 
     def get_known_or_create_new_genotype(self, session):
         """Find an existing genotype, or, create a new genotype plus a new ID, component entries, and a current symbol."""
-        # We create a cache object once, then reuse it.
-        cache = ChadoCache(session)
         # Identify if the genotype is already in chado.
-        self._find_known_genotype(session, cache)
+        self._find_known_genotype(session)
         # If not found in chado, create a new genotype in chado.
         if self.is_new is True:
             self._create_new_genotype(session)
-            self._assign_genotype_curie(session, cache)
+            self._assign_genotype_curie(session)
             self._create_genotype_component_associations(session)
-            self._assign_genotype_symbol(session, cache)
-            self._mark_as_alliance_compliant(session, cache)
+            self._assign_genotype_symbol(session)
+            self._mark_as_alliance_compliant(session)
         return
 
 
 class ComplementationGroup(object):
     """A complementation group of features that is part of a genotype."""
-    def __init__(self, input_cgroup_str, log, pub_id):
+    def __init__(self, input_cgroup_str, log, pub_id, lookup=None):
         """Create a base ComplementationGroup.
 
         Args:
             input_cgroup_str (str): The components of the cgroup: e.g., "wg[1]/Df(2L)x".
             log (Logger): The logging object to use.
             pub_id (int): The pub.pub_id to use for disambiguation.
+            lookup (ComponentLookup): Optional shared source of per-component chado facts.
 
         Returns:
             An object of the ComplementationGroup class.
@@ -568,6 +582,9 @@ class ComplementationGroup(object):
         self.input_cgroup_str = input_cgroup_str
         self.log = log                   # From a script using this class.
         self.pub_id = pub_id             # The pub.pub_id to use for disambiguation.
+        self.lookup = lookup if lookup is not None else ComponentLookup(log)
+        self.input_feature_ids = None    # Rank-ordered feature_ids, if the cgroup came from feature_genotype.
+        self.preset_features = None      # Feature dicts, if the cgroup was made by combining two other cgroups.
         self.features = []               # Will be dicts with relevant feature info.
         self.feature_replaced = False    # Change to True if an input allele/construct is converted to an insertion.
         self.at_locus = False            # Change to True if there are at_locus features present.
@@ -579,46 +596,81 @@ class ComplementationGroup(object):
         self.warnings = []               # Warnings about the cgroup.
         self.errors = []                 # Error messages: if any, the cgroup (and related genotype) should not be processed.
 
+    @classmethod
+    def from_feature_ids(cls, feature_ids, log, pub_id, lookup):
+        """Create a ComplementationGroup from feature_genotype components.
+
+        Args:
+            feature_ids (list): feature.feature_ids of the cgroup's components, ordered by feature_genotype.rank.
+            log (Logger): The logging object to use.
+            pub_id (int): The pub.pub_id to use for disambiguation.
+            lookup (ComponentLookup): The source of per-component chado facts.
+
+        Returns:
+            An object of the ComplementationGroup class.
+
+        """
+        cgroup = cls('', log, pub_id, lookup)
+        cgroup.input_feature_ids = list(feature_ids)
+        return cgroup
+
+    @classmethod
+    def from_feature_dicts(cls, feature_dicts, log, pub_id, lookup):
+        """Create a ComplementationGroup from components already identified in other cgroups.
+
+        Args:
+            feature_dicts (list): Feature dicts from cgroups that have already been processed.
+            log (Logger): The logging object to use.
+            pub_id (int): The pub.pub_id to use for disambiguation.
+            lookup (ComponentLookup): The source of per-component chado facts.
+
+        Returns:
+            An object of the ComplementationGroup class.
+
+        """
+        cgroup = cls('', log, pub_id, lookup)
+        cgroup.preset_features = list(feature_dicts)
+        return cgroup
+
     #####################
     # Internal Methods
     #####################
+
+    @staticmethod
+    def _new_feature_dict(input_symbol, input_name):
+        """Make the dict in which everything known about one component is collected."""
+        return {
+            'input_symbol': input_symbol,
+            'input_name': input_name,                          # Expected to match the feature.name of a feature in chado.
+            'input_mapped_feature_id': None,                   # The feature_id for the feature that corresponds to the input feature symbol.
+            'input_uniquename': None,                          # The uniquename for the feature that corresponds to the input feature symbol.
+            'input_features_replaced': {},                     # Old ID - new ID replacement tracking.
+            'at_locus': True,                                  # True if the feature can share a cgroup with a classical allele (so False for transgenic).
+            'single_cgroup': True,                             # True if the feature should occupy only one cgroup (False for transgenic and aberrations).
+            'feature_id': None,                                # The feature.feature_id for the component to report.
+            'current_symbol': None,                            # The current symbol synonym.synonym_sgml (in SGML, Greeks converted to &agr; style).
+            'uniquename': None,                                # The FlyBase ID for the component.
+            'type': None,                                      # The CV term for the feature type.
+            'org_abbr': None,                                  # The organism.abbreviation for the feature.
+            'parental_gene_feature_id': None,                  # The feature.feature_id for the parental gene, if the feature is an FBal allele.
+            'parental_gene_uniquename': None,                  # The FBgn ID for the parental gene, if the feature is an FBal allele.
+            'parental_gene_name': None,                        # The feature.name for the parental gene.
+            'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
+            'misexpression_element': False,                    # True if allele is a misexpression element.
+        }
 
     def _identify_feature(self, session):
         """Identify the chado feature for each symbol given in a complementation group."""
         input_feature_symbols = self.input_cgroup_str.split('/')
         self.log.debug(f'Found these component symbols: {input_feature_symbols}.')
         for input_symbol in input_feature_symbols:
-            feature_dict = {
-                'input_symbol': input_symbol,
-                'input_name': sgml_to_plain_text(input_symbol),    # Expected to match the feature.name of a feature in chado.
-                'input_mapped_feature_id': None,                   # The feature_id for the feature that corresponds to the input feature symbol.
-                'input_uniquename': None,                          # The uniquename for the feature that corresponds to the input feature symbol.
-                'input_features_replaced': {},                     # Old ID - new ID replacement tracking.
-                'at_locus': True,                                  # True if the feature can share a cgroup with a classical allele (so False for transgenic).
-                'single_cgroup': True,                             # True if the feature should occupy only one cgroup (False for transgenic and aberrations).
-                'feature_id': None,                                # The feature.feature_id for the component to report.
-                'current_symbol': None,                            # The current symbol synonym.synonym_sgml (in SGML, Greeks converted to &agr; style).
-                'uniquename': None,                                # The FlyBase ID for the component.
-                'type': None,                                      # The CV term for the feature type.
-                'org_abbr': None,                                  # The organism.abbreviation for the feature.
-                'parental_gene_feature_id': None,                  # The feature.feature_id for the parental gene, if the feature is an FBal allele.
-                'parental_gene_uniquename': None,                  # The FBgn ID for the parental gene, if the feature is an FBal allele.
-                'parental_gene_name': None,                        # The feature.name for the parental gene.
-                'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
-                'misexpression_element': False,                    # True if allele is a misexpression element.
-            }
+            feature_dict = self._new_feature_dict(input_symbol, sgml_to_plain_text(input_symbol))
             # The dict is appended by reference here, then filled in by the steps below.
             self.features.append(feature_dict)
-            filters = (
-                Feature.is_obsolete.is_(False),
-                Feature.is_analysis.is_(False),
-                Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
-                Feature.name == feature_dict['input_name'],
-            )
             # 1. Find the chado feature corresponding to the input symbol.
             # A "bogus symbol" is an option only here, when the input symbol matches no chado feature at all.
             try:
-                feature_result = session.query(Feature).filter(*filters).one()
+                initial_feature = self.lookup.feature_by_name(session, feature_dict['input_name'])
             except NoResultFound:
                 self._map_to_bogus_symbol(session, feature_dict)
                 continue
@@ -626,28 +678,78 @@ class ComplementationGroup(object):
                 self.errors.append(f'"{input_symbol}" has MANY features in chado')
                 self.log.error(f'For "{input_symbol}", found MANY chado features.')
                 continue
-            # 2. Map that feature to the feature to be reported.
-            # A symbol that does correspond to a chado feature is never sent to _map_to_bogus_symbol(): if
-            # the mapping fails, the component is left unmapped (feature_dict['feature_id'] stays None).
+            self._map_and_describe_feature(session, initial_feature, feature_dict)
+        return
+
+    def _identify_features_by_id(self, session):
+        """Identify the chado feature for each component given as a feature_genotype feature_id."""
+        self.log.debug(f'Found these component feature_ids: {self.input_feature_ids}.')
+        for feature_id in self.input_feature_ids:
+            feature_dict = self._new_feature_dict('', '')
+            # The dict is appended by reference here, then filled in by the steps below.
+            self.features.append(feature_dict)
+            # 1. Get the details of the component feature that feature_genotype names.
             try:
-                self._map_to_public_feature(session, feature_result, feature_dict)
+                basics = self.lookup.component_basics(session, feature_id)
             except NoResultFound:
-                self.errors.append(f'"{input_symbol}" ({feature_result.uniquename}) has NO feature to which it can be mapped')
-                self.log.error(f'For "{input_symbol}" ({feature_result.uniquename}), found NO feature to map it to.')
+                self.errors.append(f'feature_id={feature_id} is not a feature that can be a genotype component')
+                self.log.error(f'For feature_id={feature_id}, found no current feature that can be a genotype component.')
                 continue
             except MultipleResultsFound:
-                self.errors.append(f'"{input_symbol}" ({feature_result.uniquename}) maps to MANY features')
-                self.log.error(f'For "{input_symbol}" ({feature_result.uniquename}), found MANY features to map it to.')
+                self.errors.append(f'feature_id={feature_id} has MANY current symbols in chado')
+                self.log.error(f'For feature_id={feature_id}, found many current symbols.')
                 continue
-            # 3. Get details for the feature to be reported.
-            try:
-                self._get_basic_feature_info(session, feature_dict)
-            except NoResultFound:
-                self.errors.append(f'"{input_symbol}" maps to a feature having NO current symbol in chado')
-                self.log.error(f'For "{input_symbol}", found no current symbol for feature_id={feature_dict["feature_id"]}.')
-            except MultipleResultsFound:
-                self.errors.append(f'"{input_symbol}" maps to a feature having MANY current symbols in chado')
-                self.log.error(f'For "{input_symbol}", found many current symbols for feature_id={feature_dict["feature_id"]}.')
+            feature_dict['input_symbol'] = basics['current_symbol']
+            feature_dict['input_name'] = basics['name']
+            # A "bogus symbol" component is reported as it is: there is nothing to map it to.
+            if basics['type'] == 'bogus symbol':
+                feature_dict['feature_id'] = feature_id
+                feature_dict['current_symbol'] = basics['current_symbol']
+                feature_dict['uniquename'] = basics['uniquename']
+                feature_dict['type'] = basics['type']
+                self.log.debug(f'feature_id={feature_id} is bogus symbol {basics["uniquename"]}.')
+                continue
+            initial_feature = FeatureRef(feature_id, basics['uniquename'], basics['name'])
+            self._map_and_describe_feature(session, initial_feature, feature_dict)
+        # Note the cgroup's components, for the messages that the check methods build.
+        self.input_cgroup_str = '/'.join([i['input_symbol'] for i in self.features])
+        return
+
+    def _map_and_describe_feature(self, session, initial_feature, feature_dict):
+        """Map an identified component to the feature to report, then describe that feature."""
+        input_symbol = feature_dict['input_symbol']
+        # 1. Map the identified feature to the feature to be reported.
+        # A component that does correspond to a chado feature is never sent to _map_to_bogus_symbol(): if
+        # the mapping fails, the component is left unmapped (feature_dict['feature_id'] stays None).
+        try:
+            self._map_to_public_feature(session, initial_feature, feature_dict)
+        except NoResultFound:
+            self.errors.append(f'"{input_symbol}" ({initial_feature.uniquename}) has NO feature to which it can be mapped')
+            self.log.error(f'For "{input_symbol}" ({initial_feature.uniquename}), found NO feature to map it to.')
+            return
+        except MultipleResultsFound:
+            self.errors.append(f'"{input_symbol}" ({initial_feature.uniquename}) maps to MANY features')
+            self.log.error(f'For "{input_symbol}" ({initial_feature.uniquename}), found MANY features to map it to.')
+            return
+        # 2. Get details for the feature to be reported.
+        try:
+            self._get_basic_feature_info(session, feature_dict)
+        except NoResultFound:
+            self.errors.append(f'"{input_symbol}" maps to a feature having NO current symbol in chado')
+            self.log.error(f'For "{input_symbol}", found no current symbol for feature_id={feature_dict["feature_id"]}.')
+        except MultipleResultsFound:
+            self.errors.append(f'"{input_symbol}" maps to a feature having MANY current symbols in chado')
+            self.log.error(f'For "{input_symbol}", found many current symbols for feature_id={feature_dict["feature_id"]}.')
+        return
+
+    def _adopt_preset_features(self):
+        """Take on components that were identified, mapped and flagged in other cgroups."""
+        self.features = self.preset_features
+        for feature_dict in self.features:
+            if feature_dict['input_features_replaced']:
+                self.feature_replaced = True
+        self.input_cgroup_str = '/'.join([i['input_symbol'] for i in self.features])
+        self.log.debug(f'Built cgroup "{self.input_cgroup_str}" from components of other cgroups.')
         return
 
     def _map_to_bogus_symbol(self, session, feature_dict):
@@ -657,37 +759,16 @@ class ComplementationGroup(object):
         feature_dict['input_name'] = input_symbol
         if input_symbol == '+' or input_symbol.endswith('[+]') or input_symbol.endswith('[-]'):
             self.log.debug(f'Look for an internal "bogus symbol" feature for "{input_symbol}".')
-            filters = (
-                Feature.is_obsolete.is_(False),
-                Feature.is_analysis.is_(False),
-                Feature.name == input_symbol,
-                Feature.uniquename == Feature.name,
-                Cvterm.name == 'bogus symbol',
-            )
-            try:
-                component_result = session.query(Feature).\
-                    select_from(Feature).\
-                    join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
-                    filter(*filters).\
-                    one()
-                feature_dict['current_symbol'] = sub_sup_to_sgml(feature_dict['input_name'])
-                feature_dict['feature_id'] = component_result.feature_id
-                feature_dict['uniquename'] = component_result.uniquename
-                feature_dict['type'] = 'bogus symbol'
-                self.log.debug(f'"{input_symbol}" corresponds to bogus symbol {feature_dict["uniquename"]}.')
-            except NoResultFound:
-                # Make a new bogus symbol feature if needed.
-                # self.log.warning(f'No existing bogus symbol feature found; create one for "{input_symbol}".')
-                org_id = 1
-                if input_symbol == '+':
-                    org_id = '1367'    # Corresponds to Unknown, which is what the old perl parser did.
-                bogus_feature, _ = get_or_create(session, Feature, type_id=60494, organism_id=org_id, name=input_symbol, uniquename=input_symbol)
-                feature_dict['current_symbol'] = sub_sup_to_sgml(feature_dict['input_name'])
-                feature_dict['feature_id'] = bogus_feature.feature_id
-                feature_dict['uniquename'] = bogus_feature.uniquename
-                feature_dict['type'] = 'bogus symbol'
+            bogus_feature, is_new = self.lookup.bogus_feature(session, input_symbol)
+            feature_dict['current_symbol'] = sub_sup_to_sgml(feature_dict['input_name'])
+            feature_dict['feature_id'] = bogus_feature.feature_id
+            feature_dict['uniquename'] = bogus_feature.uniquename
+            feature_dict['type'] = 'bogus symbol'
+            if is_new is True:
                 feature_dict['is_new'] = True
                 self.log.warning(f'No existing feature for bogus symbol {feature_dict["input_symbol"]}, so one was created.')
+            else:
+                self.log.debug(f'"{input_symbol}" corresponds to bogus symbol {feature_dict["uniquename"]}.')
         else:
             self.errors.append(f'"{input_symbol}" is NOT in chado, and no "bogus symbol" feature could be made for it')
             self.log.error(f'For "{input_symbol}", found no chado feature, and the symbol is not of a form for which a "bogus symbol" feature can be made.')
@@ -699,26 +780,7 @@ class ComplementationGroup(object):
         feature_dict['input_uniquename'] = initial_feature.uniquename
         # 1. Convert FBtp to associated insertion.
         if initial_feature.uniquename.startswith('FBtp'):
-            construct = aliased(Feature, name='construct')
-            insertion = aliased(Feature, name='insertion')
-            filters = (
-                construct.feature_id == feature_dict['input_mapped_feature_id'],
-                insertion.is_obsolete.is_(False),
-                insertion.uniquename.op('~')(FBTI_REGEX),
-                insertion.is_analysis.is_(False),
-                insertion.name.op('~')('unspecified$'),
-                Cvterm.name == 'producedby',
-                Pub.uniquename == 'FBrf0262355',
-            )
-            ins_to_report = session.query(insertion).\
-                select_from(construct).\
-                join(FeatureRelationship, (FeatureRelationship.object_id == construct.feature_id)).\
-                join(insertion, (insertion.feature_id == FeatureRelationship.subject_id)).\
-                join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
-                join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == FeatureRelationship.feature_relationship_id)).\
-                join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
-                filter(*filters).\
-                one()
+            ins_to_report = self.lookup.construct_unspecified_insertion(session, initial_feature.feature_id)
             feature_dict['feature_id'] = ins_to_report.feature_id
             feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
             self.feature_replaced = True
@@ -728,43 +790,9 @@ class ComplementationGroup(object):
             self.notes.append(msg)
             return
         # 2a. Convert FBba balancer to its parent FBab aberration.
+        # Only FBba features flagged as usable balancers are mappable.
         elif initial_feature.uniquename.startswith('FBba'):
-            # 2a-i. Only FBba features flagged as usable balancers are mappable.
-            prop_type = aliased(Cvterm, name='prop_type')
-            filters = (
-                Featureprop.feature_id == feature_dict['input_mapped_feature_id'],
-                prop_type.name == 'balancer_status',
-                Featureprop.value == 'true',
-            )
-            balancer_status = session.query(Featureprop).\
-                select_from(Featureprop).\
-                join(prop_type, (prop_type.cvterm_id == Featureprop.type_id)).\
-                filter(*filters).\
-                first()
-            if balancer_status is None:
-                self.log.error(f'For "{feature_dict["input_symbol"]}" ({initial_feature.uniquename}), '
-                               f'found no "balancer_status=true" featureprop, so it is not mappable.')
-                raise NoResultFound
-            # 2a-ii. Find the one parent FBab aberration of the balancer.
-            balancer = aliased(Feature, name='balancer')
-            aberration = aliased(Feature, name='aberration')
-            filters = (
-                balancer.feature_id == feature_dict['input_mapped_feature_id'],
-                balancer.is_obsolete.is_(False),
-                balancer.is_analysis.is_(False),
-                balancer.uniquename.op('~')(FBBA_REGEX),
-                aberration.is_obsolete.is_(False),
-                aberration.is_analysis.is_(False),
-                aberration.uniquename.op('~')(FBAB_REGEX),
-                Cvterm.name == 'variant_of',
-            )
-            aberr_to_report = session.query(aberration).\
-                select_from(balancer).\
-                join(FeatureRelationship, (FeatureRelationship.subject_id == balancer.feature_id)).\
-                join(aberration, (aberration.feature_id == FeatureRelationship.object_id)).\
-                join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
-                filter(*filters).\
-                one()
+            aberr_to_report = self.lookup.balancer_aberration(session, initial_feature, feature_dict['input_symbol'])
             feature_dict['feature_id'] = aberr_to_report.feature_id
             feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = aberr_to_report.uniquename
             self.feature_replaced = True
@@ -777,22 +805,7 @@ class ComplementationGroup(object):
             feature_dict['feature_id'] = initial_feature.feature_id
             return
         # 3. For an FBal feature, look for an at-locus insertion.
-        allele = aliased(Feature, name='allele')
-        insertion = aliased(Feature, name='insertion')
-        filters = (
-            allele.feature_id == initial_feature.feature_id,
-            insertion.is_obsolete.is_(False),
-            insertion.uniquename.op('~')(FBTI_REGEX),
-            insertion.is_analysis.is_(False),
-            Cvterm.name == 'is_represented_at_alliance_as',
-        )
-        ins_to_report = session.query(insertion).\
-            select_from(allele).\
-            join(FeatureRelationship, (FeatureRelationship.subject_id == allele.feature_id)).\
-            join(insertion, (insertion.feature_id == FeatureRelationship.object_id)).\
-            join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
-            filter(*filters).\
-            one_or_none()
+        ins_to_report = self.lookup.alliance_insertion(session, initial_feature.feature_id)
         if ins_to_report:
             feature_dict['feature_id'] = ins_to_report.feature_id
             feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = ins_to_report.uniquename
@@ -802,41 +815,7 @@ class ComplementationGroup(object):
             self.notes.append(msg)
             return
         # 4. For an FBal feature, look for a single unspecified insertion for an associated construct.
-        allele = aliased(Feature, name='allele')
-        construct = aliased(Feature, name='construct')
-        insertion = aliased(Feature, name='insertion')
-        ac_rel_type = aliased(Cvterm, name='ac_rel_type')
-        ic_rel_type = aliased(Cvterm, name='ic_rel_type')
-        ac_rel = aliased(FeatureRelationship, name='ac_rel')
-        ic_rel = aliased(FeatureRelationship, name='ic_rel')
-        filters = (
-            allele.feature_id == initial_feature.feature_id,
-            construct.is_obsolete.is_(False),
-            construct.uniquename.op('~')(FBTP_REGEX),
-            construct.is_analysis.is_(False),
-            insertion.is_obsolete.is_(False),
-            insertion.uniquename.op('~')(FBTI_REGEX),
-            insertion.is_analysis.is_(False),
-            insertion.name.op('~')('unspecified$'),
-            ac_rel_type.name == 'associated_with',
-            ic_rel_type.name == 'producedby',
-            Pub.uniquename == 'FBrf0262355',
-        )
-        results = session.query(construct, insertion).\
-            select_from(allele).\
-            join(ac_rel, (ac_rel.subject_id == allele.feature_id)).\
-            join(construct, (construct.feature_id == ac_rel.object_id)).\
-            join(ac_rel_type, (ac_rel_type.cvterm_id == ac_rel.type_id)).\
-            join(ic_rel, (ic_rel.object_id == construct.feature_id)).\
-            join(insertion, (insertion.feature_id == ic_rel.subject_id)).\
-            join(ic_rel_type, (ic_rel_type.cvterm_id == ic_rel.type_id)).\
-            join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == ic_rel.feature_relationship_id)).\
-            join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
-            filter(*filters).\
-            distinct()
-        cons_ins_dict = {}
-        for result in results:
-            cons_ins_dict[result.construct.feature_id] = result.insertion
+        cons_ins_dict = self.lookup.allele_construct_insertions(session, initial_feature.feature_id)
         # 4a. If no construct-associated insertions, report the original allele.
         if len(cons_ins_dict.keys()) == 0:
             feature_dict['feature_id'] = initial_feature.feature_id
@@ -854,17 +833,7 @@ class ComplementationGroup(object):
             return
         else:
             feature_dict['at_locus'] = False
-            filters = (
-                Feature.feature_id.in_((cons_ins_dict.keys())),
-                Pub.pub_id == self.pub_id
-            )
-            pub_asso_cons = session.query(Feature).\
-                select_from(Feature).\
-                join(FeaturePub, (FeaturePub.feature_id == Feature.feature_id)).\
-                join(Pub, (Pub.pub_id == FeaturePub.pub_id)).\
-                filter(*filters).\
-                distinct()
-            pub_asso_cons_ids = [i.feature_id for i in pub_asso_cons]
+            pub_asso_cons_ids = self.lookup.constructs_for_pub(session, cons_ins_dict.keys(), self.pub_id)
             # 4c. If a single construct associated with the pub, report that insertion.
             if len(pub_asso_cons_ids) == 1:
                 specific_cons_id = pub_asso_cons_ids[0]
@@ -886,30 +855,11 @@ class ComplementationGroup(object):
     def _get_basic_feature_info(self, session, feature_dict):
         if feature_dict['feature_id'] is None:
             return
-        feature_type = aliased(Cvterm, name='feature_type')
-        synonym_type = aliased(Cvterm, name='synonym_type')
-        filters = (
-            Feature.is_obsolete.is_(False),
-            Feature.is_analysis.is_(False),
-            Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
-            Feature.feature_id == feature_dict['feature_id'],
-            FeatureSynonym.is_current.is_(True),
-            synonym_type.name == 'symbol',
-        )
-        component_result = session.query(Feature, feature_type, Organism, Synonym).\
-            select_from(Feature).\
-            join(Organism, (Organism.organism_id == Feature.organism_id)).\
-            join(feature_type, (feature_type.cvterm_id == Feature.type_id)).\
-            join(FeatureSynonym, (FeatureSynonym.feature_id == Feature.feature_id)).\
-            join(Synonym, (Synonym.synonym_id == FeatureSynonym.synonym_id)).\
-            join(synonym_type, (synonym_type.cvterm_id == Synonym.type_id)).\
-            filter(*filters).\
-            one()
-        feature_dict['current_symbol'] = greek_to_sgml(component_result.Synonym.synonym_sgml)
-        feature_dict['feature_id'] = component_result.Feature.feature_id
-        feature_dict['uniquename'] = component_result.Feature.uniquename
-        feature_dict['type'] = component_result.feature_type.name
-        feature_dict['org_abbr'] = component_result.Organism.abbreviation
+        basics = self.lookup.feature_basics(session, feature_dict['feature_id'])
+        feature_dict['current_symbol'] = basics['current_symbol']
+        feature_dict['uniquename'] = basics['uniquename']
+        feature_dict['type'] = basics['type']
+        feature_dict['org_abbr'] = basics['org_abbr']
         self.log.debug(f'Input "{feature_dict["input_symbol"]}" corresponds to {feature_dict["uniquename"]}.')
         return
 
@@ -917,8 +867,6 @@ class ComplementationGroup(object):
         """Get parental Drosophilid genes for each allele specified."""
         # Note - get the parental gene for the input allele, even if the allele is converted to an insertion in the output genotype.
         # self.log.debug(f'Getting parental gene(s) for this cgroup: "{self.input_cgroup_str}".')
-        rel_type = aliased(Cvterm, name='rel_type')
-        org_prop_type = aliased(Cvterm, name='org_prop_type')
         for feature_dict in self.features:
             # Skip undetermined features.
             if not feature_dict['input_uniquename'] or not feature_dict['uniquename']:
@@ -928,27 +876,11 @@ class ComplementationGroup(object):
                 continue
             input_symbol = feature_dict['input_symbol']
             try:
-                filters = (
-                    org_prop_type.name == 'taxgroup',
-                    Organismprop.value == 'drosophilid',
-                    FeatureRelationship.subject_id == feature_dict['input_mapped_feature_id'],
-                    rel_type.name == 'alleleof',
-                    Feature.is_obsolete.is_(False),
-                    Feature.is_analysis.is_(False),
-                    Feature.uniquename.op('~')(FBGN_REGEX),
-                )
-                parent_gene_result = session.query(Feature).\
-                    select_from(Feature).\
-                    join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
-                    join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
-                    join(FeatureRelationship, (FeatureRelationship.object_id == Feature.feature_id)).\
-                    join(rel_type, (rel_type.cvterm_id == FeatureRelationship.type_id)).\
-                    filter(*filters).\
-                    one()
-                feature_dict['parental_gene_feature_id'] = parent_gene_result.feature_id
-                feature_dict['parental_gene_uniquename'] = parent_gene_result.uniquename
-                feature_dict['parental_gene_name'] = parent_gene_result.name
-                self.log.debug(f'For "{input_symbol}", found this parental gene: {parent_gene_result.name} ({parent_gene_result.uniquename}).')
+                parent_gene = self.lookup.parental_gene(session, feature_dict['input_mapped_feature_id'])
+                feature_dict['parental_gene_feature_id'] = parent_gene.feature_id
+                feature_dict['parental_gene_uniquename'] = parent_gene.uniquename
+                feature_dict['parental_gene_name'] = parent_gene.name
+                self.log.debug(f'For "{input_symbol}", found this parental gene: {parent_gene.name} ({parent_gene.uniquename}).')
             except NoResultFound:
                 # This only occurs for non-Drosophilid genes, for which we do not want the parental gene.
                 pass
@@ -967,16 +899,7 @@ class ComplementationGroup(object):
             if feature_dict['at_locus'] is False:
                 continue
             if feature_dict['input_uniquename'] and feature_dict['input_uniquename'].startswith('FBal'):
-                filters = (
-                    FeatureCvterm.feature_id == feature_dict['input_mapped_feature_id'],
-                    Cvterm.name == 'in vitro construct',
-                )
-                results = session.query(Cvterm).\
-                    select_from(FeatureCvterm).\
-                    join(Cvterm, (Cvterm.cvterm_id == FeatureCvterm.cvterm_id)).\
-                    filter(*filters).\
-                    distinct()
-                for _ in results:
+                if self.lookup.is_in_vitro(session, feature_dict['input_mapped_feature_id']):
                     feature_dict['at_locus'] = False
             if feature_dict['at_locus'] is False:
                 self.log.debug(f'Allele "{input_symbol}" has "in vitro construct" annotation.')
@@ -990,43 +913,8 @@ class ComplementationGroup(object):
                 continue
             input_symbol = feature_dict['input_symbol']
             if feature_dict['input_uniquename'] and feature_dict['input_uniquename'].startswith('FBal'):
-                allele_feature = aliased(Feature, name='allele_feature')
-                construct_feature = aliased(Feature, name='construct_feature')
-                insertion_feature = aliased(Feature, name='insertion_feature')
-                allele_insertion_rel = aliased(FeatureRelationship, name='allele_insertion_rel')
-                insertion_construct_rel = aliased(FeatureRelationship, name='insertion_construct_rel')
-                ai_rel_type = aliased(Cvterm, name='ai_rel_type')
-                ic_rel_type = aliased(Cvterm, name='ic_rel_type')
-                tool_type = aliased(Cvterm, name='tool_type')
-                tool_rel = aliased(Cvterm, name='tool_rel')
-                filters = (
-                    allele_feature.feature_id == feature_dict['input_mapped_feature_id'],
-                    construct_feature.uniquename.op('~')(FBTP_REGEX),
-                    construct_feature.is_obsolete.is_(False),
-                    insertion_feature.uniquename.op('~')(FBTI_REGEX),
-                    insertion_feature.is_obsolete.is_(False),
-                    ai_rel_type.name == 'associated_with',
-                    ic_rel_type.name == 'producedby',
-                    tool_type.name == 'misexpression element',
-                    tool_rel.name == 'tool_uses'
-                )
-                results = session.query(allele_feature).\
-                    select_from(allele_feature).\
-                    join(allele_insertion_rel, (allele_insertion_rel.subject_id == allele_feature.feature_id)).\
-                    join(insertion_feature, (insertion_feature.feature_id == allele_insertion_rel.object_id)).\
-                    join(ai_rel_type, (ai_rel_type.cvterm_id == allele_insertion_rel.type_id)).\
-                    join(insertion_construct_rel, (insertion_construct_rel.subject_id == insertion_feature.feature_id)).\
-                    join(construct_feature, (construct_feature.feature_id == insertion_construct_rel.object_id)).\
-                    join(ic_rel_type, (ic_rel_type.cvterm_id == insertion_construct_rel.type_id)).\
-                    join(FeatureCvterm, (FeatureCvterm.feature_id == construct_feature.feature_id)).\
-                    join(tool_type, (tool_type.cvterm_id == FeatureCvterm.cvterm_id)).\
-                    join(FeatureCvtermprop, (FeatureCvtermprop.feature_cvterm_id == FeatureCvterm.feature_cvterm_id)).\
-                    join(tool_rel, (tool_rel.cvterm_id == FeatureCvtermprop.type_id)).\
-                    filter(*filters).\
-                    distinct()
-                for _ in results:
+                if self.lookup.is_misexpression_element(session, feature_dict['input_mapped_feature_id']):
                     feature_dict['misexpression_element'] = True
-                if feature_dict['misexpression_element'] is True:
                     self.log.debug(f'Allele "{input_symbol}" is a misexpression element.')
         return
 
@@ -1159,10 +1047,17 @@ class ComplementationGroup(object):
     def process_cgroup(self, session):
         """Run various ComplementationGroup methods in sequence."""
         self.log.debug(f'Processing cgroup {self.input_cgroup_str}')
-        self._identify_feature(session)
-        self._flag_in_vitro_alleles(session)
-        self._flag_misexpression_elements(session)
-        self._get_parental_genes(session)
+        if self.preset_features is not None:
+            # These components carry the flags they were given in the cgroups they came from.
+            self._adopt_preset_features()
+        else:
+            if self.input_feature_ids is not None:
+                self._identify_features_by_id(session)
+            else:
+                self._identify_feature(session)
+            self._flag_in_vitro_alleles(session)
+            self._flag_misexpression_elements(session)
+            self._get_parental_genes(session)
         self._assess_single_group_alleles()
         self._check_cgroup_feature_count()
         self._check_cgroup_gene_count()
