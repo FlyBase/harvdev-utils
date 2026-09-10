@@ -32,16 +32,18 @@ from collections import defaultdict
 from harvdev_utils.production import (
     Cv, Cvterm, Db, Dbxref, Feature, FeatureCvterm, FeatureCvtermprop,
     FeatureGenotype, FeatureRelationship, FeatureRelationshipPub, FeaturePub,
-    FeatureSynonym, Genotype, GenotypeCvterm, GenotypeDbxref, GenotypeSynonym,
-    Organism, Organismprop, Pub, Synonym
+    FeatureSynonym, Featureprop, Genotype, GenotypeCvterm, GenotypeDbxref,
+    GenotypeSynonym, Organism, Organismprop, Pub, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml, sub_sup_to_sgml
 
 
 # Regex patterns as constants (easier to maintain/change if needed)
-FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ti|tp)[0-9]{7}$'    # Exclude FBba balancers since these are not submitted to Alliance.
+FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'    # FTA-258: include FBba balancers.
 FBAL_REGEX = r'^FBal[0-9]{7}$'
+FBAB_REGEX = r'^FBab[0-9]{7}$'
+FBBA_REGEX = r'^FBba[0-9]{7}$'
 FBGO_REGEX = r'^FBgo[0-9]{7}$'
 FBTP_REGEX = r'^FBtp[0-9]{7}$'
 FBTI_REGEX = r'^FBti[0-9]{7}$'
@@ -605,22 +607,47 @@ class ComplementationGroup(object):
                 'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
                 'misexpression_element': False,                    # True if allele is a misexpression element.
             }
+            # The dict is appended by reference here, then filled in by the steps below.
+            self.features.append(feature_dict)
             filters = (
                 Feature.is_obsolete.is_(False),
                 Feature.is_analysis.is_(False),
                 Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
                 Feature.name == feature_dict['input_name'],
             )
+            # 1. Find the chado feature corresponding to the input symbol.
+            # A "bogus symbol" is an option only here, when the input symbol matches no chado feature at all.
             try:
                 feature_result = session.query(Feature).filter(*filters).one()
-                self._map_to_public_feature(session, feature_result, feature_dict)
-                self._get_basic_feature_info(session, feature_dict)
             except NoResultFound:
                 self._map_to_bogus_symbol(session, feature_dict)
+                continue
             except MultipleResultsFound:
                 self.errors.append(f'"{input_symbol}" has MANY features in chado')
                 self.log.error(f'For "{input_symbol}", found MANY chado features.')
-            self.features.append(feature_dict)
+                continue
+            # 2. Map that feature to the feature to be reported.
+            # A symbol that does correspond to a chado feature is never sent to _map_to_bogus_symbol(): if
+            # the mapping fails, the component is left unmapped (feature_dict['feature_id'] stays None).
+            try:
+                self._map_to_public_feature(session, feature_result, feature_dict)
+            except NoResultFound:
+                self.errors.append(f'"{input_symbol}" ({feature_result.uniquename}) has NO feature to which it can be mapped')
+                self.log.error(f'For "{input_symbol}" ({feature_result.uniquename}), found NO feature to map it to.')
+                continue
+            except MultipleResultsFound:
+                self.errors.append(f'"{input_symbol}" ({feature_result.uniquename}) maps to MANY features')
+                self.log.error(f'For "{input_symbol}" ({feature_result.uniquename}), found MANY features to map it to.')
+                continue
+            # 3. Get details for the feature to be reported.
+            try:
+                self._get_basic_feature_info(session, feature_dict)
+            except NoResultFound:
+                self.errors.append(f'"{input_symbol}" maps to a feature having NO current symbol in chado')
+                self.log.error(f'For "{input_symbol}", found no current symbol for feature_id={feature_dict["feature_id"]}.')
+            except MultipleResultsFound:
+                self.errors.append(f'"{input_symbol}" maps to a feature having MANY current symbols in chado')
+                self.log.error(f'For "{input_symbol}", found many current symbols for feature_id={feature_dict["feature_id"]}.')
         return
 
     def _map_to_bogus_symbol(self, session, feature_dict):
@@ -662,8 +689,8 @@ class ComplementationGroup(object):
                 feature_dict['is_new'] = True
                 self.log.warning(f'No existing feature for bogus symbol {feature_dict["input_symbol"]}, so one was created.')
         else:
-            self.errors.append(f'"{input_symbol}" NOT in chado')
-            self.log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
+            self.errors.append(f'"{input_symbol}" is NOT in chado, and no "bogus symbol" feature could be made for it')
+            self.log.error(f'For "{input_symbol}", found no chado feature, and the symbol is not of a form for which a "bogus symbol" feature can be made.')
         return
 
     def _map_to_public_feature(self, session, initial_feature, feature_dict):
@@ -700,7 +727,52 @@ class ComplementationGroup(object):
             self.log.debug(msg)
             self.notes.append(msg)
             return
-        # 2. For non-FBal features, just use the initial feature found.
+        # 2a. Convert FBba balancer to its parent FBab aberration.
+        elif initial_feature.uniquename.startswith('FBba'):
+            # 2a-i. Only FBba features flagged as usable balancers are mappable.
+            prop_type = aliased(Cvterm, name='prop_type')
+            filters = (
+                Featureprop.feature_id == feature_dict['input_mapped_feature_id'],
+                prop_type.name == 'balancer_status',
+                Featureprop.value == 'true',
+            )
+            balancer_status = session.query(Featureprop).\
+                select_from(Featureprop).\
+                join(prop_type, (prop_type.cvterm_id == Featureprop.type_id)).\
+                filter(*filters).\
+                first()
+            if balancer_status is None:
+                self.log.error(f'For "{feature_dict["input_symbol"]}" ({initial_feature.uniquename}), '
+                               f'found no "balancer_status=true" featureprop, so it is not mappable.')
+                raise NoResultFound
+            # 2a-ii. Find the one parent FBab aberration of the balancer.
+            balancer = aliased(Feature, name='balancer')
+            aberration = aliased(Feature, name='aberration')
+            filters = (
+                balancer.feature_id == feature_dict['input_mapped_feature_id'],
+                balancer.is_obsolete.is_(False),
+                balancer.is_analysis.is_(False),
+                balancer.uniquename.op('~')(FBBA_REGEX),
+                aberration.is_obsolete.is_(False),
+                aberration.is_analysis.is_(False),
+                aberration.uniquename.op('~')(FBAB_REGEX),
+                Cvterm.name == 'variant_of',
+            )
+            aberr_to_report = session.query(aberration).\
+                select_from(balancer).\
+                join(FeatureRelationship, (FeatureRelationship.subject_id == balancer.feature_id)).\
+                join(aberration, (aberration.feature_id == FeatureRelationship.object_id)).\
+                join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
+                filter(*filters).\
+                one()
+            feature_dict['feature_id'] = aberr_to_report.feature_id
+            feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = aberr_to_report.uniquename
+            self.feature_replaced = True
+            msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{aberr_to_report.name}" ({aberr_to_report.uniquename})'
+            self.log.debug(msg)
+            self.notes.append(msg)
+            return
+        # 2b. For non-FBal, non-FBba (balancer) features, just use the initial feature found.
         elif not initial_feature.uniquename.startswith('FBal'):
             feature_dict['feature_id'] = initial_feature.feature_id
             return
