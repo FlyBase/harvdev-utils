@@ -607,22 +607,47 @@ class ComplementationGroup(object):
                 'is_new': False,                                   # True if the feature is a bogus symbol made by this script.
                 'misexpression_element': False,                    # True if allele is a misexpression element.
             }
+            # The dict is appended by reference here, then filled in by the steps below.
+            self.features.append(feature_dict)
             filters = (
                 Feature.is_obsolete.is_(False),
                 Feature.is_analysis.is_(False),
                 Feature.uniquename.op('~')(FEATURE_UNIQUENAME_REGEX),
                 Feature.name == feature_dict['input_name'],
             )
+            # 1. Find the chado feature corresponding to the input symbol.
+            # A "bogus symbol" is an option only here, when the input symbol matches no chado feature at all.
             try:
                 feature_result = session.query(Feature).filter(*filters).one()
-                self._map_to_public_feature(session, feature_result, feature_dict)
-                self._get_basic_feature_info(session, feature_dict)
             except NoResultFound:
                 self._map_to_bogus_symbol(session, feature_dict)
+                continue
             except MultipleResultsFound:
                 self.errors.append(f'"{input_symbol}" has MANY features in chado')
                 self.log.error(f'For "{input_symbol}", found MANY chado features.')
-            self.features.append(feature_dict)
+                continue
+            # 2. Map that feature to the feature to be reported.
+            # A symbol that does correspond to a chado feature is never sent to _map_to_bogus_symbol(): if
+            # the mapping fails, the component is left unmapped (feature_dict['feature_id'] stays None).
+            try:
+                self._map_to_public_feature(session, feature_result, feature_dict)
+            except NoResultFound:
+                self.errors.append(f'"{input_symbol}" ({feature_result.uniquename}) has NO feature to which it can be mapped')
+                self.log.error(f'For "{input_symbol}" ({feature_result.uniquename}), found NO feature to map it to.')
+                continue
+            except MultipleResultsFound:
+                self.errors.append(f'"{input_symbol}" ({feature_result.uniquename}) maps to MANY features')
+                self.log.error(f'For "{input_symbol}" ({feature_result.uniquename}), found MANY features to map it to.')
+                continue
+            # 3. Get details for the feature to be reported.
+            try:
+                self._get_basic_feature_info(session, feature_dict)
+            except NoResultFound:
+                self.errors.append(f'"{input_symbol}" maps to a feature having NO current symbol in chado')
+                self.log.error(f'For "{input_symbol}", found no current symbol for feature_id={feature_dict["feature_id"]}.')
+            except MultipleResultsFound:
+                self.errors.append(f'"{input_symbol}" maps to a feature having MANY current symbols in chado')
+                self.log.error(f'For "{input_symbol}", found many current symbols for feature_id={feature_dict["feature_id"]}.')
         return
 
     def _map_to_bogus_symbol(self, session, feature_dict):
@@ -664,8 +689,8 @@ class ComplementationGroup(object):
                 feature_dict['is_new'] = True
                 self.log.warning(f'No existing feature for bogus symbol {feature_dict["input_symbol"]}, so one was created.')
         else:
-            self.errors.append(f'"{input_symbol}" NOT in chado')
-            self.log.error(f'For "{input_symbol}", could not find an existing chado feature or create a "bogus symbol" feature.')
+            self.errors.append(f'"{input_symbol}" is NOT in chado, and no "bogus symbol" feature could be made for it')
+            self.log.error(f'For "{input_symbol}", found no chado feature, and the symbol is not of a form for which a "bogus symbol" feature can be made.')
         return
 
     def _map_to_public_feature(self, session, initial_feature, feature_dict):
