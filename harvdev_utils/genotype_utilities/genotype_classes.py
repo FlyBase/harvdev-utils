@@ -42,6 +42,8 @@ from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml, su
 # Regex patterns as constants (easier to maintain/change if needed)
 FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'    # FTA-258: include FBba balancers.
 FBAL_REGEX = r'^FBal[0-9]{7}$'
+FBAB_REGEX = r'^FBab[0-9]{7}$'
+FBBA_REGEX = r'^FBba[0-9]{7}$'
 FBGO_REGEX = r'^FBgo[0-9]{7}$'
 FBTP_REGEX = r'^FBtp[0-9]{7}$'
 FBTI_REGEX = r'^FBti[0-9]{7}$'
@@ -700,7 +702,36 @@ class ComplementationGroup(object):
             self.log.debug(msg)
             self.notes.append(msg)
             return
-        # 2. For non-FBal features, just use the initial feature found.
+        # 2a. For non-FBal features, just use the initial feature found.
+        elif initial_feature.uniquename.startswith('FBba'):
+            balancer = aliased(Feature, name='balancer')
+            aberration = aliased(Feature, name='aberration')
+            filters = (
+                balancer.feature_id == feature_dict['input_mapped_feature_id'],
+                balancer.is_obsolete.is_(False),
+                balancer.is_analysis.is_(False),
+                balancer.uniquename.op('~')(FBBA_REGEX),
+                aberration.is_obsolete.is_(False),
+                aberration.is_analysis.is_(False),
+                aberration.uniquename.op('~')(FBAB_REGEX),
+                Cvterm.name == 'variant_of',
+            )
+            aberr_to_report = session.query(aberration).\
+                select_from(balancer).\
+                join(FeatureRelationship, (FeatureRelationship.subject_id == balancer.feature_id)).\
+                join(aberration, (aberration.feature_id == FeatureRelationship.object_id)).\
+                join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
+                filter(*filters).\
+                one()
+            feature_dict['feature_id'] = aberr_to_report.feature_id
+            feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = aberr_to_report.uniquename
+            self.feature_replaced = True
+            feature_dict['at_locus'] = False
+            msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{aberr_to_report.name}" ({aberr_to_report.uniquename})'
+            self.log.debug(msg)
+            self.notes.append(msg)
+            return
+        # 2b. For non-FBal, non-FBba (balancer) features, just use the initial feature found.
         elif not initial_feature.uniquename.startswith('FBal'):
             feature_dict['feature_id'] = initial_feature.feature_id
             return
