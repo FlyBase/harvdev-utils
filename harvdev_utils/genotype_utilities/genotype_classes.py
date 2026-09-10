@@ -40,7 +40,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml, su
 
 
 # Regex patterns as constants (easier to maintain/change if needed)
-FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ti|tp)[0-9]{7}$'    # Exclude FBba balancers since these are not submitted to Alliance.
+FEATURE_UNIQUENAME_REGEX = r'^FB(al|ab|ba|ti|tp)[0-9]{7}$'    # FTA-258: include FBba balancers.
 FBAL_REGEX = r'^FBal[0-9]{7}$'
 FBGO_REGEX = r'^FBgo[0-9]{7}$'
 FBTP_REGEX = r'^FBtp[0-9]{7}$'
