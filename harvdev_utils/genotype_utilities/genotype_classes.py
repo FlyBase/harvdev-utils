@@ -32,8 +32,8 @@ from collections import defaultdict
 from harvdev_utils.production import (
     Cv, Cvterm, Db, Dbxref, Feature, FeatureCvterm, FeatureCvtermprop,
     FeatureGenotype, FeatureRelationship, FeatureRelationshipPub, FeaturePub,
-    FeatureSynonym, Genotype, GenotypeCvterm, GenotypeDbxref, GenotypeSynonym,
-    Organism, Organismprop, Pub, Synonym
+    FeatureSynonym, Featureprop, Genotype, GenotypeCvterm, GenotypeDbxref,
+    GenotypeSynonym, Organism, Organismprop, Pub, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions import sgml_to_plain_text, greek_to_sgml, sub_sup_to_sgml
@@ -727,8 +727,25 @@ class ComplementationGroup(object):
             self.log.debug(msg)
             self.notes.append(msg)
             return
-        # 2a. For non-FBal features, just use the initial feature found.
+        # 2a. Convert FBba balancer to its parent FBab aberration.
         elif initial_feature.uniquename.startswith('FBba'):
+            # 2a-i. Only FBba features flagged as usable balancers are mappable.
+            prop_type = aliased(Cvterm, name='prop_type')
+            filters = (
+                Featureprop.feature_id == feature_dict['input_mapped_feature_id'],
+                prop_type.name == 'balancer_status',
+                Featureprop.value == 'true',
+            )
+            balancer_status = session.query(Featureprop).\
+                select_from(Featureprop).\
+                join(prop_type, (prop_type.cvterm_id == Featureprop.type_id)).\
+                filter(*filters).\
+                first()
+            if balancer_status is None:
+                self.log.error(f'For "{feature_dict["input_symbol"]}" ({initial_feature.uniquename}), '
+                               f'found no "balancer_status=true" featureprop, so it is not mappable.')
+                raise NoResultFound
+            # 2a-ii. Find the one parent FBab aberration of the balancer.
             balancer = aliased(Feature, name='balancer')
             aberration = aliased(Feature, name='aberration')
             filters = (
@@ -751,7 +768,6 @@ class ComplementationGroup(object):
             feature_dict['feature_id'] = aberr_to_report.feature_id
             feature_dict['input_features_replaced'][feature_dict['input_uniquename']] = aberr_to_report.uniquename
             self.feature_replaced = True
-            feature_dict['at_locus'] = False
             msg = f'Convert "{initial_feature.name}" ({initial_feature.uniquename}) to "{aberr_to_report.name}" ({aberr_to_report.uniquename})'
             self.log.debug(msg)
             self.notes.append(msg)
