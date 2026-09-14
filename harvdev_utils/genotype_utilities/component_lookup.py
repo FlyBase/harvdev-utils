@@ -497,8 +497,20 @@ class ComponentLookup(object):
         return self._misexpression_query(session, [allele_feature_id]).first() is not None
 
     @staticmethod
-    def _misexpression_query(session, allele_feature_ids: Iterable[int]):
-        """Build a query for FBal feature_ids that are misexpression elements."""
+    def _misexpression_query(session, allele_feature_ids: Optional[Iterable[int]] = None):
+        """Build a query for FBal feature_ids that are misexpression elements.
+
+        Args:
+            session (Session): SQLAlchemy session for the chado database.
+            allele_feature_ids (Iterable[int]): Optional FBal feature_ids to restrict the query to.
+                Leave this unset to assess every allele. Chado runs on PostgreSQL 13, which lacks
+                hashed ScalarArrayOpExpr, so a large IN list is rescanned linearly for every
+                candidate row and costs orders of magnitude more than the unrestricted join.
+
+        Returns:
+            A query over the feature_ids of alleles that are misexpression elements.
+
+        """
         allele = aliased(Feature, name='mis_allele')
         construct = aliased(Feature, name='mis_construct')
         insertion = aliased(Feature, name='mis_insertion')
@@ -508,8 +520,7 @@ class ComponentLookup(object):
         ic_rel_type = aliased(Cvterm, name='mis_ic_rel_type')
         tool_type = aliased(Cvterm, name='mis_tool_type')
         tool_rel = aliased(Cvterm, name='mis_tool_rel')
-        filters = (
-            allele.feature_id.in_(tuple(allele_feature_ids)),
+        filters = [
             construct.uniquename.op('~')(FBTP_REGEX),
             construct.is_obsolete.is_(False),
             insertion.uniquename.op('~')(FBTI_REGEX),
@@ -518,7 +529,9 @@ class ComponentLookup(object):
             ic_rel_type.name == 'producedby',
             tool_type.name == 'misexpression element',
             tool_rel.name == 'tool_uses',
-        )
+        ]
+        if allele_feature_ids is not None:
+            filters.append(allele.feature_id.in_(tuple(allele_feature_ids)))
         return session.query(allele.feature_id).\
             select_from(allele).\
             join(ai_rel, (ai_rel.subject_id == allele.feature_id)).\
@@ -962,20 +975,20 @@ class PrefetchedComponentLookup(ComponentLookup):
         return
 
     def _prefetch_allele_flags(self, session) -> None:
-        """Flag component alleles that are in vitro, or misexpression elements."""
-        for id_chunk in _chunked(self.component_ids):
-            filters = (
-                FeatureCvterm.feature_id.in_(id_chunk),
-                Cvterm.name == 'in vitro construct',
-            )
-            results = session.query(FeatureCvterm.feature_id).\
-                select_from(FeatureCvterm).\
-                join(Cvterm, (Cvterm.cvterm_id == FeatureCvterm.cvterm_id)).\
-                filter(*filters).\
-                distinct()
-            self._in_vitro_alleles.update(i.feature_id for i in results)
-            results = self._misexpression_query(session, id_chunk)
-            self._misexpression_alleles.update(i[0] for i in results)
+        """Flag component alleles that are in vitro, or misexpression elements.
+
+        Neither query is chunked by component feature_id: both are cheaper run once over all
+        alleles and intersected here than they are run per chunk. See _misexpression_query.
+
+        """
+        results = session.query(FeatureCvterm.feature_id).\
+            select_from(FeatureCvterm).\
+            join(Cvterm, (Cvterm.cvterm_id == FeatureCvterm.cvterm_id)).\
+            filter(Cvterm.name == 'in vitro construct').\
+            distinct()
+        self._in_vitro_alleles.update({i.feature_id for i in results} & self.component_ids)
+        results = self._misexpression_query(session)
+        self._misexpression_alleles.update({i[0] for i in results} & self.component_ids)
         self.log.info(f'Found {len(self._in_vitro_alleles)} component alleles with "in vitro construct" annotations.')
         self.log.info(f'Found {len(self._misexpression_alleles)} component alleles that are misexpression elements.')
         return
