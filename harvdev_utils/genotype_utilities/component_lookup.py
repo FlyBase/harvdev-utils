@@ -800,14 +800,15 @@ class PrefetchedComponentLookup(ComponentLookup):
         return
 
     def _prefetch_component_ids(self, session) -> None:
-        """Collect the feature_ids of all components of current genotypes."""
+        """Collect the feature_ids of all current components of current genotypes."""
         results = session.query(FeatureGenotype.feature_id).\
             select_from(FeatureGenotype).\
             join(Genotype, (Genotype.genotype_id == FeatureGenotype.genotype_id)).\
-            filter(Genotype.is_obsolete.is_(False)).\
+            join(Feature, (Feature.feature_id == FeatureGenotype.feature_id)).\
+            filter(Genotype.is_obsolete.is_(False), Feature.is_obsolete.is_(False)).\
             distinct()
         self.component_ids = {i.feature_id for i in results}
-        self.log.info(f'Found {len(self.component_ids)} distinct features used as components of current genotypes.')
+        self.log.info(f'Found {len(self.component_ids)} distinct current features used as components of current genotypes.')
         return
 
     def _mapped_feature_ids(self) -> Set[int]:
