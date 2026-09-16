@@ -78,7 +78,15 @@ class KnownGenotype(NamedTuple):
 
 
 def _chunked(ids: Iterable[int]) -> Iterable[List[int]]:
-    """Break an iterable of feature_ids into ID_CHUNK_SIZE-sized lists."""
+    """Break an iterable of feature_ids into ID_CHUNK_SIZE-sized lists.
+
+    Only chunk a query whose id list drives an index scan over a bounded set, such as one
+    filtering on feature.feature_id. Chado runs on PostgreSQL 13, which lacks hashed
+    ScalarArrayOpExpr, so anywhere else a large IN list is rescanned linearly for every
+    candidate row and costs orders of magnitude more than the unrestricted query. Run such
+    a query unrestricted and intersect its results with the wanted ids in Python instead.
+
+    """
     chunk: List[int] = []
     for an_id in ids:
         chunk.append(an_id)
@@ -829,35 +837,47 @@ class PrefetchedComponentLookup(ComponentLookup):
     ###################
 
     def _prefetch_alliance_insertions(self, session) -> None:
-        """Map each component allele to the insertion that represents it at the Alliance."""
+        """Map each component allele to the insertion that represents it at the Alliance.
+
+        Not chunked by component feature_id: the unrestricted join is far cheaper than a
+        large IN list here. See _chunked.
+
+        """
         allele = aliased(Feature, name='allele')
         insertion = aliased(Feature, name='insertion')
         counter = 0
-        for id_chunk in _chunked(self.component_ids):
-            filters = (
-                allele.feature_id.in_(id_chunk),
-                allele.uniquename.op('~')(FBAL_REGEX),
-                insertion.is_obsolete.is_(False),
-                insertion.uniquename.op('~')(FBTI_REGEX),
-                insertion.is_analysis.is_(False),
-                Cvterm.name == 'is_represented_at_alliance_as',
-            )
-            results = session.query(allele.feature_id.label('allele_id'), insertion).\
-                select_from(allele).\
-                join(FeatureRelationship, (FeatureRelationship.subject_id == allele.feature_id)).\
-                join(insertion, (insertion.feature_id == FeatureRelationship.object_id)).\
-                join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
-                filter(*filters).\
-                distinct()
-            for result in results:
-                feature_ref = FeatureRef(result.insertion.feature_id, result.insertion.uniquename, result.insertion.name)
-                self._alliance_insertions.setdefault(result.allele_id, []).append(feature_ref)
-                counter += 1
+        filters = (
+            allele.uniquename.op('~')(FBAL_REGEX),
+            insertion.is_obsolete.is_(False),
+            insertion.uniquename.op('~')(FBTI_REGEX),
+            insertion.is_analysis.is_(False),
+            Cvterm.name == 'is_represented_at_alliance_as',
+        )
+        results = session.query(allele.feature_id.label('allele_id'),
+                                insertion.feature_id.label('insertion_id'),
+                                insertion.uniquename.label('insertion_uniquename'),
+                                insertion.name.label('insertion_name')).\
+            select_from(allele).\
+            join(FeatureRelationship, (FeatureRelationship.subject_id == allele.feature_id)).\
+            join(insertion, (insertion.feature_id == FeatureRelationship.object_id)).\
+            join(Cvterm, (Cvterm.cvterm_id == FeatureRelationship.type_id)).\
+            filter(*filters).\
+            distinct()
+        for result in results:
+            if result.allele_id not in self.component_ids:
+                continue
+            feature_ref = FeatureRef(result.insertion_id, result.insertion_uniquename, result.insertion_name)
+            self._alliance_insertions.setdefault(result.allele_id, []).append(feature_ref)
+            counter += 1
         self.log.info(f'Found {counter} "is_represented_at_alliance_as" insertions for component alleles.')
         return
 
     def _prefetch_construct_insertions(self, session) -> None:
-        """Map each component construct to its "unspecified" insertion."""
+        """Map each component construct to its "unspecified" insertion.
+
+        Still chunked: there are few such insertions, and the id list costs nothing here.
+
+        """
         construct = aliased(Feature, name='construct')
         insertion = aliased(Feature, name='insertion')
         counter = 0
@@ -872,7 +892,10 @@ class PrefetchedComponentLookup(ComponentLookup):
                 Cvterm.name == 'producedby',
                 Pub.uniquename == UNSPECIFIED_INSERTION_PUB,
             )
-            results = session.query(construct.feature_id.label('construct_id'), insertion).\
+            results = session.query(construct.feature_id.label('construct_id'),
+                                    insertion.feature_id.label('insertion_id'),
+                                    insertion.uniquename.label('insertion_uniquename'),
+                                    insertion.name.label('insertion_name')).\
                 select_from(construct).\
                 join(FeatureRelationship, (FeatureRelationship.object_id == construct.feature_id)).\
                 join(insertion, (insertion.feature_id == FeatureRelationship.subject_id)).\
@@ -882,14 +905,19 @@ class PrefetchedComponentLookup(ComponentLookup):
                 filter(*filters).\
                 distinct()
             for result in results:
-                feature_ref = FeatureRef(result.insertion.feature_id, result.insertion.uniquename, result.insertion.name)
+                feature_ref = FeatureRef(result.insertion_id, result.insertion_uniquename, result.insertion_name)
                 self._construct_insertions.setdefault(result.construct_id, []).append(feature_ref)
                 counter += 1
         self.log.info(f'Found {counter} "unspecified" insertions for component constructs.')
         return
 
     def _prefetch_allele_construct_insertions(self, session) -> None:
-        """Map each component allele to the "unspecified" insertions of its constructs."""
+        """Map each component allele to the "unspecified" insertions of its constructs.
+
+        Not chunked by component feature_id: the unrestricted join is far cheaper than a
+        large IN list here. See _chunked.
+
+        """
         allele = aliased(Feature, name='allele')
         construct = aliased(Feature, name='construct')
         insertion = aliased(Feature, name='insertion')
@@ -898,42 +926,51 @@ class PrefetchedComponentLookup(ComponentLookup):
         ac_rel = aliased(FeatureRelationship, name='ac_rel')
         ic_rel = aliased(FeatureRelationship, name='ic_rel')
         counter = 0
-        for id_chunk in _chunked(self.component_ids):
-            filters = (
-                allele.feature_id.in_(id_chunk),
-                allele.uniquename.op('~')(FBAL_REGEX),
-                construct.is_obsolete.is_(False),
-                construct.uniquename.op('~')(FBTP_REGEX),
-                construct.is_analysis.is_(False),
-                insertion.is_obsolete.is_(False),
-                insertion.uniquename.op('~')(FBTI_REGEX),
-                insertion.is_analysis.is_(False),
-                insertion.name.op('~')('unspecified$'),
-                ac_rel_type.name == 'associated_with',
-                ic_rel_type.name == 'producedby',
-                Pub.uniquename == UNSPECIFIED_INSERTION_PUB,
-            )
-            results = session.query(allele.feature_id.label('allele_id'), construct.feature_id.label('construct_id'), insertion).\
-                select_from(allele).\
-                join(ac_rel, (ac_rel.subject_id == allele.feature_id)).\
-                join(construct, (construct.feature_id == ac_rel.object_id)).\
-                join(ac_rel_type, (ac_rel_type.cvterm_id == ac_rel.type_id)).\
-                join(ic_rel, (ic_rel.object_id == construct.feature_id)).\
-                join(insertion, (insertion.feature_id == ic_rel.subject_id)).\
-                join(ic_rel_type, (ic_rel_type.cvterm_id == ic_rel.type_id)).\
-                join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == ic_rel.feature_relationship_id)).\
-                join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
-                filter(*filters).\
-                distinct()
-            for result in results:
-                feature_ref = FeatureRef(result.insertion.feature_id, result.insertion.uniquename, result.insertion.name)
-                self._allele_construct_insertions.setdefault(result.allele_id, {})[result.construct_id] = feature_ref
-                counter += 1
+        filters = (
+            allele.uniquename.op('~')(FBAL_REGEX),
+            construct.is_obsolete.is_(False),
+            construct.uniquename.op('~')(FBTP_REGEX),
+            construct.is_analysis.is_(False),
+            insertion.is_obsolete.is_(False),
+            insertion.uniquename.op('~')(FBTI_REGEX),
+            insertion.is_analysis.is_(False),
+            insertion.name.op('~')('unspecified$'),
+            ac_rel_type.name == 'associated_with',
+            ic_rel_type.name == 'producedby',
+            Pub.uniquename == UNSPECIFIED_INSERTION_PUB,
+        )
+        results = session.query(allele.feature_id.label('allele_id'),
+                                construct.feature_id.label('construct_id'),
+                                insertion.feature_id.label('insertion_id'),
+                                insertion.uniquename.label('insertion_uniquename'),
+                                insertion.name.label('insertion_name')).\
+            select_from(allele).\
+            join(ac_rel, (ac_rel.subject_id == allele.feature_id)).\
+            join(construct, (construct.feature_id == ac_rel.object_id)).\
+            join(ac_rel_type, (ac_rel_type.cvterm_id == ac_rel.type_id)).\
+            join(ic_rel, (ic_rel.object_id == construct.feature_id)).\
+            join(insertion, (insertion.feature_id == ic_rel.subject_id)).\
+            join(ic_rel_type, (ic_rel_type.cvterm_id == ic_rel.type_id)).\
+            join(FeatureRelationshipPub, (FeatureRelationshipPub.feature_relationship_id == ic_rel.feature_relationship_id)).\
+            join(Pub, (Pub.pub_id == FeatureRelationshipPub.pub_id)).\
+            filter(*filters).\
+            distinct()
+        for result in results:
+            if result.allele_id not in self.component_ids:
+                continue
+            feature_ref = FeatureRef(result.insertion_id, result.insertion_uniquename, result.insertion_name)
+            self._allele_construct_insertions.setdefault(result.allele_id, {})[result.construct_id] = feature_ref
+            counter += 1
         self.log.info(f'Found {counter} construct-associated "unspecified" insertions for component alleles.')
         return
 
     def _prefetch_balancer_mappings(self, session) -> None:
-        """Flag usable component balancers and map them to their parent aberrations."""
+        """Flag usable component balancers and map them to their parent aberrations.
+
+        Still chunked: few features carry a "balancer_status" prop, and fewer still are
+        usable balancers, so the id lists cost nothing here.
+
+        """
         prop_type = aliased(Cvterm, name='prop_type')
         balancer = aliased(Feature, name='balancer')
         aberration = aliased(Feature, name='aberration')
@@ -961,7 +998,10 @@ class PrefetchedComponentLookup(ComponentLookup):
                 aberration.uniquename.op('~')(FBAB_REGEX),
                 Cvterm.name == 'variant_of',
             )
-            results = session.query(balancer.feature_id.label('balancer_id'), aberration).\
+            results = session.query(balancer.feature_id.label('balancer_id'),
+                                    aberration.feature_id.label('aberration_id'),
+                                    aberration.uniquename.label('aberration_uniquename'),
+                                    aberration.name.label('aberration_name')).\
                 select_from(balancer).\
                 join(FeatureRelationship, (FeatureRelationship.subject_id == balancer.feature_id)).\
                 join(aberration, (aberration.feature_id == FeatureRelationship.object_id)).\
@@ -969,7 +1009,7 @@ class PrefetchedComponentLookup(ComponentLookup):
                 filter(*filters).\
                 distinct()
             for result in results:
-                feature_ref = FeatureRef(result.aberration.feature_id, result.aberration.uniquename, result.aberration.name)
+                feature_ref = FeatureRef(result.aberration_id, result.aberration_uniquename, result.aberration_name)
                 self._balancer_aberrations.setdefault(result.balancer_id, []).append(feature_ref)
                 counter += 1
         self.log.info(f'Found {len(self._usable_balancers)} usable component balancers, having {counter} parent aberrations.')
@@ -995,37 +1035,52 @@ class PrefetchedComponentLookup(ComponentLookup):
         return
 
     def _prefetch_parental_genes(self, session) -> None:
-        """Map each component allele to its parental Drosophilid gene."""
+        """Map each component allele to its parental Drosophilid gene.
+
+        Not chunked by component feature_id: the id list filters feature_relationship
+        rather than a feature primary key, and the unrestricted join is far cheaper than a
+        large IN list. See _chunked.
+
+        """
         rel_type = aliased(Cvterm, name='rel_type')
         org_prop_type = aliased(Cvterm, name='org_prop_type')
         counter = 0
-        for id_chunk in _chunked(self.component_ids):
-            filters = (
-                org_prop_type.name == 'taxgroup',
-                Organismprop.value == 'drosophilid',
-                FeatureRelationship.subject_id.in_(id_chunk),
-                rel_type.name == 'alleleof',
-                Feature.is_obsolete.is_(False),
-                Feature.is_analysis.is_(False),
-                Feature.uniquename.op('~')(FBGN_REGEX),
-            )
-            results = session.query(FeatureRelationship.subject_id.label('allele_id'), Feature).\
-                select_from(Feature).\
-                join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
-                join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
-                join(FeatureRelationship, (FeatureRelationship.object_id == Feature.feature_id)).\
-                join(rel_type, (rel_type.cvterm_id == FeatureRelationship.type_id)).\
-                filter(*filters).\
-                distinct()
-            for result in results:
-                feature_ref = FeatureRef(result.Feature.feature_id, result.Feature.uniquename, result.Feature.name)
-                self._parental_genes.setdefault(result.allele_id, []).append(feature_ref)
-                counter += 1
+        filters = (
+            org_prop_type.name == 'taxgroup',
+            Organismprop.value == 'drosophilid',
+            rel_type.name == 'alleleof',
+            Feature.is_obsolete.is_(False),
+            Feature.is_analysis.is_(False),
+            Feature.uniquename.op('~')(FBGN_REGEX),
+        )
+        results = session.query(FeatureRelationship.subject_id.label('allele_id'),
+                                Feature.feature_id.label('gene_id'),
+                                Feature.uniquename.label('gene_uniquename'),
+                                Feature.name.label('gene_name')).\
+            select_from(Feature).\
+            join(Organismprop, (Organismprop.organism_id == Feature.organism_id)).\
+            join(org_prop_type, (org_prop_type.cvterm_id == Organismprop.type_id)).\
+            join(FeatureRelationship, (FeatureRelationship.object_id == Feature.feature_id)).\
+            join(rel_type, (rel_type.cvterm_id == FeatureRelationship.type_id)).\
+            filter(*filters).\
+            distinct()
+        for result in results:
+            if result.allele_id not in self.component_ids:
+                continue
+            feature_ref = FeatureRef(result.gene_id, result.gene_uniquename, result.gene_name)
+            self._parental_genes.setdefault(result.allele_id, []).append(feature_ref)
+            counter += 1
         self.log.info(f'Found {counter} parental Drosophilid genes for component alleles.')
         return
 
     def _prefetch_insertion_genes(self, session) -> None:
-        """Map each insertion in play to the Drosophilid genes it could belong to."""
+        """Map each insertion in play to the Drosophilid genes it could belong to.
+
+        Not chunked by insertion feature_id: the id list filters feature_relationship
+        rather than a feature primary key, and the unrestricted join is far cheaper than a
+        large IN list. See _chunked.
+
+        """
         insertion_ids = {i.feature_id for refs in self._alliance_insertions.values() for i in refs}
         insertion_ids.update(i.feature_id for refs in self._construct_insertions.values() for i in refs)
         insertion_ids.update(i.feature_id for cons in self._allele_construct_insertions.values() for i in cons.values())
@@ -1038,37 +1093,43 @@ class PrefetchedComponentLookup(ComponentLookup):
         ag_rel_type = aliased(Cvterm, name='ag_rel_type')
         ai_rel_type = aliased(Cvterm, name='ai_rel_type')
         counter = 0
-        for id_chunk in _chunked(insertion_ids):
-            filters = (
-                ai_rel.object_id.in_(id_chunk),
-                insertion.uniquename.op('~')(FBTI_REGEX),
-                allele.is_obsolete.is_(False),
-                allele.uniquename.op('~')(FBAL_REGEX),
-                gene.is_obsolete.is_(False),
-                gene.uniquename.op('~')(FBGN_REGEX),
-                ai_rel_type.name == 'associated_with',
-                ag_rel_type.name == 'alleleof',
-                Organismprop.value == 'drosophilid',
-            )
-            results = session.query(ai_rel.object_id.label('insertion_id'), gene.uniquename.label('gene_uniquename')).\
-                select_from(gene).\
-                join(Organismprop, (Organismprop.organism_id == gene.organism_id)).\
-                join(ag_rel, (ag_rel.object_id == gene.feature_id)).\
-                join(ag_rel_type, (ag_rel_type.cvterm_id == ag_rel.type_id)).\
-                join(allele, (allele.feature_id == ag_rel.subject_id)).\
-                join(ai_rel, (ai_rel.subject_id == allele.feature_id)).\
-                join(ai_rel_type, (ai_rel_type.cvterm_id == ai_rel.type_id)).\
-                join(insertion, (insertion.feature_id == ai_rel.object_id)).\
-                filter(*filters).\
-                distinct()
-            for result in results:
-                self._insertion_genes.setdefault(result.insertion_id, []).append(result.gene_uniquename)
-                counter += 1
+        filters = (
+            insertion.uniquename.op('~')(FBTI_REGEX),
+            allele.is_obsolete.is_(False),
+            allele.uniquename.op('~')(FBAL_REGEX),
+            gene.is_obsolete.is_(False),
+            gene.uniquename.op('~')(FBGN_REGEX),
+            ai_rel_type.name == 'associated_with',
+            ag_rel_type.name == 'alleleof',
+            Organismprop.value == 'drosophilid',
+        )
+        results = session.query(ai_rel.object_id.label('insertion_id'), gene.uniquename.label('gene_uniquename')).\
+            select_from(gene).\
+            join(Organismprop, (Organismprop.organism_id == gene.organism_id)).\
+            join(ag_rel, (ag_rel.object_id == gene.feature_id)).\
+            join(ag_rel_type, (ag_rel_type.cvterm_id == ag_rel.type_id)).\
+            join(allele, (allele.feature_id == ag_rel.subject_id)).\
+            join(ai_rel, (ai_rel.subject_id == allele.feature_id)).\
+            join(ai_rel_type, (ai_rel_type.cvterm_id == ai_rel.type_id)).\
+            join(insertion, (insertion.feature_id == ai_rel.object_id)).\
+            filter(*filters).\
+            distinct()
+        for result in results:
+            if result.insertion_id not in insertion_ids:
+                continue
+            self._insertion_genes.setdefault(result.insertion_id, []).append(result.gene_uniquename)
+            counter += 1
         self.log.info(f'Found {counter} possible Drosophilid genes for {len(self._insertion_genes)} insertions.')
         return
 
     def _prefetch_feature_basics(self, session) -> None:
-        """Get reportable details for every component and every feature a component maps onto."""
+        """Get reportable details for every component and every feature a component maps onto.
+
+        Still chunked: the id list filters feature.feature_id, which the planner resolves
+        through the primary key index, and the unrestricted query would have to scan every
+        feature and synonym in chado.
+
+        """
         wanted_ids = set(self.component_ids)
         wanted_ids.update(self._mapped_feature_ids())
         feature_type = aliased(Cvterm, name='feature_type')
@@ -1083,7 +1144,15 @@ class PrefetchedComponentLookup(ComponentLookup):
                 FeatureSynonym.is_current.is_(True),
                 synonym_type.name == 'symbol',
             )
-            results = session.query(Feature, feature_type, Organism, Synonym).\
+            # synonym_id is selected but unused: it keeps DISTINCT keyed per synonym row, so
+            # a feature with two current symbols still returns two rows and is still flagged.
+            results = session.query(Feature.feature_id.label('feature_id'),
+                                    Feature.uniquename.label('uniquename'),
+                                    Feature.name.label('name'),
+                                    feature_type.name.label('type_name'),
+                                    Organism.abbreviation.label('org_abbr'),
+                                    Synonym.synonym_id.label('synonym_id'),
+                                    Synonym.synonym_sgml.label('synonym_sgml')).\
                 select_from(Feature).\
                 join(Organism, (Organism.organism_id == Feature.organism_id)).\
                 join(feature_type, (feature_type.cvterm_id == Feature.type_id)).\
@@ -1093,16 +1162,16 @@ class PrefetchedComponentLookup(ComponentLookup):
                 filter(*filters).\
                 distinct()
             for result in results:
-                feature_id = result.Feature.feature_id
+                feature_id = result.feature_id
                 if feature_id in self._feature_basics:
                     multi_symbol_ids.add(feature_id)
                     continue
                 self._feature_basics[feature_id] = {
-                    'uniquename': result.Feature.uniquename,
-                    'name': result.Feature.name,
-                    'type': result.feature_type.name,
-                    'org_abbr': result.Organism.abbreviation,
-                    'current_symbol': greek_to_sgml(result.Synonym.synonym_sgml),
+                    'uniquename': result.uniquename,
+                    'name': result.name,
+                    'type': result.type_name,
+                    'org_abbr': result.org_abbr,
+                    'current_symbol': greek_to_sgml(result.synonym_sgml),
                 }
         # Bogus symbol features have no symbol synonym, and are never mapping targets.
         bogus_counter = 0
@@ -1112,7 +1181,7 @@ class PrefetchedComponentLookup(ComponentLookup):
                 Feature.uniquename == Feature.name,
                 Cvterm.name == 'bogus symbol',
             )
-            results = session.query(Feature).\
+            results = session.query(Feature.feature_id, Feature.uniquename, Feature.name).\
                 select_from(Feature).\
                 join(Cvterm, (Cvterm.cvterm_id == Feature.type_id)).\
                 filter(*filters).\
