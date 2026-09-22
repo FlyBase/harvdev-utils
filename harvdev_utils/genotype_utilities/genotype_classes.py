@@ -204,19 +204,39 @@ class GenotypeAnnotation(object):
                     self.input_features_replaced[old_id] = new_id
         return
 
-    def _remove_redundant_cgroups(self):
-        """For cgroups that have had allele replacements, assess for redundancy."""
+    def _remove_redundant_cgroups(self, session):
+        """For cgroups that have had allele replacements, assess for redundancy.
+
+        Cgroups are grouped by their public components, not by their whole description, because two
+        cgroups can report the same feature and still be described differently. One insertion that
+        disrupts two genes is curated once per gene, each time over that gene's own bogus wild-type
+        symbol, so "Ant2[+]/Ant2[G0247]" and "sesB[+]/sesB[G0247]" are one heterozygous insertion
+        written twice. Once both alleles are replaced by the insertion they share, the cgroups say
+        the same thing and collapse into one.
+
+        The survivor's wild-type partner then becomes the generic "+", since the insertion it is
+        paired with is no longer the allele of any one gene. A cgroup that names a partner is kept
+        over one that does not, so that "heterozygous" is not downgraded to "zygosity unstated".
+
+        Args:
+            session: Database session.
+        """
         if self.errors:
             return
-        transformed_cgroup_descs = {}
+        cgroups_by_components = {}
         for cgroup in self.cgroup_list:
-            try:
-                transformed_cgroup_descs[cgroup.cgroup_desc].append(cgroup)
-            except KeyError:
-                transformed_cgroup_descs[cgroup.cgroup_desc] = [cgroup]
+            public_uniquenames = tuple(sorted(i['uniquename'] for i in cgroup.features
+                                              if i['uniquename'] and i['type'] != 'bogus symbol'))
+            cgroups_by_components.setdefault(public_uniquenames, []).append(cgroup)
         non_redundant_cgroup_list = []
-        for cgroup_list in transformed_cgroup_descs.values():
-            non_redundant_cgroup_list.append(cgroup_list[0])
+        for cgroups in cgroups_by_components.values():
+            keeper = sorted(cgroups, key=lambda i: (-len(i.features), i.cgroup_desc))[0]
+            if len({i.cgroup_desc for i in cgroups}) > 1:
+                msg = f'cgroups {sorted(i.cgroup_desc for i in cgroups)} report the same components, so they are combined'
+                self.notes.append(msg)
+                self.log.debug(msg)
+                keeper.use_generic_wildtype_partner(session)
+            non_redundant_cgroup_list.append(keeper)
         self.cgroup_list = non_redundant_cgroup_list
         return
 
@@ -580,7 +600,7 @@ class GenotypeAnnotation(object):
         self._parse_cgroups(session)
         self._propagate_cgroup_notes_and_errors()
         self._remove_less_informative_cgroups()
-        self._remove_redundant_cgroups()
+        self._remove_redundant_cgroups(session)
         self._reassign_insertions_to_classical_cgroups(session)
         self._check_multi_cgroup_genes()
         self._calculate_genotype_uniquename()
@@ -1081,6 +1101,35 @@ class ComplementationGroup(object):
     ###############################
     # Public Methods (Entry Point)
     ###############################
+
+    def use_generic_wildtype_partner(self, session):
+        """Replace a gene-specific bogus wild-type partner with the generic "+".
+
+        Called when this cgroup stands in for several that named different genes' wild-type
+        symbols for what turned out to be one shared component. No one gene's symbol is right
+        any more, so the partner becomes the "+" that the perl parser has always used for an
+        unspecified wild type.
+
+        Args:
+            session: Database session.
+        """
+        replaced = False
+        for feature_dict in self.features:
+            if feature_dict['type'] != 'bogus symbol' or feature_dict['uniquename'] == '+':
+                continue
+            generic_wildtype, _ = self.lookup.bogus_feature(session, '+')
+            msg = f'wild-type partner "{feature_dict["uniquename"]}" is reported as "{generic_wildtype.uniquename}"'
+            self.notes.append(msg)
+            self.log.debug(msg)
+            feature_dict['feature_id'] = generic_wildtype.feature_id
+            feature_dict['uniquename'] = generic_wildtype.uniquename
+            feature_dict['current_symbol'] = generic_wildtype.uniquename
+            feature_dict['input_symbol'] = generic_wildtype.uniquename
+            feature_dict['input_name'] = generic_wildtype.uniquename
+            replaced = True
+        if replaced:
+            self._rank_cgroups()
+        return
 
     def process_cgroup(self, session):
         """Run various ComplementationGroup methods in sequence."""
