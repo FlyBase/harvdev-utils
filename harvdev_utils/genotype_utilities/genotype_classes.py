@@ -319,6 +319,16 @@ class GenotypeAnnotation(object):
                 if receptor_desc == donor_desc:
                     continue
                 receptor = cgroup_desc_dict[receptor_desc]
+                # One insertion that disrupts two genes is curated once per locus, so two cgroups of
+                # one genotype can hold the same FBti and still have different descriptions, because
+                # each is paired with its own gene's bogus wild-type symbol. Combining them would
+                # pair the insertion with itself and report a homozygote the genotype does not have.
+                receptor_feature_ids = [i['feature_id'] for i in receptor.features if i['feature_id'] and i['type'] != 'bogus symbol']
+                if receptor_feature_ids and receptor_feature_ids[0] == public_feature_ids[0]:
+                    msg = f'cgroups "{donor_desc}" and "{receptor_desc}" report the same insertion, so they are not combined'
+                    self.notes.append(msg)
+                    self.log.debug(msg)
+                    continue
                 # self.log.debug(f'For {receptor_desc}, found this FBgn ID locus: {receptor.gene_locus_id}')
                 if receptor.gene_locus_id in compatible_fbgn_ids:
                     donor_cgroups[donor_desc].append(receptor_desc)
