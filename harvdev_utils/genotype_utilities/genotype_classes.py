@@ -248,7 +248,22 @@ class GenotypeAnnotation(object):
         return
 
     def _reassign_insertions_to_classical_cgroups(self, session):
-        """Look for FBti cgroups that can be combined with another cgroup."""
+        """Look for FBti cgroups that can be combined with another cgroup.
+
+        A cgroup holding a single at-locus FBti is a "donor": the insertion may belong beside the
+        classical allele of another cgroup, the "receptor". Whether a cgroup can donate must not
+        depend on how its FBti got there, because this method has to give the same answer when it
+        is run again on the genotype it produced. It used to skip any cgroup carrying a
+        gene_locus_id, which _get_parental_genes() fills in from the component as it was *before*
+        an FBal was replaced by its "is_represented_at_alliance_as" insertion. So a replaced
+        FBal->FBti never donated, while the very same FBti as an original feature_genotype
+        component did. That wrote genotypes into chado whose own reassessment mapped them
+        elsewhere (FTA-255).
+
+        A cgroup can therefore now be both a donor and a receptor. It may not pair with itself,
+        and each cgroup joins at most one merge, so that two cgroups which each accept the other
+        do not both build the same combined cgroup.
+        """
         if self.errors:
             return
         cgroup_desc_dict = {}    # cgroup_desc-keyed cgroups
@@ -256,19 +271,16 @@ class GenotypeAnnotation(object):
         donor_cgroups = {}       # keys are cgroups with single FBti that might get moved to another cgroup: each value a list of compatible receptor cgroups
         final_matches = {}       # A 1:1 donor-receptor match (using cgroup descs).
         new_cgroup_list = []
-        # 1. Check for potential donor cgroups (must be a single at-locus FBti, not assigned to a Dros gene by curation).
+        # 1. Check for potential donor cgroups (must be a single at-locus FBti).
         for cgroup in self.cgroup_list:
             # self.log.debug(f'Assess donor-potential of cgroup {cgroup.cgroup_desc}')
-            if cgroup.at_locus is False or cgroup.gene_locus_id or 'FBti' not in cgroup.cgroup_desc:
+            if cgroup.at_locus is False:
                 # self.log.debug(f'The cgroup {cgroup.cgroup_desc} is NOT a potential donor.')
                 continue
-            else:
-                # self.log.debug(f'Check cgroup {cgroup.cgroup_desc} as a potential donor.')
-                pass
             public_uniquenames = [i['uniquename'] for i in cgroup.features if i['uniquename'] and i['type'] != 'bogus symbol']
             # self.log.debug(f'Have these public uniquenames: {public_uniquenames}')
             # Must be a cgroup with only one FBti in the cgroup (ignore bogus symbols).
-            if len(public_uniquenames) == 1:
+            if len(public_uniquenames) == 1 and public_uniquenames[0].startswith('FBti'):
                 donor_cgroups[cgroup.cgroup_desc] = []
                 # self.log.debug(f'The cgroup {cgroup.cgroup_desc} IS a potential donor.')
         if not donor_cgroups:
@@ -295,13 +307,17 @@ class GenotypeAnnotation(object):
         # Make a cgroup_desc-keyed dict of cgroups.
         for cgroup in self.cgroup_list:
             cgroup_desc_dict[cgroup.cgroup_desc] = cgroup
-        # 3. Look for compatible donor/acceptor cgroups: the two sets should be non-overlapping.
+        # 3. Look for compatible donor/acceptor cgroups. The two sets overlap, since a cgroup of
+        # one replaced FBal->FBti is both a lone insertion that can move and a locus that can be
+        # moved to, so a cgroup is never matched against itself.
         for donor_desc in donor_cgroups.keys():
             donor = cgroup_desc_dict[donor_desc]
             public_feature_ids = [i['feature_id'] for i in donor.features if i['feature_id'] and i['uniquename'].startswith('FBti')]
             compatible_fbgn_ids = self.lookup.possible_genes_for_insertion(session, public_feature_ids[0])
             # self.log.debug(f'For {donor_desc}, found these compatible FBgn IDs: {compatible_fbgn_ids}')
             for receptor_desc in receptor_cgroups.keys():
+                if receptor_desc == donor_desc:
+                    continue
                 receptor = cgroup_desc_dict[receptor_desc]
                 # self.log.debug(f'For {receptor_desc}, found this FBgn ID locus: {receptor.gene_locus_id}')
                 if receptor.gene_locus_id in compatible_fbgn_ids:
@@ -318,17 +334,29 @@ class GenotypeAnnotation(object):
                     final_matches[donor_desc] = receptor_desc
         for k, v in final_matches.items():
             self.log.debug(f'Found complementary cgroups: {k} and {v}')
-        # 5. Move non-donor/receptor cgroups to the final list.
-        cgroups_to_edit = list(final_matches.keys())
-        cgroups_to_edit.extend(list(final_matches.values()))
+        # 5. Let each cgroup join only one merge. Two cgroups that each accept the other match
+        # both ways round, and since a combined cgroup is described by its sorted component IDs,
+        # both matches would build the very same cgroup. Sorted, so that which one is kept does
+        # not depend on dict ordering.
+        merges = []
+        merged_descs = set()
+        for donor_desc, receptor_desc in sorted(final_matches.items()):
+            if donor_desc in merged_descs or receptor_desc in merged_descs:
+                msg = f'cgroup "{donor_desc}" and cgroup "{receptor_desc}" already belong to another combined cgroup'
+                self.notes.append(msg)
+                self.log.debug(msg)
+                continue
+            merges.append((donor_desc, receptor_desc))
+            merged_descs.update((donor_desc, receptor_desc))
+        # 6. Move the cgroups that are not being combined to the final list.
         for cgroup in self.cgroup_list:
-            if cgroup.cgroup_desc not in cgroups_to_edit:
+            if cgroup.cgroup_desc not in merged_descs:
                 new_cgroup_list.append(cgroup)
-        # 6. Combine the donor/receptor pairs and add them to the final list of cgroups.
+        # 7. Combine the donor/receptor pairs and add them to the final list of cgroups.
         # The pair's components have already been identified, mapped and flagged, so the combined
         # cgroup reuses those feature dicts. Rebuilding it from a "donor/receptor" symbol string
         # would re-do all that work, and would split a component symbol that contains a "/".
-        for donor_desc, receptor_desc in final_matches.items():
+        for donor_desc, receptor_desc in merges:
             donor_cgroup = cgroup_desc_dict[donor_desc]
             donor_feature = [i for i in donor_cgroup.features if i['uniquename'] and i['uniquename'].startswith('FBti')][0]
             receptor_cgroup = cgroup_desc_dict[receptor_desc]
